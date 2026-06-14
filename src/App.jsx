@@ -393,18 +393,11 @@ function SingleSelect({ options, value, onChange, activeColor=C.green }) {
 
 // ── SessionCounter ────────────────────────────────────────────────────────────
 function SessionCounter({ value, onChange }) {
-  const presets = [6,10,12,16,20,24];
   return (
     <div>
       <span style={lbl()}>Sessões autorizadas</span>
-      <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
-        {presets.map(n=>(
-          <button key={n} onClick={()=>onChange(String(n))} style={iconBtn(value===String(n),C.amber,{padding:"6px 12px"})}>{n}</button>
-        ))}
-        <input type="number" min="1" max="120" value={value} onChange={e=>onChange(e.target.value)}
-          style={{...inp({width:72,textAlign:"center",fontSize:14,fontWeight:700})}} placeholder="—"/>
-        <span style={{fontSize:11,color:C.textMuted}}>sessões</span>
-      </div>
+      <input type="number" min="1" max="120" value={value} onChange={e=>onChange(e.target.value)}
+        style={{...inp({width:"100%",textAlign:"center",fontSize:16,fontWeight:700,padding:"12px 14px"})}} placeholder="Nº de sessões"/>
     </div>
   );
 }
@@ -702,14 +695,218 @@ function SubHeading({ children }) {
 
 let _gId = 20;
 
+// ── Login Screen ────────────────────────────────────────────────────────────────
+function LoginScreen({ onLogin }) {
+  const [prof, setProf] = useState("");
+  const [nome, setNome] = useState("");
+  const [crefito, setCrefito] = useState("");
+
+  const profOptions = [
+    { value:"fisio", label:"Fisioterapeuta", icon:"🦵" },
+    { value:"to", label:"Terapeuta Ocupacional", icon:"🤲" },
+    { value:"educFisico", label:"Educador Físico", icon:"🏃" },
+    { value:"outro", label:"Outro profissional da saúde", icon:"💚" },
+  ];
+
+  const handleEnter = () => {
+    if (!prof || !nome.trim()) return;
+    onLogin({ prof, nome: nome.trim(), crefito: crefito.trim() });
+  };
+
+  return (
+    <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:F, padding:24 }}>
+      <div style={{ maxWidth:440, width:"100%", textAlign:"center" }}>
+
+        {/* Logo grande */}
+        <div style={{ marginBottom:8 }}>
+          <svg viewBox="0 0 400 70" width="320" height="62" style={{ display:"block", margin:"0 auto" }}>
+            <g transform="translate(78,36)">
+              <line x1="0" y1="-28" x2="0" y2="28" stroke={C.textDim} strokeWidth="1.5" strokeDasharray="2 5"/>
+              <path d="M -20 14 C -10 4,0 0,20 -14" fill="none" stroke={C.green} strokeWidth="5" strokeLinecap="round"/>
+              <path d="M -20 -5 C -5 0,5 4,20 15" fill="none" stroke={C.greenDim} strokeWidth="3.5" strokeLinecap="round"/>
+              <path d="M -12 24 C -4 13,4 -6,15 -24" fill="none" stroke={C.greenDeep} strokeWidth="3" strokeLinecap="round"/>
+              <circle cx="0" cy="0" r="6" fill={C.amber}/>
+            </g>
+            <text x="200" y="50" fill={C.white} fontSize="36" fontWeight="900" letterSpacing="8" fontFamily={F} textAnchor="middle">SASYRA</text>
+            <text x="200" y="66" fill={C.green} fontSize="13" fontWeight="800" letterSpacing="6" fontFamily={F} textAnchor="middle">REABILITAÇÃO E EVIDÊNCIA</text>
+          </svg>
+        </div>
+
+        <p style={{ color:C.textMuted, fontSize:14, lineHeight:1.6, margin:"8px 0 28px" }}>
+          Sistema de apoio à decisão clínica para avaliação, documentação e tratamento ortopédico baseado em evidências
+        </p>
+
+        {/* Profissão */}
+        <div style={{ textAlign:"left", marginBottom:18 }}>
+          <span style={lbl()}>Sou profissional de</span>
+          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+            {profOptions.map(opt => (
+              <button key={opt.value} onClick={() => setProf(opt.value)}
+                style={{
+                  ...iconBtn(prof === opt.value, C.green),
+                  width:"100%", justifyContent:"flex-start", textAlign:"left", padding:"12px 16px",
+                  border: prof === opt.value ? `1px solid ${C.green}70` : `1px solid ${C.border}`,
+                  background: prof === opt.value ? C.greenBg : C.surface,
+                  borderRadius:10, gap:10, fontSize:14
+                }}>
+                <span style={{ fontSize:18 }}>{opt.icon}</span>
+                <span style={{ fontWeight: prof === opt.value ? 700 : 400, color: prof === opt.value ? C.green : C.text }}>{opt.label}</span>
+                {prof === opt.value && <span style={{ marginLeft:"auto", color:C.green, fontSize:16 }}>✓</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Nome */}
+        <div style={{ textAlign:"left", marginBottom:14 }}>
+          <span style={lbl()}>Nome completo</span>
+          <input type="text" value={nome} onChange={e => setNome(e.target.value)} placeholder="Seu nome"
+            style={inp({ padding:"11px 14px", fontSize:14 })} />
+        </div>
+
+        {/* CREFITO (opcional) */}
+        <div style={{ textAlign:"left", marginBottom:24 }}>
+          <span style={lbl()}>CREFITO / registro profissional <span style={{ color:C.textDim, fontWeight:400, textTransform:"none" }}>(opcional)</span></span>
+          <input type="text" value={crefito} onChange={e => setCrefito(e.target.value)} placeholder="Ex: 12345-F"
+            style={inp({ padding:"11px 14px", fontSize:14 })} />
+        </div>
+
+        {/* Entrar */}
+        <button onClick={handleEnter} disabled={!prof || !nome.trim()}
+          style={{
+            ...primaryBtn(),
+            width:"100%", justifyContent:"center", padding:"14px", fontSize:15, fontWeight:800,
+            opacity: (!prof || !nome.trim()) ? 0.4 : 1,
+            cursor: (!prof || !nome.trim()) ? "not-allowed" : "pointer"
+          }}>
+          Entrar no SASYRA →
+        </button>
+
+        <p style={{ color:C.textDim, fontSize:11, marginTop:24 }}>
+          Ao entrar, você declara ser profissional de saúde habilitado
+        </p>
+      </div>
+    </div>
+  );
+}
+
+const PROF_LABELS = { fisio:"Fisioterapeuta", to:"Terapeuta Ocupacional", educFisico:"Educador Físico", outro:"Profissional da Saúde" };
+
+// ── Patient List ──────────────────────────────────────────────────────────────
+function PatientList({ patients, onSelect, onAdd, onLogout, user }) {
+  const [showForm, setShowForm] = useState(false);
+  const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
+
+  const handleAdd = () => {
+    if (!f.nome.trim()) return;
+    onAdd({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10) });
+    setF({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
+    setShowForm(false);
+  };
+
+  return (
+    <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", fontFamily:F, color:C.text, padding:24 }}>
+      <div style={{ maxWidth:680, margin:"0 auto" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
+          <LogoSVG/>
+          <button onClick={onLogout} style={ghostBtn({ fontSize:12 })}>Sair</button>
+        </div>
+
+        <div style={{ marginBottom:28 }}>
+          <div style={{ fontSize:22, fontWeight:800, color:C.white, marginBottom:2 }}>Olá, {user.nome}</div>
+          <div style={{ fontSize:13, color:C.textMuted }}>{PROF_LABELS[user.prof] || user.prof}{user.crefito ? ` · CREFITO ${user.crefito}` : ""}</div>
+        </div>
+
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+          <span style={{ fontSize:15, fontWeight:700, color:C.text }}>Pacientes {patients.length > 0 && <span style={{ color:C.textMuted, fontWeight:400, fontSize:13 }}>({patients.length})</span>}</span>
+          <button onClick={() => setShowForm(!showForm)} style={primaryBtn({ padding:"9px 18px", fontSize:13 })}>
+            {showForm ? "Cancelar" : "+ Novo Paciente"}
+          </button>
+        </div>
+
+        {showForm && (
+          <div style={{ ...cardStyle(), marginBottom:16, border:`1px solid ${C.green}50` }}>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
+              {[
+                {k:"nome",l:"Nome completo",pl:"Nome do paciente"},
+                {k:"dataNasc",l:"Nascimento",pl:"",type:"date"},
+                {k:"sexo",l:"Sexo",type:"select",opts:["","Feminino","Masculino","Outro"]},
+                {k:"profissao",l:"Profissão",pl:"Profissão"},
+                {k:"convenio",l:"Convênio",type:"select",opts:["","Particular","Unimed","Bradesco Saúde","Amil","SulAmérica","Hapvida","NotreDame","IPSEMG","SUS / NASF","Outro"]},
+                {k:"telefone",l:"Telefone",pl:"(99) 99999-9999"},
+                {k:"peso",l:"Peso (kg)",pl:"kg"},
+                {k:"altura",l:"Altura (cm)",pl:"cm"},
+              ].map(({k,l,pl,type,opts}) => (
+                <div key={k}>
+                  <span style={lbl()}>{l}</span>
+                  {opts ? (
+                    <select value={f[k]} onChange={e => setF(p=>({...p,[k]:e.target.value}))} style={sel()}>
+                      {opts.map(o => <option key={o} value={o}>{o||"Selecionar…"}</option>)}
+                    </select>
+                  ) : (
+                    <input type={type||"text"} value={f[k]} placeholder={pl||""} onChange={e => setF(p=>({...p,[k]:e.target.value}))} style={inp()} />
+                  )}
+                </div>
+              ))}
+            </div>
+            <button onClick={handleAdd} disabled={!f.nome.trim()} style={{...primaryBtn({width:"100%",justifyContent:"center",padding:"11px",fontSize:14}),opacity:f.nome.trim()?1:0.4,cursor:f.nome.trim()?"pointer":"not-allowed"}}>Cadastrar Paciente</button>
+          </div>
+        )}
+
+        {patients.length === 0 && !showForm && (
+          <div style={{ ...cardStyle(), textAlign:"center", padding:"48px 24px" }}>
+            <div style={{ fontSize:40, marginBottom:12 }}>🩺</div>
+            <div style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:6 }}>Nenhum paciente cadastrado</div>
+            <div style={{ fontSize:13, color:C.textMuted, marginBottom:18 }}>Clique em "+ Novo Paciente" para começar</div>
+          </div>
+        )}
+
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          {[...patients].reverse().map(p => (
+            <button key={p.id} onClick={() => onSelect(p)} style={{
+              background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px 18px", cursor:"pointer",
+              textAlign:"left", fontFamily:F, color:C.text, display:"flex", alignItems:"center", gap:14, width:"100%",
+              transition:"all 0.12s"
+            }}>
+              <div style={{ width:40, height:40, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:800, color:C.green, flexShrink:0 }}>{p.nome[0]?.toUpperCase()}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontWeight:700, fontSize:14, color:C.text, marginBottom:2 }}>{p.nome}</div>
+                <div style={{ fontSize:11, color:C.textMuted, display:"flex", gap:8, flexWrap:"wrap" }}>
+                  {p.sexo && <span>{p.sexo}</span>}
+                  {p.dataNasc && <span>Nasc: {p.dataNasc}</span>}
+                  {p.profissao && <span>{p.profissao}</span>}
+                  {p.convenio && <span>{p.convenio}</span>}
+                </div>
+              </div>
+              <span style={{ color:C.green, fontSize:16 }}>→</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function Sasyra() {
+  const [user, setUser] = useState(null);
+  const [patients, setPatients] = useState([]);
+  const [patientView, setPatientView] = useState(true);
   const [tab, setTab] = useState("avaliacao");
   const [regiao, setRegiao] = useState("Centro-Oeste");
 
   // Patient
   const [pt, setPt] = useState({ nome:"", dataNasc:"", sexo:"", lateralidade:"", estadoCivil:"", profissao:"", convenio:"", sessoesAuth:"", telefone:"", peso:"", altura:"", data:new Date().toISOString().slice(0,10) });
   const up = (k,v) => setPt(p=>({...p,[k]:v}));
+
+  const selectPatient = (p) => {
+    setPt({ ...pt, ...p });
+    setPatientView(false);
+  };
+
+  const addPatient = (p) => setPatients(ps => [...ps, p]);
+
+  const handleLogout = () => { setUser(null); setPatientView(true); setPatients([]); };
 
   // Anamnese
   const [queixa, setQueixa] = useState("");
@@ -831,23 +1028,30 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
+  if (!user) return <LoginScreen onLogin={setUser} />;
+  if (patientView) return <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} user={user} />;
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
 
       {/* Header */}
       <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:60 }}>
-        <LogoSVG/>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <LogoSVG/>
+          <button onClick={()=>setPatientView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+        </div>
         <div style={{ display:"flex", gap:4 }}>
           {[["avaliacao","📋","Avaliação"],["diario","📅","Diário"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb])=>(
             <button key={k} onClick={()=>setTab(k)} style={{ background:tab===k?C.greenBg:"transparent", border:`1px solid ${tab===k?C.green+"50":"transparent"}`, borderRadius:8, padding:"7px 16px", fontSize:13, fontWeight:tab===k?700:400, color:tab===k?C.green:C.textMuted, cursor:"pointer", fontFamily:F }}>{ic} {lb}</button>
           ))}
         </div>
-        {pt.nome && (
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <div style={{ width:30, height:30, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.green }}>{pt.nome[0]?.toUpperCase()}</div>
-            <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{pt.nome}</span>
-          </div>
-        )}
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          {pt.nome && (
+            <>
+              <div style={{ width:30, height:30, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.green }}>{pt.nome[0]?.toUpperCase()}</div>
+              <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{pt.nome}</span>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Progress bar */}
