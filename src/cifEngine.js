@@ -1,10 +1,7 @@
 export function generateCIF({
   evaMov,
   avds,
-  localDor
 }) {
-  // localDor ainda não é usado (mantido para assinatura compatível)
-  void localDor;
   const result = [];
 
 
