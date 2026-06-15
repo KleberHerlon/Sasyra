@@ -303,23 +303,4 @@
   color: #bccabb;
 }
 
-.bg-image {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 33.333333%;
-  height: 100%;
-  opacity: 0.1;
-  filter: grayscale(100%);
-  pointer-events: none;
-  display: none;
-}
 
-@media (min-width: 768px) {
-  .bg-image {
-    display: block;
-    background-image: url('https://lh3.googleusercontent.com/aida/AP1WRLs4_Uqx2QMrVYDPVZIHOXaU69lK4GJSazEV-96ln9ayCYgc5NRpTSp17-JwcHSgM9P935EcyuW6jpfyJfUtTWJbF5yP7YneSJSCeIBO6hZkNF-P1IyYFat0tPCgmz7xdv2A8_lg9Iw1UxxyHimInY0CwQYYbRNaRoqNvI-2Iexbp-1JBYFK8TJnyaeLxPf8BnIa9OwTeuWzwBnz0D8qzLw2VHtxSKyV7yiOrwIBVmDym8hq7myZyt2X1h3T');
-    background-size: cover;
-    background-position: center;
-  }
-}

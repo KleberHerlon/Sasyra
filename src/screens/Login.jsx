@@ -114,8 +114,6 @@ export default function Login() {
         </footer>
       </main>
 
-      {/* Visual Identity Background Images */}
-      <div className="bg-image"></div>
     </div>
   );
 }
