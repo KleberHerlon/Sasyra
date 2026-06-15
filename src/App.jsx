@@ -1,31 +1,33 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { EvaSlider, TagSelect, SingleSelect, AudioField, useProgress, Section, Row, Field, SubHeading, useMediaQuery } from "./components";
+import Assessment from "./Assessment";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
-  bg:          "#0E141B",
-  surface:     "#111822",
-  card:        "#19243A",
-  cardAlt:     "#162030",
-  border:      "#1F2E45",
-  borderLight: "#2A3F5C",
-  green:       "#4ADE80",
-  greenDim:    "#22C55E",
-  greenDeep:   "#0D9E5C",
-  greenBg:     "rgba(74,222,128,0.09)",
-  greenBgHov:  "rgba(74,222,128,0.16)",
-  amber:       "#FBBF24",
-  amberBg:     "rgba(251,191,36,0.10)",
-  red:         "#F87171",
-  redBg:       "rgba(248,113,113,0.09)",
-  blue:        "#60A5FA",
-  blueBg:      "rgba(96,165,250,0.09)",
-  purple:      "#A78BFA",
-  purpleBg:    "rgba(167,139,250,0.09)",
-  text:        "#DDE6F0",
-  textSub:     "#A8BECC",
-  textMuted:   "#5E7A96",
-  textDim:     "#364D62",
-  white:       "#FFFFFF",
+  bg:          "var(--bg)",
+  surface:     "var(--surface)",
+  card:        "var(--card)",
+  cardAlt:     "var(--cardAlt)",
+  border:      "var(--border)",
+  borderLight: "var(--borderLight)",
+  green:       "var(--green)",
+  greenDim:    "var(--greenDim)",
+  greenDeep:   "var(--greenDeep)",
+  greenBg:     "var(--greenBg)",
+  greenBgHov:  "var(--greenBgHov)",
+  amber:       "var(--amber)",
+  amberBg:     "var(--amberBg)",
+  red:         "var(--red)",
+  redBg:       "var(--redBg)",
+  blue:        "var(--blue)",
+  blueBg:      "var(--blueBg)",
+  purple:      "var(--purple)",
+  purpleBg:    "var(--purpleBg)",
+  text:        "var(--text)",
+  textSub:     "var(--textSub)",
+  textMuted:   "var(--textMuted)",
+  textDim:     "var(--textDim)",
+  white:       "var(--white)",
 };
 const F = "'Inter','Segoe UI',system-ui,sans-serif";
 
@@ -37,8 +39,18 @@ const cardStyle = (extra={}) => ({ background:C.card, border:`1px solid ${C.bord
 const primaryBtn = (extra={}) => ({ background:C.green, color:"#061A0C", border:"none", borderRadius:8, padding:"10px 20px", fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:F, display:"inline-flex", alignItems:"center", gap:6, ...extra });
 const ghostBtn = (extra={}) => ({ background:"transparent", color:C.green, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 16px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:F, display:"inline-flex", alignItems:"center", gap:6, ...extra });
 const iconBtn = (active=false, activeColor=C.green, extra={}) => ({ background: active ? `${activeColor}18` : C.surface, border:`1px solid ${active ? activeColor+"50" : C.border}`, color: active ? activeColor : C.textMuted, borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight: active ? 700 : 400, cursor:"pointer", fontFamily:F, transition:"all 0.12s", ...extra });
-
 // ── BMI ───────────────────────────────────────────────────────────────────────
+const PROCEDIMENTOS_CATEGORIES = [
+  { category: "Eletroterapia", items: ["TENS", "FES", "Ultrassom terapêutico", "Laser de baixa potência", "Magnetoterapia"] },
+  { category: "Termoterapia", items: ["Crioterapia", "Termoterapia"] },
+  { category: "Terapia Manual", items: ["Massagem terapêutica", "Mobilização articular", "Manipulação", "Tração", "Dry needling", "Ventosaterapia", "Liberação miofascial"] },
+  { category: "Bandagens Funcionais", items: ["Bandagem funcional", "Kinesio taping"] },
+  { category: "Cinesioterapia e Exercícios", items: ["RPG", "Pilates clínico", "Cinesioterapia", "Treino de força", "Treino proprioceptivo", "Treino funcional", "Exercício neuromotor"] },
+  { category: "Hidroterapia", items: ["Hidroterapia"] },
+  { category: "Alongamento", items: ["Alongamento global"] },
+  { category: "Abordagens Cognitivo-Comportamentais", items: ["PNE – Educação em Dor", "Graded Exposure", "CFT – Terapia Funcional Cognitiva"] },
+];
+
 function calcIMC(peso, altura) {
   const p = parseFloat(peso), h = parseFloat(altura)/100;
   if (!p || !h || h <= 0) return null;
@@ -47,31 +59,9 @@ function calcIMC(peso, altura) {
   return { value: v.toFixed(1), ...cat };
 }
 
-// ── CREFITO Honorários (Resolução COFFITO 424/2013 + tabela 2024) ─────────────
-const CREFITO_REGIOES = {
-  "Sul (RS/SC/PR)":         { consulta: 180, sessao: 160, avaliacao: 250, relatorio: 120 },
-  "Sudeste SP":             { consulta: 220, sessao: 200, avaliacao: 320, relatorio: 150 },
-  "Sudeste RJ/ES/MG":       { consulta: 190, sessao: 170, avaliacao: 280, relatorio: 130 },
-  "Centro-Oeste":           { consulta: 170, sessao: 150, avaliacao: 240, relatorio: 110 },
-  "Nordeste":               { consulta: 150, sessao: 140, avaliacao: 220, relatorio: 100 },
-  "Norte":                  { consulta: 140, sessao: 130, avaliacao: 210, relatorio: 95  },
-};
 
-// ── CIF dictionary (expandido) ────────────────────────────────────────────────
-const CIF = {
-  b280:"Sensação de dor", b28010:"Dor em cabeça e pescoço", b28013:"Dor nas costas",
-  b28014:"Dor em membro superior", b28015:"Dor em membro inferior",
-  b7300:"Força de grupos musculares isolados", b7350:"Tônus de grupos musculares isolados",
-  b7400:"Resistência de grupos musculares isolados", b710:"Mobilidade das articulações",
-  b715:"Estabilidade das articulações", b730:"Força muscular",
-  b770:"Padrão de marcha", b780:"Sensações relacionadas aos músculos e funções do movimento",
-  d410:"Mudar posição corporal básica", d415:"Manter posição corporal",
-  d430:"Levantar e transportar objetos", d445:"Uso da mão e do braço",
-  d450:"Andar", d455:"Deslocar-se", d4551:"Subir/descer escadas",
-  d640:"Realizar tarefas domésticas", d850:"Trabalho remunerado",
-  d4401:"Uso fino da mão (preensão de precisão)", d920:"Recreação e lazer",
-  e1101:"Medicamentos", e355:"Profissionais de saúde",
-};
+
+
 
 // ── Evidence (PEDRO / Cochrane / CPG) ────────────────────────────────────────
 const EVIDENCE = {
@@ -261,24 +251,6 @@ function generateCIF({ evaMov, avds, localDor, gonio, tests, yellowFlags, tempoD
 }
 
 // ── Goniometria ───────────────────────────────────────────────────────────────
-const JOINTS = ["Coluna Cervical","Coluna Torácica","Coluna Lombar","Ombro D","Ombro E","Cotovelo D","Cotovelo E","Punho D","Punho E","Quadril D","Quadril E","Joelho D","Joelho E","Tornozelo D","Tornozelo E","ATM D","ATM E"];
-const MVMT = {
-  "Coluna Cervical":["Flexão","Extensão","Inclinação D","Inclinação E","Rotação D","Rotação E"],
-  "Coluna Torácica":["Flexão","Extensão","Rotação D","Rotação E"],
-  "Coluna Lombar":["Flexão","Extensão","Inclinação D","Inclinação E","Rotação D","Rotação E"],
-  "Ombro D":["Flexão","Extensão","Abdução","Adução","RI","RE","Abdução Horiz."],
-  "Ombro E":["Flexão","Extensão","Abdução","Adução","RI","RE","Abdução Horiz."],
-  "Cotovelo D":["Flexão","Extensão","Pronação","Supinação"],
-  "Cotovelo E":["Flexão","Extensão","Pronação","Supinação"],
-  "Punho D":["Flexão","Extensão","Desvio Radial","Desvio Ulnar"],
-  "Punho E":["Flexão","Extensão","Desvio Radial","Desvio Ulnar"],
-  "Quadril D":["Flexão","Extensão","Abdução","Adução","RI","RE"],
-  "Quadril E":["Flexão","Extensão","Abdução","Adução","RI","RE"],
-  "Joelho D":["Flexão","Extensão"],"Joelho E":["Flexão","Extensão"],
-  "Tornozelo D":["Dorsiflexão","Plantarflexão","Inversão","Eversão"],
-  "Tornozelo E":["Dorsiflexão","Plantarflexão","Inversão","Eversão"],
-  "ATM D":["Abertura","Protrusão","Desvio"],"ATM E":["Abertura","Protrusão","Desvio"],
-};
 const REF = {
   "Flexão|Coluna Cervical":"0–45","Extensão|Coluna Cervical":"0–45","Inclinação D|Coluna Cervical":"0–45","Inclinação E|Coluna Cervical":"0–45","Rotação D|Coluna Cervical":"0–60","Rotação E|Coluna Cervical":"0–60",
   "Flexão|Coluna Lombar":"0–60","Extensão|Coluna Lombar":"0–25","Inclinação D|Coluna Lombar":"0–25","Inclinação E|Coluna Lombar":"0–25",
@@ -317,190 +289,7 @@ function LogoSVG() {
   );
 }
 
-// ── NumericDrum ───────────────────────────────────────────────────────────────
-function NumericDrum({ value, onChange, min, max, step=1, unit, label: lbl2 }) {
-  const inc = () => onChange(Math.min(max, (parseFloat(value)||min)+step));
-  const dec = () => onChange(Math.max(min, (parseFloat(value)||min)-step));
-  return (
-    <div>
-      <span style={lbl()}>{lbl2}</span>
-      <div style={{ display:"flex", alignItems:"center", background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, overflow:"hidden" }}>
-        <button onClick={dec} style={{ background:"none", border:"none", color:C.textMuted, fontSize:18, padding:"0 14px", cursor:"pointer", height:44, display:"flex", alignItems:"center", borderRight:`1px solid ${C.border}` }}>−</button>
-        <div style={{ flex:1, textAlign:"center" }}>
-          <input type="number" value={value} min={min} max={max} step={step} onChange={e=>onChange(e.target.value)}
-            style={{ ...inp(), border:"none", background:"transparent", textAlign:"center", fontSize:18, fontWeight:800, color:C.text, padding:"10px 4px" }}/>
-        </div>
-        <span style={{ fontSize:12, color:C.textMuted, paddingRight:10, paddingLeft:4 }}>{unit}</span>
-        <button onClick={inc} style={{ background:"none", border:"none", color:C.green, fontSize:18, padding:"0 14px", cursor:"pointer", height:44, display:"flex", alignItems:"center", borderLeft:`1px solid ${C.border}` }}>+</button>
-      </div>
-    </div>
-  );
-}
 
-// ── EvaSlider ─────────────────────────────────────────────────────────────────
-function EvaSlider({ label: lbl2, value, onChange }) {
-  const isDefined = value !== null && value !== "";
-  const currentVal = isDefined ? value : 0;
-  const pct = (currentVal / 10) * 100;
-  const color = !isDefined ? C.textDim : currentVal <= 3 ? C.green : currentVal <= 6 ? C.amber : C.red;
-  const faces = ["😌","😐","😟","😣","😭"];
-  const face = isDefined ? faces[Math.min(4, Math.floor(currentVal / 2.5))] : "⚪";
-  const desc = !isDefined ? "Não avaliado" : currentVal === 0 ? "Sem dor" : currentVal <= 3 ? "Leve" : currentVal <= 6 ? "Moderada" : currentVal <= 8 ? "Intensa" : "Máxima";
-  return (
-    <div style={{ opacity: isDefined ? 1 : 0.6, transition:"opacity 0.2s" }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-        <span style={lbl()}>{lbl2}</span>
-        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <span style={{ fontSize:20 }}>{face}</span>
-          <span style={{ fontSize:24, fontWeight:900, color, lineHeight:1 }}>{isDefined ? currentVal : "—"}</span>
-          <span style={{ fontSize:10, color:C.textMuted }}>{isDefined ? `/10 · ${desc}` : desc}</span>
-        </div>
-      </div>
-      <div style={{ position:"relative", height:8, background:C.surface, borderRadius:99, border:`1px solid ${C.border}`, marginBottom:4 }}>
-        {isDefined && <div style={{ position:"absolute", left:0, top:0, height:"100%", width:`${pct}%`, background:`linear-gradient(90deg, ${C.green}, ${color})`, borderRadius:99, transition:"width 0.1s" }}/>}
-      </div>
-      <input type="range" min="0" max="10" step="1" value={currentVal} onChange={e=>onChange(Number(e.target.value))}
-        style={{ width:"100%", accentColor: isDefined ? color : C.border, cursor:"pointer", marginBottom:2 }}/>
-      <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:C.textDim }}>
-        <span>0</span><span>5</span><span>10</span>
-      </div>
-    </div>
-  );
-}
-
-// ── TagSelect / SingleSelect ──────────────────────────────────────────────────
-function TagSelect({ options, value, onChange, activeColor=C.green }) {
-  const toggle = v => onChange(value.includes(v) ? value.filter(x=>x!==v) : [...value,v]);
-  return (
-    <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-      {options.map(o => {
-        const v=o.value??o, l=o.label??o, active=value.includes(v);
-        return <button key={v} onClick={()=>toggle(v)} style={iconBtn(active,activeColor)}>{active && <span style={{fontSize:10}}>✓ </span>}{l}</button>;
-      })}
-    </div>
-  );
-}
-function SingleSelect({ options, value, onChange, activeColor=C.green }) {
-  return (
-    <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-      {options.map(o => {
-        const v=o.value??o, l=o.label??o, active=value===v;
-        return <button key={v} onClick={()=>onChange(active?"":v)} style={iconBtn(active,activeColor)}>{l}</button>;
-      })}
-    </div>
-  );
-}
-
-// ── SessionCounter ────────────────────────────────────────────────────────────
-function SessionCounter({ value, onChange }) {
-  return (
-    <div>
-      <span style={lbl()}>Sessões autorizadas</span>
-      <input type="number" min="1" max="120" value={value} onChange={e=>onChange(e.target.value)}
-        style={{...inp({width:"100%",textAlign:"center",fontSize:16,fontWeight:700,padding:"12px 14px"})}} placeholder="Nº de sessões"/>
-    </div>
-  );
-}
-
-// ── AudioField ────────────────────────────────────────────────────────────────
-function AudioField({ value, onChange, placeholder, rows=3 }) {
-  const [rec, setRec] = useState(false);
-  const [supported, setSupported] = useState(false);
-  const rRef = useRef(null);
-  useEffect(() => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { setSupported(false); return; }
-    setSupported(true);
-    const r = new SR(); r.lang="pt-BR"; r.continuous=true; r.interimResults=false;
-    r.onresult = e => { const t=Array.from(e.results).map(x=>x[0].transcript).join(" "); onChange(p=>(p?p+" "+t:t)); };
-    r.onend = () => setRec(false);
-    rRef.current = r;
-  }, [onChange]);
-  const toggle = () => { if (!rRef.current) return; if(rec){rRef.current.stop();setRec(false);}else{rRef.current.start();setRec(true);} };
-  return (
-    <div style={{ position:"relative" }}>
-      <textarea rows={rows} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
-        style={{...inp({resize:"vertical",lineHeight:1.6}), paddingRight:supported?48:12}}/>
-      {supported && (
-        <button onClick={toggle} title={rec?"Parar":"Ditar por voz"}
-          style={{ position:"absolute", right:8, top:8, background:rec?C.redBg:C.greenBg, border:`1px solid ${rec?C.red:C.green}50`, borderRadius:8, padding:"6px 8px", cursor:"pointer", display:"flex", alignItems:"center", gap:4, fontSize:12, color:rec?C.red:C.green, fontFamily:F, fontWeight:700 }}>
-          {rec ? "⏹ Stop" : "🎙"}
-        </button>
-      )}
-    </div>
-  );
-}
-
-// ── MRCSelect ─────────────────────────────────────────────────────────────────
-function MRCSelect({ value, onChange }) {
-  const grades = ["0 – Sem contração","1 – Frêmito","2 – Sem gravidade","3 – Contra gravidade","4 – Resistência parcial","5 – Normal"];
-  return (
-    <select value={value} onChange={e=>onChange(e.target.value)} style={sel()}>
-      <option value="">MRC…</option>
-      {grades.map((g,i)=><option key={i} value={String(i)}>{g}</option>)}
-    </select>
-  );
-}
-
-// ── GonioRow ──────────────────────────────────────────────────────────────────
-function GonioRow({ row, onUpdate, onRemove }) {
-  const mvts = MVMT[row.joint]||[];
-  const ref = getRef(row.movement, row.joint);
-  const oor = isOutOfRange(row.value, ref);
-  return (
-    <div style={{ display:"grid", gridTemplateColumns:"1.8fr 1.8fr 76px 72px 28px", gap:8, alignItems:"center", padding:"9px 0", borderBottom:`1px solid ${C.border}` }}>
-      <select value={row.joint} onChange={e=>onUpdate({...row,joint:e.target.value,movement:""})} style={sel()}>
-        <option value="">Articulação…</option>
-        {JOINTS.map(j=><option key={j} value={j}>{j}</option>)}
-      </select>
-      <select value={row.movement} onChange={e=>onUpdate({...row,movement:e.target.value})} style={sel()} disabled={!row.joint}>
-        <option value="">Movimento…</option>
-        {mvts.map(m=><option key={m} value={m}>{m}</option>)}
-      </select>
-      <input type="number" min="0" max="360" value={row.value} onChange={e=>onUpdate({...row,value:e.target.value})}
-        style={{...inp({textAlign:"center",border:`1.5px solid ${oor?C.red:C.border}`,fontWeight:700})}} placeholder="°"/>
-      <div style={{ fontSize:11, color:oor?C.red:C.textMuted, textAlign:"center", fontWeight:oor?700:400 }}>{ref?`${ref}°`:"—"}{oor?" ⚠":""}</div>
-      <button onClick={onRemove} style={{ background:"none", border:"none", color:C.textDim, fontSize:18, cursor:"pointer", padding:0 }}>×</button>
-    </div>
-  );
-}
-
-// ── TestCard ──────────────────────────────────────────────────────────────────
-function TestCard({ test, result, onResult }) {
-  const [open, setOpen] = useState(false);
-  const borderColor = result==="Positivo"?`${C.red}60`:result==="Negativo"?`${C.green}50`:C.border;
-  return (
-    <div style={{ background:C.surface, border:`1px solid ${borderColor}`, borderRadius:10, padding:"12px 14px", marginBottom:8 }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
-        <div style={{ flex:1 }}>
-          <div style={{ fontWeight:700, fontSize:14, color:C.text }}>{test.name}</div>
-          <div style={{ fontSize:12, color:C.textMuted, marginTop:2 }}>{test.desc}</div>
-        </div>
-        <div style={{ display:"flex", gap:6, flexShrink:0 }}>
-          {test.video && <a href={test.video} target="_blank" rel="noreferrer"
-            style={{ background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:6, padding:"4px 10px", fontSize:11, color:C.green, textDecoration:"none", fontWeight:700 }}>▶ Vídeo</a>}
-          <button onClick={()=>setOpen(o=>!o)} style={{ background:"none", border:"none", color:C.textMuted, cursor:"pointer", fontSize:16, padding:"0 4px" }}>{open?"▲":"▼"}</button>
-        </div>
-      </div>
-      {open && (
-        <div style={{ marginTop:10, background:C.card, borderRadius:8, padding:"10px 12px", fontSize:12, color:C.text, lineHeight:1.7 }}>
-          <span style={{ color:C.green, fontWeight:700 }}>Como executar: </span>{test.how}
-        </div>
-      )}
-      <div style={{ display:"flex", gap:6, marginTop:10 }}>
-        {["Positivo","Negativo","Não realizado"].map(r=>{
-          const ac = r==="Positivo"?C.red:r==="Negativo"?C.green:C.amber;
-          return (
-            <button key={r} onClick={()=>onResult(r)}
-              style={{ flex:1, background:result===r?`${ac}15`:C.card, border:`1px solid ${result===r?ac:C.border}`, borderRadius:8, padding:"6px 4px", fontSize:11, fontWeight:result===r?700:400, color:result===r?ac:C.textMuted, cursor:"pointer", fontFamily:F }}>
-              {r}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 // ── PEDro card ────────────────────────────────────────────────────────────────
 function PedroCard({ study }) {
@@ -524,179 +313,16 @@ function PedroCard({ study }) {
   );
 }
 
-// ── HonoráriosCard ────────────────────────────────────────────────────────────
-function HonorariosCard({ convenio, regiao, sessoesAuth }) {
-  if (convenio !== "Particular") return null;
-  const tabela = CREFITO_REGIOES[regiao] || CREFITO_REGIOES["Centro-Oeste"];
-  const sessoes = parseInt(sessoesAuth) || 10;
 
-  const [custom, setCustom] = useState({
-    avaliacao: null,
-    sessao: null,
-    consulta: null,
-    relatorio: null,
-  });
 
-  const eff = {
-    avaliacao: custom.avaliacao != null ? Number(custom.avaliacao) : tabela.avaliacao,
-    sessao: custom.sessao != null ? Number(custom.sessao) : tabela.sessao,
-    consulta: custom.consulta != null ? Number(custom.consulta) : tabela.consulta,
-    relatorio: custom.relatorio != null ? Number(custom.relatorio) : tabela.relatorio,
-  };
 
-  const totalSessoes = eff.sessao * sessoes;
-  const totalEstimado = eff.avaliacao + totalSessoes + eff.relatorio + eff.consulta;
-
-  const btnStyle = {
-    background:"transparent",
-    border:`1px solid ${C.purple}44`,
-    borderRadius:6,
-    padding:"6px 0",
-    flex:"0 0 auto",
-    width:36,
-    fontSize:13,
-    fontWeight:700,
-    color:C.purple,
-    cursor:"pointer",
-    fontFamily:F,
-  };
-  const MoneyCell = ({ label, suggested, value, onChange }) => {
-    const current = value != null ? Number(value) : suggested;
-    const adjust = (delta) => {
-      const next = Math.round((current + delta) * 10) / 10;
-      if (next < 0) return;
-      onChange(String(next));
-    };
-
-    return (
-      <div style={{ background:C.card, borderRadius:8, padding:"8px 10px", border:`1px solid ${C.border}` }}>
-        <div style={{ fontSize:9, color:C.textMuted, fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>{label}</div>
-        <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-          <button style={btnStyle} onClick={() => adjust(-50)} title="-50">−50</button>
-          <button style={btnStyle} onClick={() => adjust(-10)} title="-10">−10</button>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={value == null ? "" : value}
-            onChange={(e) => {
-              const v = e.target.value;
-              if (v === "" || /^0$|^[1-9]\d*$|^[1-9]\d*\.\d*$|^0\.\d*$/.test(v)) {
-                onChange(v === "" ? null : v);
-              }
-            }}
-            onFocus={(e) => e.target.select()}
-            style={{ flex:1, minWidth:0, boxSizing:"border-box", background:"transparent", border:`1px solid ${C.purple}55`, borderRadius:8, padding:"8px 6px", color:C.purple, fontWeight:900, fontSize:14, outline:"none", textAlign:"center" }}
-            placeholder={`R$ ${suggested.toFixed(2)}`}
-          />
-          <button style={btnStyle} onClick={() => adjust(10)} title="+10">+10</button>
-          <button style={btnStyle} onClick={() => adjust(50)} title="+50">+50</button>
-        </div>
-        {value == null && (
-          <div style={{ fontSize:10, marginTop:4, color:C.textMuted }}>
-            Sugerido: <strong>R$ {suggested.toFixed(2)}</strong>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  return (
-    <div style={{ background:C.purpleBg, border:`1px solid ${C.purple}40`, borderRadius:12, padding:"16px 18px", marginTop:12 }}>
-      <div style={{ fontSize:10, fontWeight:800, color:C.purple, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:12 }}>
-        💰 HONORÁRIOS CREFITO — REFERÊNCIA PARA ATENDIMENTO PARTICULAR
-      </div>
-      <div style={{ fontSize:10, color:C.textMuted, marginBottom:10 }}>
-        Baseado na Tabela de Honorários do COFFITO (Res. 424/2013) e reajustes regionais. Valores em R$ (referência 2024).
-      </div>
-
-      <div style={{ background:C.card, borderRadius:8, padding:"10px 14px", border:`1px solid ${C.purple}30`, marginBottom:10 }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <span style={{ fontSize:10, color:C.textMuted, fontWeight:700, textTransform:"uppercase" }}>Valor por sessão</span>
-          <span style={{ fontSize:18, fontWeight:900, color:C.purple }}>R$ {eff.sessao.toFixed(2)}</span>
-        </div>
-      </div>
-
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(2, 1fr)", gap:8, marginBottom:10 }}>
-        <MoneyCell label="Avaliação / Triagem" suggested={tabela.avaliacao} value={custom.avaliacao} onChange={(v)=>setCustom(c=>({...c, avaliacao:v}))}/>
-        <MoneyCell label="Sessão de Fisioterapia" suggested={tabela.sessao} value={custom.sessao} onChange={(v)=>setCustom(c=>({...c, sessao:v}))}/>
-        <MoneyCell label="Consulta de Retorno" suggested={tabela.consulta} value={custom.consulta} onChange={(v)=>setCustom(c=>({...c, consulta:v}))}/>
-        <MoneyCell label="Relatório / Laudo" suggested={tabela.relatorio} value={custom.relatorio} onChange={(v)=>setCustom(c=>({...c, relatorio:v}))}/>
-      </div>
-
-      <div style={{ background:C.card, borderRadius:8, padding:"10px 14px", border:`1px solid ${C.purple}30` }}>
-        <div style={{ fontSize:10, color:C.textMuted, lineHeight:1.6, marginBottom:8 }}>
-          <div>Avaliação / Triagem: R$ {eff.avaliacao.toFixed(2)}</div>
-          <div>{sessoes} sessões × R$ {eff.sessao.toFixed(2)}: R$ {totalSessoes.toFixed(2)}</div>
-          <div>Consulta de Retorno: R$ {eff.consulta.toFixed(2)}</div>
-          <div>Relatório / Laudo: R$ {eff.relatorio.toFixed(2)}</div>
-        </div>
-        <div style={{ height:1, background:`${C.purple}20`, marginBottom:8 }} />
-        <div style={{ fontSize:10, color:C.textMuted, fontWeight:700, textTransform:"uppercase", marginBottom:4 }}>Valor total</div>
-        <div style={{ fontSize:22, fontWeight:900, color:C.purple }}>R$ {totalEstimado.toFixed(2)}</div>
-      </div>
-
-      <div style={{ fontSize:10, color:C.textMuted, marginTop:8, lineHeight:1.5 }}>
-        ⚠️ Estes valores são <strong>referências mínimas</strong> sugeridas pelo CREFITO. O profissional pode definir seus honorários acima destes valores com base em especialização, experiência e localidade. Consulte sempre a tabela vigente do seu CREFITO regional.
-      </div>
-    </div>
-  );
-}
-
-// ── Progress ──────────────────────────────────────────────────────────────────
-function useProgress(patient, queixa, evaMov, gonio, testResults, kb) {
-  const isMeaningfulGonioRow = (g) => {
-    // Ignore defaults: only count rows that truly have measurement
-    // - joint and movement must be selected
-    // - value must be a real number (>0)
-    const v = g?.value;
-    const num = v === "" || v === null || v === undefined ? NaN : Number(v);
-    return Boolean(g?.joint && g?.movement) && Number.isFinite(num) && num > 0;
-  };
-
-  const steps = [
-    { key:"ident",  label:"Identificação", done: !!(patient.nome && patient.dataNasc && patient.sexo) },
-    { key:"queixa", label:"Queixa",        done: queixa.length > 5 },
-    { key:"dor",    label:"EVA",           done: evaMov !== null && evaMov !== "" },
-    { key:"fisico", label:"Exame físico",  done: !!(patient.peso && patient.altura) },
-    // Count meaningful goniometry measurements only (ignore “Articulação” alone)
-    { key:"gonio",  label:"Goniometria",   done: gonio?.some(isMeaningfulGonioRow) },
-    { key:"testes", label:"Testes",        done: kb ? Object.values(testResults||{}).some(v=>v && v!=="Não realizado") : false },
-  ];
-  const pct = Math.round((steps.filter(s=>s.done).length / steps.length)*100);
-  return { steps, pct };
-}
 
 // ── Section / Row / Field ─────────────────────────────────────────────────────
-function Section({ title, icon, badge, children, accent }) {
-  return (
-    <div style={cardStyle({ borderLeft: accent ? `3px solid ${accent}` : undefined })}>
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:18, paddingBottom:12, borderBottom:`1px solid ${C.border}` }}>
-        <span style={{ fontSize:16 }}>{icon}</span>
-        <h3 style={{ margin:0, fontSize:11, fontWeight:800, letterSpacing:"0.11em", textTransform:"uppercase", color:C.green, flex:1 }}>{title}</h3>
-        {badge && <span style={{ fontSize:11, background:C.amberBg, color:C.amber, border:`1px solid ${C.amber}40`, borderRadius:20, padding:"2px 10px" }}>{badge}</span>}
-      </div>
-      {children}
-    </div>
-  );
-}
-function Row({ children, cols="1fr 1fr", gap=14 }) {
-  return <div style={{ display:"grid", gridTemplateColumns:cols, gap, marginBottom:14 }}>{children}</div>;
-}
-function Field({ l, children, span }) {
-  return <div style={span?{gridColumn:`span ${span}`}:{}}><span style={lbl()}>{l}</span>{children}</div>;
-}
-function SubHeading({ children }) {
-  return (
-    <div style={{ fontSize:11, fontWeight:800, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", borderBottom:`1px solid ${C.border}`, paddingBottom:6, marginBottom:12, marginTop:18 }}>
-      {children}
-    </div>
-  );
-}
 
 let _gId = 20;
 
 // ── Login Screen ────────────────────────────────────────────────────────────────
-function LoginScreen({ onLogin }) {
+function LoginScreen({ onLogin, theme, onToggleTheme }) {
   const [prof, setProf] = useState("");
   const [nome, setNome] = useState("");
   const [crefito, setCrefito] = useState("");
@@ -714,7 +340,12 @@ function LoginScreen({ onLogin }) {
   };
 
   return (
-    <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:F, padding:24 }}>
+    <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:F, padding:24, position:"relative" }}>
+      {/* Theme toggle */}
+      <button onClick={onToggleTheme} style={{ position:"absolute", top:20, right:20, background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.textMuted, padding:"7px 12px", fontSize:16, lineHeight:1, cursor:"pointer", fontFamily:F, transition:"all 0.2s" }}>
+        {theme === "dark" ? "☀️" : "🌙"}
+      </button>
+
       <div style={{ maxWidth:440, width:"100%", textAlign:"center" }}>
 
         {/* Logo grande */}
@@ -796,6 +427,7 @@ const PROF_LABELS = { fisio:"Fisioterapeuta", to:"Terapeuta Ocupacional", educFi
 function PatientList({ patients, onSelect, onAdd, onLogout, user }) {
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
+  const isMobile = useMediaQuery("(max-width:767px)");
 
   const handleAdd = () => {
     if (!f.nome.trim()) return;
@@ -805,7 +437,7 @@ function PatientList({ patients, onSelect, onAdd, onLogout, user }) {
   };
 
   return (
-    <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", fontFamily:F, color:C.text, padding:24 }}>
+    <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", fontFamily:F, color:C.text, padding:isMobile?12:24 }}>
       <div style={{ maxWidth:680, margin:"0 auto" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
           <LogoSVG/>
@@ -826,7 +458,7 @@ function PatientList({ patients, onSelect, onAdd, onLogout, user }) {
 
         {showForm && (
           <div style={{ ...cardStyle(), marginBottom:16, border:`1px solid ${C.green}50` }}>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
+            <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
               {[
                 {k:"nome",l:"Nome completo",pl:"Nome do paciente"},
                 {k:"dataNasc",l:"Nascimento",pl:"",type:"date"},
@@ -890,23 +522,40 @@ function PatientList({ patients, onSelect, onAdd, onLogout, user }) {
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function Sasyra() {
   const [user, setUser] = useState(null);
-  const [patients, setPatients] = useState([]);
+  const [theme, setTheme] = useState(() => localStorage.getItem("sasyra_theme") || "dark");
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("sasyra_theme", theme);
+  }, [theme]);
+
+  const [patients, setPatients] = useState(() => { try { const d = localStorage.getItem("sasyra_patients"); return d ? JSON.parse(d) : []; } catch { return []; } });
   const [patientView, setPatientView] = useState(true);
   const [tab, setTab] = useState("avaliacao");
   const [regiao, setRegiao] = useState("Centro-Oeste");
+  const [assessmentHistory, setAssessmentHistory] = useState(() => { try { const d = localStorage.getItem("sasyra_assessments"); return d ? JSON.parse(d) : []; } catch { return []; } });
 
   // Patient
   const [pt, setPt] = useState({ nome:"", dataNasc:"", sexo:"", lateralidade:"", estadoCivil:"", profissao:"", convenio:"", sessoesAuth:"", telefone:"", peso:"", altura:"", data:new Date().toISOString().slice(0,10) });
   const up = (k,v) => setPt(p=>({...p,[k]:v}));
 
   const selectPatient = (p) => {
+    if (queixa || hda || localDor.length > 0) saveAssessment();
     setPt({ ...pt, ...p });
+    const pid = p.id || p.nome;
+    const patientAssessments = assessmentHistory.filter(a => a.patientId === pid);
+    if (patientAssessments.length > 0) {
+      patientAssessments.sort((a, b) => (b.id || 0) - (a.id || 0));
+      loadAssessment(patientAssessments[0]);
+    } else {
+      resetAssessment();
+    }
     setPatientView(false);
   };
 
   const addPatient = (p) => setPatients(ps => [...ps, p]);
 
-  const handleLogout = () => { setUser(null); setPatientView(true); setPatients([]); };
+  const handleLogout = () => { setUser(null); setPatientView(true); setPatients([]); setAssessmentHistory([]); };
 
   // Anamnese
   const [queixa, setQueixa] = useState("");
@@ -936,7 +585,10 @@ export default function Sasyra() {
   const [palpacao, setPalpacao] = useState("");
   const [sensib, setSensib] = useState("");
   const [reflexos, setReflexos] = useState("");
-  const [forca, setForca] = useState({ quadricepsD:"",quadricepsE:"",isquiotibialD:"",isquiotibialE:"",gluteoD:"",gluteoE:"",manguitoD:"",manguitoE:"",tibialAnterior:"",gastrocnemio:"",bicepsD:"",bicepsE:"" });
+  const [forca, setForca] = useState([]);
+  const addF = () => setForca(f=>[...f,{id:_gId++,muscle:"",value:""}]);
+  const updF = (id,row) => setForca(f=>f.map(r=>r.id===id?row:r));
+  const remF = id => setForca(f=>f.filter(r=>r.id!==id));
 
   // Goniometria
   const [gonio, setGonio] = useState([{id:1,joint:"",movement:"",value:""}]);
@@ -952,9 +604,17 @@ export default function Sasyra() {
   const [aiLoad, setAiLoad] = useState(false);
   const [aiRes, setAiRes] = useState("");
 
-  // Diário
-  const [logs, setLogs] = useState([]);
-  const [df, setDf] = useState({ data:new Date().toISOString().slice(0,10), eva:5, procedimentos:[], resposta:"", evolucao:"", metas:"", escalas:"" });
+  // Evolução
+  const [logs, setLogs] = useState(() => { try { const d = localStorage.getItem("sasyra_logs"); return d ? JSON.parse(d) : []; } catch { return []; } });
+  const [df, setDf] = useState({ data:new Date().toISOString().slice(0,10), eva:5, procedimentos:[], resposta:"", evolucao:"", metas:"", escalas:"", pa:"" });
+  const [expandedCats, setExpandedCats] = useState([]);
+
+  // ── localStorage ─────────────────────────────────────────────────────────
+  useEffect(() => { const t = setTimeout(() => { try { localStorage.setItem("sasyra_patients", JSON.stringify(patients)); } catch { /* storage full or unavailable */ } }, 500); return () => clearTimeout(t); }, [patients]);
+  useEffect(() => { const t = setTimeout(() => { try { localStorage.setItem("sasyra_assessments", JSON.stringify(assessmentHistory)); } catch { /* storage full or unavailable */ } }, 500); return () => clearTimeout(t); }, [assessmentHistory]);
+  useEffect(() => { const t = setTimeout(() => { try { localStorage.setItem("sasyra_logs", JSON.stringify(logs)); } catch { /* storage full or unavailable */ } }, 500); return () => clearTimeout(t); }, [logs]);
+
+  const currentLogs = logs.filter(l => l.patientId === (pt.id || pt.nome));
 
   const kb = KB[queixaKey];
   const evidence = EVIDENCE[queixaKey];
@@ -965,6 +625,41 @@ export default function Sasyra() {
   const isEvaValid = evaMov !== null && evaMov !== undefined && evaMov !== "";
   const hasFilledTests = kb && Object.keys(tests||{}).length > 0 && Object.values(tests).some(v=>v!==""&&v!==undefined&&v!==null&&v!=="Não realizado");
   const { steps:progSteps, pct:progPct } = useProgress(pt, queixa, isEvaValid?evaMov:null, gonio, hasFilledTests?tests:{}, kb);
+
+  // ── Assessment History ─────────────────────────────────────────────────────
+  const saveAssessment = () => {
+    if (!pt.id && !pt.nome) return;
+    setAssessmentHistory(prev => [...prev, {
+      id:Date.now(), date:new Date().toISOString().slice(0,10), patientId:pt.id||pt.nome,
+      queixa, queixaKey, localDor, caraterDor, tempoDor, melhora, piora, hda,
+      comorbid, antec, meds, yellowFlagsState, evaMov, evaRep, avds, objTrat, nivelAti,
+      postura, marcha, edema, palpacao, sensib, reflexos, forca, gonio, tests, obs, regiao,
+    }]);
+  };
+  const loadAssessment = (a) => {
+    setQueixa(a.queixa||""); setQueixaKey(a.queixaKey||"");
+    setLocalDor(a.localDor||[]); setCaraterDor(a.caraterDor||[]);
+    setTempoDor(a.tempoDor||""); setMelhora(a.melhora||[]); setPiora(a.piora||[]);
+    setHda(a.hda||""); setComorbid(a.comorbid||[]); setAntec(a.antec||[]);
+    setMeds(a.meds||""); setYellowFlagsState(a.yellowFlagsState||[]);
+    setEvaMov(a.evaMov??null); setEvaRep(a.evaRep??null);
+    setAvds(a.avds||[]); setObjTrat(a.objTrat||[]); setNivelAti(a.nivelAti||"");
+    setPostura(a.postura||[]); setMarcha(a.marcha||""); setEdema(a.edema||"");
+    setPalpacao(a.palpacao||""); setSensib(a.sensib||""); setReflexos(a.reflexos||"");
+    setForca(Array.isArray(a.forca) ? a.forca : (a.forca && typeof a.forca === "object" ? Object.entries(a.forca).filter(([,v])=>v).map(([k,v])=>({id:_gId++,muscle:k,value:v})) : []));
+    setGonio(a.gonio||[{id:1,joint:"",movement:"",value:""}]);
+    setTests(a.tests||{}); setObs(a.obs||""); setRegiao(a.regiao||"Centro-Oeste");
+  };
+  const resetAssessment = () => {
+    setQueixa(""); setQueixaKey(""); setLocalDor([]); setCaraterDor([]);
+    setTempoDor(""); setMelhora([]); setPiora([]); setHda("");
+    setComorbid([]); setAntec([]); setMeds(""); setYellowFlagsState([]);
+    setEvaMov(null); setEvaRep(null); setAvds([]); setObjTrat([]); setNivelAti("");
+    setPostura([]); setMarcha(""); setEdema(""); setPalpacao(""); setSensib("");
+    setReflexos("");     setForca([]);
+    setGonio([{id:1,joint:"",movement:"",value:""}]);
+    setTests({}); setObs(""); setRegiao("Centro-Oeste");
+  };
 
   // ── AI call ───────────────────────────────────────────────────────────────
   const runAI = async () => {
@@ -981,7 +676,7 @@ export default function Sasyra() {
         `Nível atividade: ${nivelAti} | AVDs comprometidas: ${avds.join(", ")}`,
         `Postura: ${postura.join(", ")} | Marcha: ${marcha}`,
         `Edema: ${edema} | Sensibilidade: ${sensib} | Reflexos: ${reflexos}`,
-        `Força: ${Object.entries(forca).filter(([,v])=>v).map(([k,v])=>`${k}:${v}`).join(", ")}`,
+        `Força: ${forca.filter(r=>r.value).map(r=>`${r.muscle}:${r.value}`).join(", ")}`,
         `Goniometria: ${gonio.filter(g=>g.value).map(g=>`${g.joint} ${g.movement}:${g.value}°`).join("; ")}`,
         `Testes: ${Object.entries(tests).filter(([,v])=>v&&v!=="Não realizado").map(([k,v])=>`${k}:${v}`).join("; ")}`,
         `Comorbidades: ${comorbid.join(", ")} | Antecedentes: ${antec.join(", ")} | Medicamentos: ${meds}`,
@@ -1023,32 +718,37 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
   };
 
   const addLog = () => {
-    setLogs(l=>[{...df, id:Date.now(), sessaoNum:l.length+1},...l]);
-    setDf({ data:new Date().toISOString().slice(0,10), eva:5, procedimentos:[], resposta:"", evolucao:"", metas:"", escalas:"" });
+    setLogs(l=>[{...df, id:Date.now(), patientId:pt.id||pt.nome, sessaoNum:l.filter(x=>x.patientId===(pt.id||pt.nome)).length+1},...l]);
+    setDf({ data:new Date().toISOString().slice(0,10), eva:5, procedimentos:[], resposta:"", evolucao:"", metas:"", escalas:"", pa:"" });
   };
 
+  const isMobile = useMediaQuery("(max-width:767px)");
+  const [now] = useState(() => Date.now());
+  const calcIdade = useMemo(() => pt.dataNasc ? `${Math.floor((now-new Date(pt.dataNasc).getTime())/31557600000)} anos` : "—", [pt.dataNasc, now]);
+  const MRC_LABELS = useMemo(() => [{id:"quadricepsD",l:"Quadríceps D"},{id:"quadricepsE",l:"Quadríceps E"},{id:"isquiotibialD",l:"Isquiotibiais D"},{id:"isquiotibialE",l:"Isquiotibiais E"},{id:"gluteoD",l:"Glúteo D"},{id:"gluteoE",l:"Glúteo E"},{id:"manguitoD",l:"Manguito Rotador D"},{id:"manguitoE",l:"Manguito Rotador E"},{id:"tibialAnterior",l:"Tibial Anterior"},{id:"gastrocnemio",l:"Gastrocnêmio"},{id:"bicepsD",l:"Bíceps Braquial D"},{id:"bicepsE",l:"Bíceps Braquial E"}], []);
+
   // ── Render ────────────────────────────────────────────────────────────────
-  if (!user) return <LoginScreen onLogin={setUser} />;
+  if (!user) return <LoginScreen onLogin={setUser} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} />;
   if (patientView) return <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} user={user} />;
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
 
       {/* Header */}
-      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:60 }}>
+      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:isMobile?"10px 12px":"0 24px", display:"flex", flexWrap:"wrap", alignItems:"center", justifyContent:"space-between", minHeight:isMobile?"auto":60, gap:isMobile?8:0 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <LogoSVG/>
-          <button onClick={()=>setPatientView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+          <button onClick={()=>{if(pt.id||pt.nome)saveAssessment();setPatientView(true);}} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
         </div>
-        <div style={{ display:"flex", gap:4 }}>
-          {[["avaliacao","📋","Avaliação"],["diario","📅","Diário"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb])=>(
-            <button key={k} onClick={()=>setTab(k)} style={{ background:tab===k?C.greenBg:"transparent", border:`1px solid ${tab===k?C.green+"50":"transparent"}`, borderRadius:8, padding:"7px 16px", fontSize:13, fontWeight:tab===k?700:400, color:tab===k?C.green:C.textMuted, cursor:"pointer", fontFamily:F }}>{ic} {lb}</button>
+        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+          {[["avaliacao","📋","Avaliação"],["diario","📈","Evolução"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb])=>(
+            <button key={k} onClick={()=>setTab(k)} style={{ background:tab===k?C.greenBg:"transparent", border:`1px solid ${tab===k?C.green+"50":"transparent"}`, borderRadius:8, padding:isMobile?"5px 10px":"7px 16px", fontSize:isMobile?11:13, fontWeight:tab===k?700:400, color:tab===k?C.green:C.textMuted, cursor:"pointer", fontFamily:F }}>{ic} {lb}</button>
           ))}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           {pt.nome && (
             <>
-              <div style={{ width:30, height:30, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.green }}>{pt.nome[0]?.toUpperCase()}</div>
-              <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{pt.nome}</span>
+              <div style={{ width:30, height:30, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.green, flexShrink:0 }}>{pt.nome[0]?.toUpperCase()}</div>
+              <span style={{ fontSize:12, color:C.textSub, maxWidth:isMobile?100:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{pt.nome}</span>
             </>
           )}
         </div>
@@ -1069,326 +769,46 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
         </div>
       </div>
 
-      <div style={{ maxWidth:900, margin:"0 auto", padding:"20px 16px" }}>
+      <div style={{ maxWidth:900, margin:"0 auto", padding:isMobile?"12px 8px":"20px 16px" }}>
 
         {/* ══════════════ AVALIAÇÃO ══════════════════════════════════════════ */}
-        {tab==="avaliacao" && <>
-
-          {/* Identificação */}
-          <Section title="Identificação do Paciente" icon="👤">
-            <Row cols="1fr 1fr 1fr">
-              <Field l="Nome completo" span={2}><input value={pt.nome} onChange={e=>up("nome",e.target.value)} style={inp()} placeholder="Nome completo do paciente"/></Field>
-              <Field l="Data da avaliação"><input type="date" value={pt.data} onChange={e=>up("data",e.target.value)} style={inp()}/></Field>
-            </Row>
-            <Row cols="1fr 1fr 1fr">
-              <Field l="Data de nascimento"><input type="date" value={pt.dataNasc} onChange={e=>up("dataNasc",e.target.value)} style={inp()}/></Field>
-              <Field l="Sexo"><SingleSelect options={["Masculino","Feminino","Outro"]} value={pt.sexo} onChange={v=>up("sexo",v)}/></Field>
-              <Field l="Lateralidade"><SingleSelect options={["Destro","Canhoto","Ambidestro"]} value={pt.lateralidade} onChange={v=>up("lateralidade",v)}/></Field>
-            </Row>
-            <Row cols="1fr 1fr 1fr">
-              <Field l="Estado civil">
-                <select value={pt.estadoCivil} onChange={e=>up("estadoCivil",e.target.value)} style={sel()}>
-                  <option value="">Selecionar…</option>
-                  {["Solteiro(a)","Casado(a)","Divorciado(a)","Viúvo(a)","União estável"].map(v=><option key={v}>{v}</option>)}
-                </select>
-              </Field>
-              <Field l="Profissão"><input value={pt.profissao} onChange={e=>up("profissao",e.target.value)} style={inp()} placeholder="Ocupação atual"/></Field>
-              <Field l="Telefone"><input value={pt.telefone} onChange={e=>up("telefone",e.target.value)} style={inp()} placeholder="(00) 00000-0000"/></Field>
-            </Row>
-
-            <SubHeading>Dados administrativos e financeiros</SubHeading>
-            <Row cols="1fr 1fr 1fr">
-              <Field l="Convênio / Particular">
-                <select value={pt.convenio} onChange={e=>up("convenio",e.target.value)} style={sel()}>
-                  <option value="">Selecionar…</option>
-                  {["Particular","Unimed","Bradesco Saúde","Amil","SulAmérica","Hapvida","NotreDame","IPSEMG","SUS / NASF","Outro"].map(v=><option key={v}>{v}</option>)}
-                </select>
-              </Field>
-              <div>
-                <SessionCounter value={pt.sessoesAuth} onChange={v=>up("sessoesAuth",v)}/>
-              </div>
-              {pt.convenio==="Particular" && (
-                <Field l="Região CREFITO">
-                  <select value={regiao} onChange={e=>setRegiao(e.target.value)} style={sel()}>
-                    {Object.keys(CREFITO_REGIOES).map(r=><option key={r} value={r}>{r}</option>)}
-                  </select>
-                </Field>
-              )}
-            </Row>
-            <HonorariosCard convenio={pt.convenio} regiao={regiao} sessoesAuth={pt.sessoesAuth}/>
-
-            <SubHeading>Antropometria</SubHeading>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14 }}>
-              <NumericDrum label="Peso" value={pt.peso} onChange={v=>up("peso",String(v))} min={30} max={250} step={0.5} unit="kg"/>
-              <NumericDrum label="Altura" value={pt.altura} onChange={v=>up("altura",String(v))} min={100} max={220} step={1} unit="cm"/>
-              <div>
-                <span style={lbl()}>IMC calculado</span>
-                <div style={{ background:C.surface, border:`1px solid ${imc?imc.c+"50":C.border}`, borderRadius:10, height:44, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                  {imc ? <><span style={{ fontSize:22, fontWeight:900, color:imc.c }}>{imc.value}</span><span style={{ fontSize:11, color:imc.c, fontWeight:700 }}>{imc.l}</span></> : <span style={{ fontSize:12, color:C.textDim }}>Preencha peso e altura</span>}
-                </div>
-              </div>
-            </div>
-          </Section>
-
-          {/* Queixa e Anamnese */}
-          <Section title="Queixa Principal e Anamnese" icon="📝">
-            <Field l="Queixa principal — digite ou use o microfone">
-              <AudioField value={queixa} onChange={v=>{ const t=typeof v==="function"?v(queixa):v; setQueixa(t); setQueixaKey(detectKB(t)); }} placeholder="Ex: Lombalgia com irradiação para MMII há 3 semanas após queda…" rows={2}/>
-            </Field>
-
-            {kb && (
-              <div style={{ background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:10, padding:"12px 14px", margin:"12px 0" }}>
-                <div style={{ fontSize:12, fontWeight:700, color:C.green, marginBottom:10 }}>
-                  ✓ Condição identificada: <strong>{kb.label}</strong> — protocolos carregados automaticamente
-                </div>
-
-                {cifSuggestions.length > 0 && (
-                  <div style={{ background:C.card, borderRadius:8, padding:"10px 12px", marginBottom:10 }}>
-                    <div style={{ fontSize:10, fontWeight:800, color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>CIF sugeridos pela condição</div>
-                    <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                      {cifSuggestions.map(code=>(
-                        <span key={code} style={{ fontSize:11, color:C.blue, background:C.blueBg, border:`1px solid ${C.blue}30`, borderRadius:6, padding:"3px 10px" }}>
-                          <strong>{code}</strong> — {CIF[code]}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {autoCIF.length > 0 && (
-                  <div style={{ background:C.surface, borderRadius:8, padding:"10px 12px", marginBottom:10 }}>
-                    <div style={{ fontSize:10, fontWeight:800, color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>CIF identificados automaticamente (baseados nos dados preenchidos)</div>
-                    <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                      {autoCIF.map(item=>(
-                        <span key={`${item.code}-${item.qualifier}`} style={{ fontSize:11, color:C.purple, background:C.purpleBg, border:`1px solid ${C.purple}30`, borderRadius:6, padding:"3px 10px" }}>
-                          <strong>{item.code}</strong> — {item.desc} | Q:{item.qualifier}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div style={{ background:C.redBg, border:`1px solid ${C.red}40`, borderRadius:8, padding:"8px 12px", marginBottom:10 }}>
-                  <div style={{ fontSize:10, fontWeight:800, color:C.red, letterSpacing:"0.1em", marginBottom:6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                    {kb.redFlags.map(f=>(
-                      <span key={f} style={{ fontSize:11, color:C.red, background:C.redBg, border:`1px solid ${C.red}30`, borderRadius:6, padding:"2px 10px" }}>{f}</span>
-                    ))}
-                  </div>
-                </div>
-
-                <div style={{ fontSize:11, color:C.textSub, lineHeight:1.7 }}>
-                  <strong style={{ color:C.greenDim }}>Padrão-ouro: </strong>{kb.goldStandard}
-                </div>
-
-                {kb.escalas?.length > 0 && (
-                  <div style={{ marginTop:10, background:C.card, borderRadius:8, padding:"8px 12px" }}>
-                    <div style={{ fontSize:10, fontWeight:800, color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:6 }}>📏 Escalas recomendadas para esta condição</div>
-                    <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                      {kb.escalas.map(e=>(
-                        <span key={e} style={{ fontSize:11, color:C.amber, background:C.amberBg, border:`1px solid ${C.amber}30`, borderRadius:6, padding:"2px 8px" }}>{e}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <SubHeading>Caracterização da dor</SubHeading>
-            <Row cols="1fr 1fr">
-              <Field l="Localização da dor">
-                <TagSelect options={["Cervical","Torácica","Lombar","Sacroilíaca","Ombro D","Ombro E","Cotovelo D","Cotovelo E","Punho/Mão D","Punho/Mão E","Quadril D","Quadril E","Joelho D","Joelho E","Tornozelo D","Tornozelo E","Pé D","Pé E","Irradiação MMSS","Irradiação MMII"]}
-                  value={localDor} onChange={setLocalDor}/>
-              </Field>
-              <Field l="Caráter da dor">
-                <TagSelect options={["Latejante","Queimação","Pontada","Pressão","Facada","Formigamento","Peso","Cãibra","Choques","Mecânica","Inflamatória","Neuropática"]}
-                  value={caraterDor} onChange={setCaraterDor}/>
-              </Field>
-            </Row>
-            <Row cols="1fr 1fr 1fr">
-              <Field l="Duração / tempo de dor">
-                <select value={tempoDor} onChange={e=>setTempoDor(e.target.value)} style={sel()}>
-                  <option value="">Selecionar…</option>
-                  {["< 2 semanas (aguda)","2–6 semanas (subaguda)","6 sem – 3 meses (subcrônica)","3–6 meses (crônica)","6–12 meses","1–2 anos","> 2 anos (crônica complexa)"].map(v=><option key={v}>{v}</option>)}
-                </select>
-              </Field>
-              <Field l="Fatores de melhora">
-                <TagSelect options={["Repouso","Calor","Frio","Movimento/aquecimento","Analgésico","Posição específica","Fisioterapia","Sono"]} value={melhora} onChange={setMelhora}/>
-              </Field>
-              <Field l="Fatores de piora">
-                <TagSelect options={["Movimento","Carga","Postura estática","Frio","Stress emocional","Noite/repouso","Trabalho","Após atividade"]} value={piora} onChange={setPiora}/>
-              </Field>
-            </Row>
-
-            <Field l="HDA — História da Doença Atual">
-              <AudioField value={hda} onChange={v=>setHda(typeof v==="function"?v(hda):v)} placeholder="Início, mecanismo de lesão, evolução, tratamentos anteriores, exames realizados…" rows={3}/>
-            </Field>
-
-            <SubHeading>Histórico e comorbidades</SubHeading>
-            <Row cols="1fr 1fr">
-              <Field l="Comorbidades">
-                <TagSelect options={["HAS","DM2","Obesidade","Osteoporose","Artrite/AR","Fibromialgia","Depressão","Ansiedade","Doença cardíaca","DPOC","Neoplasia","Imunossupressão","Nenhuma"]}
-                  value={comorbid} onChange={setComorbid}/>
-              </Field>
-              <Field l="Antecedentes / cirurgias">
-                <TagSelect options={["Cirurgia prévia (área)","Trauma anterior","Fratura óssea","Imobilização prolongada","Fisioterapia anterior","Infiltração corticoide","Nenhum relevante"]}
-                  value={antec} onChange={setAntec}/>
-              </Field>
-            </Row>
-            <Field l="Medicamentos em uso">
-              <input value={meds} onChange={e=>setMeds(e.target.value)} style={inp()} placeholder="Anti-inflamatório, analgésico, relaxante muscular, antidepressivo…"/>
-            </Field>
-
-            <SubHeading>Yellow Flags — Fatores Psicossociais</SubHeading>
-            <TagSelect options={["Catastrofização","Cinesiofobia","Baixa autoeficácia","Insatisfação no trabalho","Depressão/ansiedade","Baixa expectativa de recuperação","Comportamento de doença","Conflitos familiares","Litígio / afastamento laboral","Trabalho sedentário"]}
-              value={yellowFlagsState} onChange={setYellowFlagsState} activeColor={C.amber}/>
-            {yellowFlagsState.length >= 3 && (
-              <div style={{ marginTop:8, padding:"8px 12px", background:C.amberBg, border:`1px solid ${C.amber}40`, borderRadius:8, fontSize:11, color:C.amber }}>
-                ⚠️ <strong>{yellowFlagsState.length} yellow flags identificados.</strong> Considerar abordagem biopsicossocial (CFT, PNE) e avaliação psicológica.
-              </div>
-            )}
-          </Section>
-
-          {/* Dor e Funcionalidade */}
-          <Section title="Dor e Funcionalidade" icon="⚡">
-            <Row cols="1fr 1fr">
-              <div>
-                <EvaSlider label="EVA — Movimento" value={evaMov} onChange={setEvaMov}/>
-                <div style={{ marginTop:18 }}>
-                  <EvaSlider label="EVA — Repouso" value={evaRep} onChange={setEvaRep}/>
-                </div>
-              </div>
-              <div>
-                <Field l="Nível de atividade física">
-                  <SingleSelect options={["Sedentário","Levemente ativo","Moderadamente ativo","Muito ativo","Atleta"]} value={nivelAti} onChange={setNivelAti}/>
-                </Field>
-                <div style={{ marginTop:14 }}>
-                  <Field l="Limitações nas AVDs">
-                    <TagSelect options={["Andar","Subir escadas","Agachar","Sentar/levantar","Vestir-se","Higiene pessoal","Dormir","Dirigir","Trabalho manual","Esporte","Carregar peso","Vida sexual","Sem limitações"]}
-                      value={avds} onChange={setAvds}/>
-                  </Field>
-                </div>
-                <div style={{ marginTop:14 }}>
-                  <Field l="Objetivo principal (expectativa do paciente)">
-                    <TagSelect options={["Eliminar a dor","Retornar ao trabalho","Retornar ao esporte","Independência nas AVDs","Melhorar postura","Fortalecer","Prevenir recidiva","Melhorar qualidade de vida"]}
-                      value={objTrat} onChange={setObjTrat}/>
-                  </Field>
-                </div>
-              </div>
-            </Row>
-          </Section>
-
-          {/* Exame Físico */}
-          <Section title="Exame Físico" icon="🔬">
-            <SubHeading>Inspeção e marcha</SubHeading>
-            <Row cols="1fr 1fr">
-              <Field l="Alterações posturais">
-                <TagSelect options={["Anteriorização de cabeça","Protração de ombros","Hipercifose torácica","Hiperlordose lombar","Retificação lombar","Escoliose funcional","Escoliose estrutural","Pelve anteriorizada","Pelve posteriorizada","Joelho varo","Joelho valgo","Recurvatum","Pé plano","Pé cavo","Sem alterações"]}
-                  value={postura} onChange={setPostura}/>
-              </Field>
-              <div>
-                <Field l="Padrão de marcha">
-                  <select value={marcha} onChange={e=>setMarcha(e.target.value)} style={sel()}>
-                    <option value="">Selecionar…</option>
-                    {["Normal","Antálgica","Trendelenburg","Equina","Hemiplégica","Atáxica","Claudicação intermitente","Não avaliado"].map(v=><option key={v}>{v}</option>)}
-                  </select>
-                </Field>
-                <div style={{ marginTop:12 }}>
-                  <Field l="Edema / Sinais flogísticos">
-                    <select value={edema} onChange={e=>setEdema(e.target.value)} style={sel()}>
-                      <option value="">Selecionar…</option>
-                      {["Ausente","Edema leve (1+)","Edema moderado (2+)","Edema importante (3+)","Calor local","Rubor","Derrame articular","Crepitação"].map(v=><option key={v}>{v}</option>)}
-                    </select>
-                  </Field>
-                </div>
-                <div style={{ marginTop:12 }}>
-                  <Field l="Sensibilidade">
-                    <select value={sensib} onChange={e=>setSensib(e.target.value)} style={sel()}>
-                      <option value="">Selecionar…</option>
-                      {["Normal","Hipoestesia","Hiperestesia","Parestesia","Anestesia","Alodínia"].map(v=><option key={v}>{v}</option>)}
-                    </select>
-                  </Field>
-                </div>
-                <div style={{ marginTop:12 }}>
-                  <Field l="Reflexos osteotendinosos">
-                    <select value={reflexos} onChange={e=>setReflexos(e.target.value)} style={sel()}>
-                      <option value="">Selecionar…</option>
-                      {["Normais (2+)","Hiporreflexia (1+)","Arreflexia (0)","Hiperreflexia (3+/4+)","Assimétricos"].map(v=><option key={v}>{v}</option>)}
-                    </select>
-                  </Field>
-                </div>
-              </div>
-            </Row>
-
-            <SubHeading>Palpação</SubHeading>
-            <AudioField value={palpacao} onChange={v=>setPalpacao(typeof v==="function"?v(palpacao):v)}
-              placeholder="Pontos gatilho, espasmo muscular, dor à palpação de processos espinhosos, hipersensibilidade local…" rows={2}/>
-
-            <SubHeading>Força Muscular — Escala MRC (0–5)</SubHeading>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10 }}>
-              {[["quadricepsD","Quadríceps D"],["quadricepsE","Quadríceps E"],["isquiotibialD","Isquiotib. D"],["isquiotibialE","Isquiotib. E"],["gluteoD","Glúteo D"],["gluteoE","Glúteo E"],["manguitoD","Manguito D"],["manguitoE","Manguito E"],["tibialAnterior","Tibial Ant."],["gastrocnemio","Gastrocnêmio"],["bicepsD","Bíceps D"],["bicepsE","Bíceps E"]].map(([k,l2])=>(
-                <div key={k}>
-                  <span style={{...lbl(), fontSize:9}}>{l2}</span>
-                  <MRCSelect value={forca[k]} onChange={v=>setForca(f=>({...f,[k]:v}))}/>
-                </div>
-              ))}
-            </div>
-          </Section>
-
-          {/* Goniometria */}
-          <Section title="Goniometria" icon="📐" badge={`${gonio.filter(g=>g.value).length} med.`}>
-            <div style={{ display:"grid", gridTemplateColumns:"1.8fr 1.8fr 76px 72px 28px", gap:8, paddingBottom:8, borderBottom:`1px solid ${C.border}`, marginBottom:4 }}>
-              {["Articulação","Movimento","Grau","Ref.",""].map((h,i)=>(
-                <span key={i} style={{ fontSize:9, fontWeight:700, color:C.textDim, letterSpacing:"0.08em", textTransform:"uppercase", textAlign:i>=2?"center":"left" }}>{h}</span>
-              ))}
-            </div>
-            {gonio.map(row=>(
-              <GonioRow key={row.id} row={row} onUpdate={u=>updG(row.id,u)} onRemove={()=>remG(row.id)}/>
-            ))}
-            <button onClick={addG} style={{...ghostBtn(), marginTop:12, fontSize:12}}>+ Adicionar medida</button>
-          </Section>
-
-          {/* Testes especiais */}
-          {kb && (
-            <Section title={`Testes Especiais — ${kb.label}`} icon="🧪">
-              <p style={{ fontSize:12, color:C.textMuted, margin:"0 0 14px" }}>
-                Selecione o resultado de cada teste. Clique em ▼ para ver a execução detalhada ou ▶ Vídeo para demonstração.
-              </p>
-              {kb.tests.map(t=>(
-                <TestCard key={t.name} test={t} result={tests[t.name]||""} onResult={v=>setTests(tr=>({...tr,[t.name]:v}))}/>
-              ))}
-            </Section>
-          )}
-
-          {/* Observações */}
-          <Section title="Observações Clínicas" icon="💬">
-            <AudioField value={obs} onChange={v=>setObs(typeof v==="function"?v(obs):v)}
-              placeholder="Comportamento do paciente, achados adicionais, exames de imagem relevantes, considerações clínicas…" rows={4}/>
-          </Section>
-
-          {/* IA */}
-          <Section title="Análise por Inteligência Artificial — Baseada em Evidências" icon="🤖" accent={C.green}>
-            <p style={{ fontSize:12, color:C.textMuted, margin:"0 0 14px", lineHeight:1.7 }}>
-              Preencha os campos da avaliação e clique em analisar. A IA cruzará os dados com evidências científicas atualizadas (PEDro, Cochrane, CPGs) e gerará um plano de tratamento personalizado e baseado em evidências.
-            </p>
-            <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
-              <button onClick={runAI} disabled={aiLoad||!queixa} style={{...primaryBtn(), opacity:aiLoad||!queixa?0.45:1}}>
-                {aiLoad ? "⏳ Analisando…" : "🔍 Gerar análise clínica"}
-              </button>
-              <div style={{ display:"flex", gap:6 }}>
-                {progSteps.filter(s=>!s.done).map(s=>(
-                  <span key={s.key} style={{ fontSize:10, color:C.amber, background:C.amberBg, border:`1px solid ${C.amber}30`, borderRadius:6, padding:"2px 8px" }}>Pendente: {s.label}</span>
-                ))}
-              </div>
-            </div>
-            {aiRes && (
-              <div style={{ marginTop:16, background:C.surface, border:`1px solid ${C.green}30`, borderRadius:10, padding:18 }}>
-                <div style={{ fontSize:10, fontWeight:800, color:C.green, letterSpacing:"0.1em", marginBottom:12 }}>ANÁLISE CLÍNICA — SASYRA IA</div>
-                <pre style={{ fontSize:13, color:C.text, whiteSpace:"pre-wrap", margin:0, lineHeight:1.85, fontFamily:F }}>{aiRes}</pre>
-              </div>
-            )}
-          </Section>
-        </>}
+        {tab==="avaliacao" && (
+          <Assessment
+            pt={pt} up={up} regiao={regiao} setRegiao={setRegiao}
+            queixa={queixa} setQueixa={setQueixa} setQueixaKey={setQueixaKey}
+            localDor={localDor} setLocalDor={setLocalDor}
+            caraterDor={caraterDor} setCaraterDor={setCaraterDor}
+            tempoDor={tempoDor} setTempoDor={setTempoDor}
+            melhora={melhora} setMelhora={setMelhora}
+            piora={piora} setPiora={setPiora}
+            hda={hda} setHda={setHda}
+            comorbid={comorbid} setComorbid={setComorbid}
+            antec={antec} setAntec={setAntec}
+            meds={meds} setMeds={setMeds}
+            yellowFlagsState={yellowFlagsState} setYellowFlagsState={setYellowFlagsState}
+            evaMov={evaMov} setEvaMov={setEvaMov}
+            evaRep={evaRep} setEvaRep={setEvaRep}
+            avds={avds} setAvds={setAvds}
+            objTrat={objTrat} setObjTrat={setObjTrat}
+            nivelAti={nivelAti} setNivelAti={setNivelAti}
+            postura={postura} setPostura={setPostura}
+            marcha={marcha} setMarcha={setMarcha}
+            edema={edema} setEdema={setEdema}
+            palpacao={palpacao} setPalpacao={setPalpacao}
+            sensib={sensib} setSensib={setSensib}
+            reflexos={reflexos} setReflexos={setReflexos}
+            forca={forca} addF={addF} updF={updF} remF={remF}
+            gonio={gonio} addG={addG} updG={updG} remG={remG}
+            tests={tests} setTests={setTests}
+            obs={obs} setObs={setObs}
+            aiLoad={aiLoad} runAI={runAI} aiRes={aiRes}
+            kb={kb} evidence={evidence} cifSuggestions={cifSuggestions} autoCIF={autoCIF} imc={imc}
+            progSteps={progSteps} detectKB={detectKB}
+            assessmentHistory={assessmentHistory} saveAssessment={saveAssessment}
+            loadAssessment={loadAssessment} resetAssessment={resetAssessment}
+            patientId={pt.id || pt.nome}
+          />
+        )}
 
         {/* ══════════════ EVIDÊNCIAS ══════════════════════════════════════════ */}
         {tab==="evidencias" && (
@@ -1425,11 +845,11 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
         {/* ══════════════ DIÁRIO ══════════════════════════════════════════════ */}
         {tab==="diario" && <>
           {pt.sessoesAuth && (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:14 }}>
+            <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"repeat(3,1fr)", gap:12, marginBottom:14 }}>
               {[
-                ["Sessões realizadas", logs.length, C.green],
+                ["Sessões realizadas", currentLogs.length, C.green],
                 ["Autorizadas", pt.sessoesAuth, C.amber],
-                ["Restantes", Math.max(0,Number(pt.sessoesAuth)-logs.length), logs.length>=Number(pt.sessoesAuth)?C.red:C.blue],
+                ["Restantes", Math.max(0,Number(pt.sessoesAuth)-currentLogs.length), currentLogs.length>=Number(pt.sessoesAuth)?C.red:C.blue],
               ].map(([l2,v,c])=>(
                 <div key={l2} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"14px 16px", textAlign:"center" }}>
                   <div style={{ fontSize:10, color:C.textMuted, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>{l2}</div>
@@ -1440,15 +860,38 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
           )}
 
           <Section title="Registrar Nova Sessão" icon="📅">
-            <Row cols="1fr 1fr">
+            <Row cols="1fr 120px 1fr" mobileCols="1fr">
               <Field l="Data"><input type="date" value={df.data} onChange={e=>setDf(f=>({...f,data:e.target.value}))} style={inp()}/></Field>
+              <Field l="P.A. (mmHg)">
+                <div style={{display:"flex", gap:4, alignItems:"center"}}>
+                  <input type="number" min="0" max="300" placeholder="120" value={df.pa?.split("/")[0]||""} onChange={e=>setDf(f=>({...f,pa:(e.target.value||"")+(df.pa?.includes("/")?"/"+df.pa.split("/")[1]:"/")}))} style={{...inp({textAlign:"center",padding:"9px 4px"}), flex:1}}/>
+                  <span style={{color:C.textMuted,fontWeight:700,fontSize:13}}>/</span>
+                  <input type="number" min="0" max="200" placeholder="80" value={df.pa?.split("/")[1]||""} onChange={e=>setDf(f=>({...f,pa:(df.pa?.split("/")[0]||"")+"/"+(e.target.value||"")}))} style={{...inp({textAlign:"center",padding:"9px 4px"}), flex:1}}/>
+                </div>
+              </Field>
               <EvaSlider label="EVA da sessão" value={df.eva} onChange={v=>setDf(f=>({...f,eva:v}))}/>
             </Row>
             <Field l="Procedimentos realizados">
-              <TagSelect options={["TENS","FES","Ultrassom terapêutico","Laser de baixa potência","Magnetoterapia","Crioterapia","Termoterapia","Massagem terapêutica","Mobilização articular","Manipulação","Tração","Dry needling","Ventosaterapia","Bandagem funcional","Kinesio taping","RPG","Pilates clínico","Cinesioterapia","Treino de força","Treino proprioceptivo","Treino funcional","Exercício neuromotor","Liberação miofascial","Hidroterapia","Alongamento global","PNE – Educação em Dor","Graded Exposure","CFT – Terapia Funcional Cognitiva"]}
-                value={df.procedimentos} onChange={v=>setDf(f=>({...f,procedimentos:v}))}/>
+              {PROCEDIMENTOS_CATEGORIES.map(cat=>{
+                const open = expandedCats.includes(cat.category);
+                return (
+                  <div key={cat.category} style={{marginBottom:6}}>
+                    <div onClick={()=>setExpandedCats(p=>open?p.filter(x=>x!==cat.category):[...p,cat.category])}
+                      style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",padding:"8px 10px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,userSelect:"none"}}>
+                      <span style={{fontSize:10,color:C.textMuted,transition:"transform 0.15s",transform:open?"rotate(90deg)":"rotate(0deg)"}}>▶</span>
+                      <span style={{fontSize:12,fontWeight:700,color:C.green,flex:1}}>{cat.category}</span>
+                      <span style={{fontSize:10,color:C.textDim}}>{cat.items.length} procedimento{cat.items.length>1?"s":""}</span>
+                    </div>
+                    {open && (
+                      <div style={{padding:"8px 4px 4px 10px"}}>
+                        <TagSelect options={cat.items} value={df.procedimentos} onChange={v=>setDf(f=>({...f,procedimentos:v}))}/>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </Field>
-            <Row cols="1fr 1fr">
+            <Row cols="1fr 1fr" mobileCols="1fr">
               <Field l="Resposta ao tratamento">
                 <SingleSelect options={["Excelente melhora","Boa melhora","Melhora parcial","Sem melhora","Piora","Intercorrência"]}
                   value={df.resposta} onChange={v=>setDf(f=>({...f,resposta:v}))} activeColor={C.green}/>
@@ -1467,10 +910,10 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
             <button onClick={addLog} style={primaryBtn()}>+ Salvar sessão</button>
           </Section>
 
-          {logs.length >= 2 && (
+          {currentLogs.length >= 2 && (
             <Section title="Evolução da Dor (EVA)" icon="📈">
               <div style={{ display:"flex", alignItems:"flex-end", gap:4, height:80, padding:"0 4px" }}>
-                {[...logs].reverse().map((l,i)=>{
+                {[...currentLogs].map((l,i)=>{
                   const h=(l.eva/10)*72;
                   const c=l.eva<=3?C.green:l.eva<=6?C.amber:C.red;
                   return (
@@ -1483,14 +926,14 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
                 })}
               </div>
               <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:C.textMuted, marginTop:16 }}>
-                <span>S1 (inicial)</span><span>S{logs.length} (última)</span>
+                <span>S1 (inicial)</span><span>S{currentLogs.length} (última)</span>
               </div>
             </Section>
           )}
 
-          {logs.length > 0 && (
-            <Section title={`Histórico — ${logs.length} sessão(ões)`} icon="📋">
-              {logs.map(log=>{
+          {currentLogs.length > 0 && (
+            <Section title={`Histórico — ${currentLogs.length} sessão(ões)`} icon="📋">
+              {currentLogs.map(log=>{
                 const ec=log.eva<=3?C.green:log.eva<=6?C.amber:C.red;
                 return (
                   <div key={log.id} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:"14px 16px", marginBottom:10 }}>
@@ -1498,6 +941,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
                       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                         <span style={{ fontSize:11, background:C.greenBg, color:C.green, border:`1px solid ${C.green}30`, borderRadius:6, padding:"2px 8px", fontWeight:700 }}>Sessão {log.sessaoNum}</span>
                         <span style={{ fontSize:12, color:C.textMuted }}>{log.data}</span>
+                        {log.pa && <span style={{ fontSize:11, color:C.red, fontWeight:700 }}>🩺 {log.pa}</span>}
                       </div>
                       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                         {log.resposta && <span style={{ fontSize:11, color:C.textSub, background:C.cardAlt, borderRadius:6, padding:"2px 8px" }}>{log.resposta}</span>}
@@ -1521,10 +965,12 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
 
         {/* ══════════════ RELATÓRIO ═══════════════════════════════════════════ */}
         {tab==="relatorio" && (
-          <Section title="Relatório Multidisciplinar" icon="📊">
-            <div style={{ background:"#fff", borderRadius:12, padding:28, color:"#1a202c", fontFamily:F }}>
-              <div style={{ display:"flex", alignItems:"center", gap:14, borderBottom:"3px solid #4ADE80", paddingBottom:14, marginBottom:22 }}>
-                <svg viewBox="0 0 220 50" width="140" height="36">
+          <Section title="Relatório Clínico Multidisciplinar" icon="📊">
+            <div style={{ background:"#fff", borderRadius:12, padding:28, color:"#1a202c", fontFamily:F, fontSize:13, lineHeight:1.6 }}>
+
+              {/* ── Cabeçalho profissional ─────────────────────────────────── */}
+              <div style={{ display:"flex", alignItems:"flex-start", gap:16, borderBottom:"3px solid #4ADE80", paddingBottom:14, marginBottom:22 }}>
+                <svg viewBox="0 0 220 50" width="120" height="32" style={{ flexShrink:0 }}>
                   <g transform="translate(18,25)">
                     <path d="M -12 7 C -7 2,0 0,12 -7" fill="none" stroke="#4ADE80" strokeWidth="3.5" strokeLinecap="round"/>
                     <path d="M -12 -3 C -3 0,3 2,12 8" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round"/>
@@ -1533,81 +979,152 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
                   <text x="40" y="30" fill="#0E141B" fontSize="22" fontWeight="800" letterSpacing="5" fontFamily={F}>SASYRA</text>
                   <text x="42" y="44" fill="#4ADE80" fontSize="8" fontWeight="700" letterSpacing="4" fontFamily={F}>REABILITAÇÃO E EVIDÊNCIA</text>
                 </svg>
-                <div style={{ borderLeft:"1px solid #E2E8F0", paddingLeft:14 }}>
-                  <div style={{ fontWeight:800, fontSize:15, color:"#0E141B" }}>RELATÓRIO DE FISIOTERAPIA ORTOPÉDICA</div>
-                  <div style={{ fontSize:11, color:"#7C8FA6" }}>Gerado em {new Date().toLocaleDateString("pt-BR")} · Para equipe multidisciplinar</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontWeight:800, fontSize:15, color:"#0E141B" }}>RELATÓRIO DE AVALIAÇÃO FISIOTERAPÊUTICA</div>
+                  <div style={{ fontSize:11, color:"#7C8FA6", marginTop:2 }}>
+                    {new Date().toLocaleDateString("pt-BR")} · Para equipe multidisciplinar
+                  </div>
+                  <div style={{ fontSize:11, color:"#7C8FA6", marginTop:1 }}>
+                    <strong style={{ color:"#374151" }}>{user.nome}</strong> — {PROF_LABELS[user.prof] || user.prof}{user.crefito ? ` · ${user.crefito}` : ""}
+                  </div>
                 </div>
               </div>
 
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:22 }}>
-                {[["Paciente",pt.nome||"—"],["Nascimento",pt.dataNasc||"—"],["Sexo",pt.sexo||"—"],["Profissão",pt.profissao||"—"],["Convênio",pt.convenio||"—"],["Sessões auth.",pt.sessoesAuth||"—"],["Peso/Altura",pt.peso&&pt.altura?`${pt.peso}kg / ${pt.altura}cm`:"—"],["IMC",imc?`${imc.value} (${imc.l})`:"—"]].map(([k,v])=>(
-                  <div key={k} style={{ background:"#F8FAFC", borderRadius:8, padding:"8px 12px" }}>
-                    <div style={{ fontSize:9, color:"#7C8FA6", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em" }}>{k}</div>
-                    <div style={{ fontWeight:700, fontSize:13, color:"#0E141B", marginTop:2 }}>{v}</div>
-                  </div>
-                ))}
-              </div>
-
-              {queixa && <>
-                <div style={{ marginBottom:14 }}>
-                  <div style={{ fontWeight:700, color:"#0F6E56", fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:5 }}>Queixa principal</div>
-                  <p style={{ margin:0, fontSize:14, color:"#1a202c" }}>{queixa}</p>
-                </div>
-                {hda && <div style={{ marginBottom:14 }}>
-                  <div style={{ fontWeight:700, color:"#0F6E56", fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:5 }}>HDA</div>
-                  <p style={{ margin:0, fontSize:13, color:"#374151", lineHeight:1.7 }}>{hda}</p>
-                </div>}
-              </>}
-
-              {yellowFlagsState.length > 0 && (
-                <div style={{ marginBottom:14 }}>
-                  <div style={{ fontWeight:700, color:"#B45309", fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:5 }}>Yellow Flags identificados</div>
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                    {yellowFlagsState.map(f=><span key={f} style={{ fontSize:11, background:"#FFFBEB", color:"#B45309", border:"1px solid #FCD34D", borderRadius:6, padding:"2px 8px" }}>{f}</span>)}
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:18 }}>
-                {[[evaMov,"EVA Movimento"],[evaRep,"EVA Repouso"]].map(([v,l2])=>{
-                  const bc=v>=7?"#FEF2F2":v>=4?"#FFFBEB":"#F0FDF4";
-                  const tc=v>=7?"#E24B4A":v>=4?"#BA7517":"#3B6D11";
-                  return (
-                    <div key={l2} style={{ background:bc, borderRadius:8, padding:"12px 16px", textAlign:"center" }}>
-                      <div style={{ fontSize:9, color:"#7C8FA6", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em" }}>{l2}</div>
-                      <div style={{ fontSize:36, fontWeight:900, color:tc, lineHeight:1.1 }}>{v!=null?v:"—"}<span style={{ fontSize:14, fontWeight:400 }}>/10</span></div>
-                      <div style={{ fontSize:11, color:tc }}>{v===0?"Sem dor":v<=3?"Leve":v<=6?"Moderada":v<=8?"Intensa":v!=null?"Máxima":"Não avaliado"}</div>
+              {/* ── Identificação do paciente ──────────────────────────────── */}
+              <div style={{ marginBottom:20 }}>
+                <div style={{ fontWeight:800, color:"#0F6E56", fontSize:12, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:10, borderBottom:"1px solid #E2E8F0", paddingBottom:6 }}>Identificação do Paciente</div>
+                <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"repeat(auto-fill,minmax(180px,1fr))", gap:8 }}>
+                  {[
+                    ["Nome", pt.nome || "—"],
+                    ["Data de nascimento", pt.dataNasc || "—"],
+                    ["Sexo", pt.sexo || "—"],
+                    ["Lateralidade", pt.lateralidade || "—"],
+                    ["Estado civil", pt.estadoCivil || "—"],
+                    ["Profissão / Ocupação", pt.profissao || "—"],
+                    ["Telefone", pt.telefone || "—"],
+                    ["Convênio", pt.convenio || "—"],
+                    ["Data da avaliação", pt.data || "—"],
+                    ["Idade", calcIdade],
+                  ].map(([k,v])=>(
+                    <div key={k} style={{ display:"flex", gap:4 }}>
+                      <span style={{ fontWeight:700, color:"#7C8FA6", fontSize:11, whiteSpace:"nowrap" }}>{k}:</span>
+                      <span style={{ color:"#1a202c", fontSize:12 }}>{v}</span>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
+                {(pt.peso || pt.altura) && (
+                  <div style={{ display:"flex", gap:16, marginTop:8, fontSize:12 }}>
+                    {pt.peso && <span><strong style={{color:"#7C8FA6"}}>Peso:</strong> {pt.peso} kg</span>}
+                    {pt.altura && <span><strong style={{color:"#7C8FA6"}}>Altura:</strong> {pt.altura} cm</span>}
+                    {imc && <span><strong style={{color:"#7C8FA6"}}>IMC:</strong> {imc.value} ({imc.l})</span>}
+                  </div>
+                )}
               </div>
 
-              {autoCIF.length > 0 && (
+              {/* ── Queixa principal e HDA ─────────────────────────────────── */}
+              {queixa && (
                 <div style={{ marginBottom:18 }}>
-                  <div style={{ fontWeight:700, color:"#0F6E56", fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>Classificação CIF — Diagnóstico Funcional</div>
-                  <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
-                    <thead><tr style={{ background:"#F8FAFC" }}>
-                      {["Código","Descrição","Qualificador"].map(h=><th key={h} style={{ padding:"6px 10px", textAlign:"left", fontWeight:700, fontSize:10, color:"#7C8FA6", textTransform:"uppercase" }}>{h}</th>)}
-                    </tr></thead>
-                    <tbody>
-                      {autoCIF.map(c=>(
-                        <tr key={c.code} style={{ borderBottom:"1px solid #F1F5F9" }}>
-                          <td style={{ padding:"6px 10px", fontWeight:800, color:"#6B46C1" }}>{c.code}</td>
-                          <td style={{ padding:"6px 10px" }}>{c.desc}</td>
-                          <td style={{ padding:"6px 10px", fontWeight:700, color:c.qualifier>=3?"#E24B4A":c.qualifier>=2?"#BA7517":"#3B6D11" }}>{c.qualifier} — {c.qualifier===0?"Sem dificuldade":c.qualifier===1?"Dificuldade leve":c.qualifier===2?"Dificuldade moderada":c.qualifier===3?"Dificuldade grave":"Dificuldade completa"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div style={{ fontWeight:800, color:"#0F6E56", fontSize:12, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8, borderBottom:"1px solid #E2E8F0", paddingBottom:6 }}>Anamnese</div>
+                  <div style={{ marginBottom:10 }}>
+                    <div style={{ fontWeight:700, fontSize:12, color:"#374151", marginBottom:2 }}>Queixa principal</div>
+                    <p style={{ margin:0, fontSize:13, color:"#1a202c" }}>{queixa}</p>
+                  </div>
+                  {hda && (
+                    <div>
+                      <div style={{ fontWeight:700, fontSize:12, color:"#374151", marginBottom:2 }}>História da Doença Atual (HDA)</div>
+                      <p style={{ margin:0, fontSize:13, color:"#374151", lineHeight:1.7 }}>{hda}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
+              {/* ── Caracterização da dor ──────────────────────────────────── */}
+              {(localDor.length>0 || caraterDor.length>0 || tempoDor || evaMov!=null || evaRep!=null) && (
+                <div style={{ marginBottom:18 }}>
+                  <div style={{ fontWeight:800, color:"#0F6E56", fontSize:12, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8, borderBottom:"1px solid #E2E8F0", paddingBottom:6 }}>Avaliação da Dor</div>
+                  <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr", gap:8, marginBottom:10 }}>
+                    {localDor.length>0 && <div style={{ fontSize:12 }}><strong style={{color:"#7C8FA6"}}>Localização:</strong><br/>{localDor.join(", ")}</div>}
+                    {caraterDor.length>0 && <div style={{ fontSize:12 }}><strong style={{color:"#7C8FA6"}}>Caráter:</strong><br/>{caraterDor.join(", ")}</div>}
+                    {tempoDor && <div style={{ fontSize:12 }}><strong style={{color:"#7C8FA6"}}>Duração:</strong><br/>{tempoDor}</div>}
+                  </div>
+                  {(melhora.length>0 || piora.length>0) && (
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
+                      {melhora.length>0 && <div style={{ fontSize:12 }}><strong style={{color:"#7C8FA6"}}>Fatores de melhora:</strong> {melhora.join(", ")}</div>}
+                      {piora.length>0 && <div style={{ fontSize:12 }}><strong style={{color:"#7C8FA6"}}>Fatores de piora:</strong> {piora.join(", ")}</div>}
+                    </div>
+                  )}
+                  {(evaMov!=null || evaRep!=null) && (
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginTop:8 }}>
+                      {[[evaMov,"EVA — Movimento"],[evaRep,"EVA — Repouso"]].map(([v,l2])=>{
+                        if (v==null && v!==0) return null;
+                        const bc=v>=7?"#FEF2F2":v>=4?"#FFFBEB":"#F0FDF4";
+                        const tc=v>=7?"#E24B4A":v>=4?"#BA7517":"#3B6D11";
+                        return (
+                          <div key={l2} style={{ background:bc, borderRadius:8, padding:"10px 14px", textAlign:"center" }}>
+                            <div style={{ fontSize:11, color:"#7C8FA6", fontWeight:700, marginBottom:2 }}>{l2}</div>
+                            <span style={{ fontSize:28, fontWeight:900, color:tc }}>{v}<span style={{ fontSize:12, fontWeight:400 }}>/10</span></span>
+                            <div style={{ fontSize:11, color:tc, fontWeight:600 }}>{v===0?"Sem dor":v<=3?"Leve":v<=6?"Moderada":v<=8?"Intensa":"Máxima"}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Funcionalidade ─────────────────────────────────────────── */}
+              {(nivelAti || avds.length>0 || objTrat.length>0) && (
+                <div style={{ marginBottom:18 }}>
+                  <div style={{ fontWeight:800, color:"#0F6E56", fontSize:12, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8, borderBottom:"1px solid #E2E8F0", paddingBottom:6 }}>Função e Atividades</div>
+                  {nivelAti && <div style={{ fontSize:12, marginBottom:6 }}><strong style={{color:"#7C8FA6"}}>Nível de atividade física:</strong> {nivelAti}</div>}
+                  {avds.length>0 && <div style={{ fontSize:12, marginBottom:6 }}><strong style={{color:"#7C8FA6"}}>AVDs comprometidas:</strong> {avds.join(", ")}</div>}
+                  {objTrat.length>0 && <div style={{ fontSize:12 }}><strong style={{color:"#7C8FA6"}}>Objetivos do paciente:</strong> {objTrat.join(", ")}</div>}
+                </div>
+              )}
+
+              {/* ── Exame Físico ───────────────────────────────────────────── */}
+              {(postura.length>0 || marcha || edema || palpacao || sensib || reflexos || forca.some(r=>r.value)) && (
+                <div style={{ marginBottom:18 }}>
+                  <div style={{ fontWeight:800, color:"#0F6E56", fontSize:12, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8, borderBottom:"1px solid #E2E8F0", paddingBottom:6 }}>Exame Físico</div>
+                  <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:8, marginBottom:8 }}>
+                    {postura.length>0 && <div style={{ fontSize:12 }}><strong style={{color:"#7C8FA6"}}>Postura:</strong> {postura.join(", ")}</div>}
+                    {marcha && <div style={{ fontSize:12 }}><strong style={{color:"#7C8FA6"}}>Marcha:</strong> {marcha}</div>}
+                    {edema && <div style={{ fontSize:12 }}><strong style={{color:"#7C8FA6"}}>Edema/Sinais:</strong> {edema}</div>}
+                    {sensib && <div style={{ fontSize:12 }}><strong style={{color:"#7C8FA6"}}>Sensibilidade:</strong> {sensib}</div>}
+                    {reflexos && <div style={{ fontSize:12 }}><strong style={{color:"#7C8FA6"}}>Reflexos:</strong> {reflexos}</div>}
+                  </div>
+                  {palpacao && <div style={{ fontSize:12, marginBottom:8 }}><strong style={{color:"#7C8FA6"}}>Palpação:</strong> {palpacao}</div>}
+                  {forca.some(r=>r.value) && (
+                    <div style={{ marginTop:8 }}>
+                      <div style={{ fontWeight:700, fontSize:12, color:"#374151", marginBottom:4 }}>Força Muscular (MRC 0–5)</div>
+                      <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+                        <thead><tr style={{ background:"#F8FAFC" }}>
+                          {["Músculo / Grupo","Grau"].map(h=><th key={h} style={{ padding:"5px 10px", textAlign:"left", fontWeight:700, fontSize:10, color:"#7C8FA6", textTransform:"uppercase" }}>{h}</th>)}
+                        </tr></thead>
+                        <tbody>
+                          {forca.filter(r=>r.value).map(r=>{
+                            const m = MRC_LABELS.find(x=>x.id===r.muscle);
+                            return (
+                              <tr key={r.id} style={{ borderBottom:"1px solid #F1F5F9" }}>
+                                <td style={{ padding:"4px 10px" }}>{m?.l||r.muscle}</td>
+                                <td style={{ padding:"4px 10px", fontWeight:700, color:Number(r.value)<3?"#E24B4A":Number(r.value)<5?"#BA7517":"#3B6D11" }}>{r.value}/5</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Goniometria ────────────────────────────────────────────── */}
               {gonio.filter(g=>g.value).length>0 && (
                 <div style={{ marginBottom:18 }}>
-                  <div style={{ fontWeight:700, color:"#0F6E56", fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>Goniometria</div>
-                  <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+                  <div style={{ fontWeight:800, color:"#0F6E56", fontSize:12, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8, borderBottom:"1px solid #E2E8F0", paddingBottom:6 }}>Goniometria</div>
+                  <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
                     <thead><tr style={{ background:"#F8FAFC" }}>
-                      {["Articulação","Movimento","Medida","Referência","Status"].map(h=><th key={h} style={{ padding:"7px 10px", textAlign:"left", fontWeight:700, fontSize:10, color:"#7C8FA6", textTransform:"uppercase" }}>{h}</th>)}
+                      {["Articulação","Movimento","ADM","Ref.","Status"].map(h=><th key={h} style={{ padding:"5px 10px", textAlign:"left", fontWeight:700, fontSize:10, color:"#7C8FA6", textTransform:"uppercase" }}>{h}</th>)}
                     </tr></thead>
                     <tbody>
                       {gonio.filter(g=>g.value).map(g=>{
@@ -1615,11 +1132,11 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
                         const oor=isOutOfRange(g.value,ref);
                         return (
                           <tr key={g.id} style={{ borderBottom:"1px solid #F1F5F9" }}>
-                            <td style={{ padding:"6px 10px" }}>{g.joint}</td>
-                            <td style={{ padding:"6px 10px" }}>{g.movement}</td>
-                            <td style={{ padding:"6px 10px", fontWeight:800, color:oor?"#E24B4A":"#0F6E56" }}>{g.value}°</td>
-                            <td style={{ padding:"6px 10px", color:"#7C8FA6" }}>{ref?`${ref}°`:"—"}</td>
-                            <td style={{ padding:"6px 10px" }}>{oor?<span style={{ fontSize:11, color:"#E24B4A", fontWeight:700 }}>⚠ Acima do ref.</span>:<span style={{ fontSize:11, color:"#3B6D11" }}>✓</span>}</td>
+                            <td style={{ padding:"4px 10px" }}>{g.joint}</td>
+                            <td style={{ padding:"4px 10px" }}>{g.movement}</td>
+                            <td style={{ padding:"4px 10px", fontWeight:800, color:oor?"#E24B4A":"#0F6E56" }}>{g.value}°</td>
+                            <td style={{ padding:"4px 10px", color:"#7C8FA6" }}>{ref?`${ref}°`:"—"}</td>
+                            <td style={{ padding:"4px 10px", fontSize:11, color:oor?"#E24B4A":"#3B6D11", fontWeight:700 }}>{oor?"↓ Limitado":"Normal"}</td>
                           </tr>
                         );
                       })}
@@ -1628,56 +1145,125 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
                 </div>
               )}
 
+              {/* ── Testes especiais ───────────────────────────────────────── */}
               {Object.entries(tests).filter(([,v])=>v&&v!=="Não realizado").length>0 && (
                 <div style={{ marginBottom:18 }}>
-                  <div style={{ fontWeight:700, color:"#0F6E56", fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>Testes especiais</div>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
-                    {Object.entries(tests).filter(([,v])=>v&&v!=="Não realizado").map(([k,v])=>(
-                      <div key={k} style={{ display:"flex", justifyContent:"space-between", background:"#F8FAFC", borderRadius:8, padding:"6px 12px", fontSize:13 }}>
-                        <span style={{ color:"#374151" }}>{k}</span>
-                        <span style={{ fontWeight:700, color:v==="Positivo"?"#E24B4A":"#3B6D11" }}>{v}</span>
-                      </div>
-                    ))}
+                  <div style={{ fontWeight:800, color:"#0F6E56", fontSize:12, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8, borderBottom:"1px solid #E2E8F0", paddingBottom:6 }}>Testes Especiais</div>
+                  <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+                    <thead><tr style={{ background:"#F8FAFC" }}>
+                      {["Teste","Resultado"].map(h=><th key={h} style={{ padding:"5px 10px", textAlign:"left", fontWeight:700, fontSize:10, color:"#7C8FA6", textTransform:"uppercase" }}>{h}</th>)}
+                    </tr></thead>
+                    <tbody>
+                      {Object.entries(tests).filter(([,v])=>v&&v!=="Não realizado").map(([k,v])=>(
+                        <tr key={k} style={{ borderBottom:"1px solid #F1F5F9" }}>
+                          <td style={{ padding:"4px 10px" }}>{k}</td>
+                          <td style={{ padding:"4px 10px", fontWeight:700, color:v==="Positivo"?"#E24B4A":"#3B6D11" }}>{v}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* ── Histórico e comorbidades ───────────────────────────────── */}
+              {(comorbid.length>0 || antec.length>0 || meds) && (
+                <div style={{ marginBottom:18 }}>
+                  <div style={{ fontWeight:800, color:"#0F6E56", fontSize:12, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8, borderBottom:"1px solid #E2E8F0", paddingBottom:6 }}>Histórico Clínico</div>
+                  {comorbid.length>0 && <div style={{ fontSize:12, marginBottom:4 }}><strong style={{color:"#7C8FA6"}}>Comorbidades:</strong> {comorbid.join(", ")}</div>}
+                  {antec.length>0 && <div style={{ fontSize:12, marginBottom:4 }}><strong style={{color:"#7C8FA6"}}>Antecedentes / Cirurgias:</strong> {antec.join(", ")}</div>}
+                  {meds && <div style={{ fontSize:12 }}><strong style={{color:"#7C8FA6"}}>Medicamentos em uso:</strong> {meds}</div>}
+                </div>
+              )}
+
+              {/* ── Yellow Flags ───────────────────────────────────────────── */}
+              {yellowFlagsState.length>0 && (
+                <div style={{ marginBottom:18 }}>
+                  <div style={{ fontWeight:800, color:"#B45309", fontSize:12, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8, borderBottom:"1px solid #FDE68A", paddingBottom:6 }}>Fatores Psicossociais — Yellow Flags</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginBottom:6 }}>
+                    {yellowFlagsState.map(f=><span key={f} style={{ fontSize:11, background:"#FFFBEB", color:"#B45309", border:"1px solid #FCD34D", borderRadius:6, padding:"2px 10px" }}>{f}</span>)}
                   </div>
+                  {yellowFlagsState.length>=3 && <div style={{ fontSize:11, color:"#92400E", fontStyle:"italic" }}>⚠ Presença de múltiplos yellow flags — considerar abordagem biopsicossocial (PNE, CFT) e avaliação psicológica.</div>}
                 </div>
               )}
 
-              {pt.convenio==="Particular" && (
-                <div style={{ marginBottom:18, background:"#F5F3FF", borderRadius:8, padding:"12px 16px", border:"1px solid #DDD6FE" }}>
-                  <div style={{ fontWeight:700, color:"#5B21B6", fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>Honorários CREFITO — Referência para atendimento particular</div>
-                  <div style={{ fontSize:12, color:"#374151" }}>Região: {regiao} | Sessão: R$ {(CREFITO_REGIOES[regiao]||CREFITO_REGIOES["Centro-Oeste"]).sessao.toFixed(2)} | Avaliação: R$ {(CREFITO_REGIOES[regiao]||CREFITO_REGIOES["Centro-Oeste"]).avaliacao.toFixed(2)} | Relatório: R$ {(CREFITO_REGIOES[regiao]||CREFITO_REGIOES["Centro-Oeste"]).relatorio.toFixed(2)}{pt.sessoesAuth?` | Total ({${pt.sessoesAuth}} sessões): R$ ${(((CREFITO_REGIOES[regiao]||CREFITO_REGIOES["Centro-Oeste"]).avaliacao)+((CREFITO_REGIOES[regiao]||CREFITO_REGIOES["Centro-Oeste"]).sessao*parseInt(pt.sessoesAuth))+((CREFITO_REGIOES[regiao]||CREFITO_REGIOES["Centro-Oeste"]).relatorio)).toFixed(2)}`:""}</div>
+              {/* ── CIF ────────────────────────────────────────────────────── */}
+              {autoCIF.length>0 && (
+                <div style={{ marginBottom:18 }}>
+                  <div style={{ fontWeight:800, color:"#0F6E56", fontSize:12, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8, borderBottom:"1px solid #E2E8F0", paddingBottom:6 }}>Classificação CIF — Diagnóstico Funcional</div>
+                  <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+                    <thead><tr style={{ background:"#F8FAFC" }}>
+                      {["Código","Descrição","Qualificador"].map(h=><th key={h} style={{ padding:"5px 10px", textAlign:"left", fontWeight:700, fontSize:10, color:"#7C8FA6", textTransform:"uppercase" }}>{h}</th>)}
+                    </tr></thead>
+                    <tbody>
+                      {autoCIF.map(c=>(
+                        <tr key={c.code} style={{ borderBottom:"1px solid #F1F5F9" }}>
+                          <td style={{ padding:"4px 10px", fontWeight:800, color:"#6B46C1" }}>{c.code}</td>
+                          <td style={{ padding:"4px 10px" }}>{c.desc}</td>
+                          <td style={{ padding:"4px 10px", fontWeight:700, fontSize:11, color:c.qualifier>=3?"#E24B4A":c.qualifier>=2?"#BA7517":"#3B6D11" }}>{c.qualifier} — {["Sem dificuldade","Dificuldade leve","Dificuldade moderada","Dificuldade grave","Dificuldade completa"][c.qualifier]}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
 
+              {/* ── Observações ────────────────────────────────────────────── */}
+              {obs && (
+                <div style={{ marginBottom:18 }}>
+                  <div style={{ fontWeight:800, color:"#0F6E56", fontSize:12, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8, borderBottom:"1px solid #E2E8F0", paddingBottom:6 }}>Observações Clínicas</div>
+                  <p style={{ margin:0, fontSize:13, color:"#374151", lineHeight:1.7, whiteSpace:"pre-wrap" }}>{obs}</p>
+                </div>
+              )}
+
+              {/* ── Plano de tratamento (AI) ───────────────────────────────── */}
               {aiRes && (
                 <div style={{ marginBottom:18 }}>
-                  <div style={{ fontWeight:700, color:"#0F6E56", fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>Plano de tratamento — análise IA baseada em evidências</div>
-                  <pre style={{ fontSize:12, whiteSpace:"pre-wrap", background:"#F8FAFC", borderRadius:8, padding:14, margin:0, fontFamily:F, lineHeight:1.8, color:"#1a202c" }}>{aiRes}</pre>
+                  <div style={{ fontWeight:800, color:"#0F6E56", fontSize:12, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8, borderBottom:"1px solid #E2E8F0", paddingBottom:6 }}>Plano de Tratamento — Análise Baseada em Evidências</div>
+                  <div style={{ fontSize:12, whiteSpace:"pre-wrap", background:"#F8FAFC", borderRadius:8, padding:14, lineHeight:1.8, color:"#1a202c" }}>{aiRes}</div>
                 </div>
               )}
 
-              {logs.length>0 && (
+              {/* ── Evolução ───────────────────────────────────────────────── */}
+              {currentLogs.length>0 && (
                 <div style={{ marginBottom:18 }}>
-                  <div style={{ fontWeight:700, color:"#0F6E56", fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:10 }}>Evolução — {logs.length} sessão(ões)</div>
-                  {[...logs].reverse().map(l=>(
+                  <div style={{ fontWeight:800, color:"#0F6E56", fontSize:12, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8, borderBottom:"1px solid #E2E8F0", paddingBottom:6 }}>Evolução — {currentLogs.length} sessão(ões) realizadas</div>
+                  {[...currentLogs].reverse().slice(0,10).map(l=>(
                     <div key={l.id} style={{ borderLeft:"3px solid #4ADE80", paddingLeft:12, marginBottom:10 }}>
                       <div style={{ fontSize:11, color:"#7C8FA6", marginBottom:2 }}>
-                        Sessão {l.sessaoNum} · {l.data} · EVA {l.eva}/10{l.resposta?` · ${l.resposta}`:""}
+                        <strong>Sessão {l.sessaoNum}</strong> · {l.data} · EVA {l.eva}/10{l.resposta?` · ${l.resposta}`:""}
                       </div>
+                      {l.procedimentos?.length>0 && <div style={{ fontSize:11, color:"#374151", marginBottom:2 }}>Procedimentos: {l.procedimentos.join(", ")}</div>}
                       {l.escalas && <div style={{ fontSize:11, color:"#6B46C1", marginBottom:2 }}>📏 {l.escalas}</div>}
-                      {l.evolucao && <div style={{ fontSize:13, color:"#374151", lineHeight:1.6 }}>{l.evolucao}</div>}
-                      {l.metas && <div style={{ fontSize:11, color:"#7C8FA6", marginTop:2 }}>→ {l.metas}</div>}
+                      {l.evolucao && <div style={{ fontSize:12, color:"#374151", lineHeight:1.6 }}>{l.evolucao}</div>}
+                      {l.metas && <div style={{ fontSize:11, color:"#7C8FA6", marginTop:2 }}>→ Meta: {l.metas}</div>}
                     </div>
                   ))}
+                  {currentLogs.length>10 && <div style={{ fontSize:11, color:"#7C8FA6", fontStyle:"italic" }}>... e mais {currentLogs.length-10} sessão(ões). Consulte o prontuário completo.</div>}
                 </div>
               )}
 
-              <div style={{ borderTop:"1px solid #E2E8F0", marginTop:20, paddingTop:12, fontSize:10, color:"#7C8FA6", textAlign:"center" }}>
-                SASYRA · Reabilitação e Evidência · Documento gerado para equipe multidisciplinar
+              {/* ── Recomendações para encaminhamento ──────────────────────── */}
+              <div style={{ marginBottom:18, background:"#F0FDF4", borderRadius:8, padding:"12px 16px", border:"1px solid #BBF7D0" }}>
+                <div style={{ fontWeight:800, color:"#166534", fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:6 }}>🔗 Para outros profissionais</div>
+                <div style={{ fontSize:12, color:"#374151", lineHeight:1.7 }}>
+                  {kb ? (
+                    <>Paciente em tratamento fisioterapêutico para {kb.label}, conforme protocolo baseado em evidências. Avaliação multidimensional realizada, incluindo CIF e fatores psicossociais. Solicita-se colaboração interdisciplinar conforme necessário.</>
+                  ) : (
+                    <>Paciente em avaliação fisioterapêutica. Favor considerar encaminhamento para avaliação médica, psicológica ou nutricional se houver indicação clínica.</>
+                  )}
+                  {yellowFlagsState.length>=3 && <> Recomenda-se avaliação psicológica para manejo de fatores psicossociais.</>}
+                  {imc && (Number(imc.value)>=30) && <> Recomenda-se avaliação nutricional para manejo de obesidade.</>}
+                </div>
+              </div>
+
+              {/* ── Rodapé ─────────────────────────────────────────────────── */}
+              <div style={{ borderTop:"1px solid #E2E8F0", marginTop:20, paddingTop:14, fontSize:10, color:"#94A3B8", textAlign:"center", lineHeight:1.8 }}>
+                {user.nome} — {PROF_LABELS[user.prof] || user.prof}{user.crefito ? ` · ${user.crefito}` : ""}<br/>
+                SASYRA — Reabilitação e Evidência · Documento gerado em {new Date().toLocaleString("pt-BR")} · Para equipe multidisciplinar
               </div>
             </div>
-            <div style={{ marginTop:14, display:"flex", gap:10 }}>
-              <button onClick={()=>window.print()} style={primaryBtn()}>🖨️ Imprimir / Salvar PDF</button>
+            <div style={{ marginTop:14, display:"flex", gap:10, flexWrap:"wrap" }}>
+              <button onClick={()=>window.print()} style={primaryBtn()}>🖨️ Imprimir / PDF</button>
             </div>
           </Section>
         )}

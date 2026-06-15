@@ -1,32 +1,41 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useState, useRef, useEffect, useMemo } from "react";
-import Body from "react-muscle-highlighter";
 
+export function useMediaQuery(query) {
+  const [match, setMatch] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const fn = (e) => setMatch(e.matches);
+    mq.addEventListener("change", fn);
+    return () => mq.removeEventListener("change", fn);
+  }, [query]);
+  return match;
+}
 const C = {
-  bg:          "#0E141B",
-  surface:     "#111822",
-  card:        "#19243A",
-  cardAlt:     "#162030",
-  border:      "#1F2E45",
-  borderLight: "#2A3F5C",
-  green:       "#4ADE80",
-  greenDim:    "#22C55E",
-  greenDeep:   "#0D9E5C",
-  greenBg:     "rgba(74,222,128,0.09)",
-  greenBgHov:  "rgba(74,222,128,0.16)",
-  amber:       "#FBBF24",
-  amberBg:     "rgba(251,191,36,0.10)",
-  red:         "#F87171",
-  redBg:       "rgba(248,113,113,0.09)",
-  blue:        "#60A5FA",
-  blueBg:      "rgba(96,165,250,0.09)",
-  purple:      "#A78BFA",
-  purpleBg:    "rgba(167,139,250,0.09)",
-  text:        "#DDE6F0",
-  textSub:     "#A8BECC",
-  textMuted:   "#5E7A96",
-  textDim:     "#364D62",
-  white:       "#FFFFFF",
+  bg:          "var(--bg)",
+  surface:     "var(--surface)",
+  card:        "var(--card)",
+  cardAlt:     "var(--cardAlt)",
+  border:      "var(--border)",
+  borderLight: "var(--borderLight)",
+  green:       "var(--green)",
+  greenDim:    "var(--greenDim)",
+  greenDeep:   "var(--greenDeep)",
+  greenBg:     "var(--greenBg)",
+  greenBgHov:  "var(--greenBgHov)",
+  amber:       "var(--amber)",
+  amberBg:     "var(--amberBg)",
+  red:         "var(--red)",
+  redBg:       "var(--redBg)",
+  blue:        "var(--blue)",
+  blueBg:      "var(--blueBg)",
+  purple:      "var(--purple)",
+  purpleBg:    "var(--purpleBg)",
+  text:        "var(--text)",
+  textSub:     "var(--textSub)",
+  textMuted:   "var(--textMuted)",
+  textDim:     "var(--textDim)",
+  white:       "var(--white)",
 };
 const F = "'Inter','Segoe UI',system-ui,sans-serif";
 
@@ -186,6 +195,21 @@ export function AudioField({ value, onChange, placeholder, rows=3 }) {
   );
 }
 
+export const MUSCLES = [
+  { id:"quadricepsD", label:"Quadríceps D" },
+  { id:"quadricepsE", label:"Quadríceps E" },
+  { id:"isquiotibialD", label:"Isquiotibiais D" },
+  { id:"isquiotibialE", label:"Isquiotibiais E" },
+  { id:"gluteoD", label:"Glúteo D" },
+  { id:"gluteoE", label:"Glúteo E" },
+  { id:"manguitoD", label:"Manguito Rotador D" },
+  { id:"manguitoE", label:"Manguito Rotador E" },
+  { id:"tibialAnterior", label:"Tibial Anterior" },
+  { id:"gastrocnemio", label:"Gastrocnêmio" },
+  { id:"bicepsD", label:"Bíceps Braquial D" },
+  { id:"bicepsE", label:"Bíceps Braquial E" },
+];
+
 export function MRCSelect({ value, onChange }) {
   const grades = ["0 – Sem contração","1 – Frêmito","2 – Sem gravidade","3 – Contra gravidade","4 – Resistência parcial","5 – Normal"];
   return (
@@ -196,12 +220,27 @@ export function MRCSelect({ value, onChange }) {
   );
 }
 
+export function MRCRow({ row, onUpdate, onRemove }) {
+  const isMobile = useMediaQuery("(max-width:767px)");
+  return (
+    <div style={{ display:"grid", gridTemplateColumns:isMobile ? "1fr 100px 28px" : "2fr 200px 28px", gap:8, alignItems:"center", padding:"9px 0", borderBottom:`1px solid ${C.border}` }}>
+      <select value={row.muscle} onChange={e=>onUpdate({...row,muscle:e.target.value})} style={sel()}>
+        <option value="">Músculo…</option>
+        {MUSCLES.map(m=><option key={m.id} value={m.id}>{m.label}</option>)}
+      </select>
+      <MRCSelect value={row.value} onChange={v=>onUpdate({...row,value:v})} />
+      <button onClick={onRemove} style={{ background:"none", border:"none", color:C.textDim, fontSize:18, cursor:"pointer", padding:0, justifySelf:"center" }}>×</button>
+    </div>
+  );
+}
+
 export function GonioRow({ row, onUpdate, onRemove }) {
   const mvts = MVMT[row.joint]||[];
   const ref = getRef(row.movement, row.joint);
   const oor = isOutOfRange(row.value, ref);
+  const isMobile = useMediaQuery("(max-width:767px)");
   return (
-    <div style={{ display:"grid", gridTemplateColumns:"1.8fr 1.8fr 76px 72px 28px", gap:8, alignItems:"center", padding:"9px 0", borderBottom:`1px solid ${C.border}` }}>
+    <div style={{ display:"grid", gridTemplateColumns:isMobile ? "1fr 1fr 100px 28px" : "1.8fr 1.8fr 76px 72px 28px", gap:8, alignItems:"center", padding:"9px 0", borderBottom:`1px solid ${C.border}` }}>
       <select value={row.joint} onChange={e=>onUpdate({...row,joint:e.target.value,movement:""})} style={sel()}>
         <option value="">Articulação…</option>
         {JOINTS.map(j=><option key={j} value={j}>{j}</option>)}
@@ -304,11 +343,12 @@ export function useProgress(patient, queixa, evaMov, gonio, testResults, kb) {
 }
 
 export function Section({ title, icon, badge, children, accent }) {
+  const isMobile = useMediaQuery("(max-width:767px)");
   return (
-    <div style={cardStyle({ borderLeft: accent ? `3px solid ${accent}` : undefined })}>
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:18, paddingBottom:12, borderBottom:`1px solid ${C.border}` }}>
+    <div style={cardStyle({ padding: isMobile ? "14px 12px" : "20px 22px", borderLeft: accent ? `3px solid ${accent}` : undefined })}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:isMobile?12:18, paddingBottom:isMobile?10:12, borderBottom:`1px solid ${C.border}` }}>
         <span style={{ fontSize:16 }}>{icon}</span>
-        <h3 style={{ margin:0, fontSize:11, fontWeight:800, letterSpacing:"0.11em", textTransform:"uppercase", color:C.green, flex:1 }}>{title}</h3>
+        <h3 style={{ margin:0, fontSize:isMobile?10:11, fontWeight:800, letterSpacing:"0.11em", textTransform:"uppercase", color:C.green, flex:1 }}>{title}</h3>
         {badge && <span style={{ fontSize:11, background:C.amberBg, color:C.amber, border:`1px solid ${C.amber}40`, borderRadius:20, padding:"2px 10px" }}>{badge}</span>}
       </div>
       {children}
@@ -316,8 +356,10 @@ export function Section({ title, icon, badge, children, accent }) {
   );
 }
 
-export function Row({ children, cols="1fr 1fr", gap=14 }) {
-  return <div style={{ display:"grid", gridTemplateColumns:cols, gap, marginBottom:14 }}>{children}</div>;
+export function Row({ children, cols="1fr 1fr", gap=14, mobileCols }) {
+  const isMobile = useMediaQuery("(max-width:767px)");
+  const nc = isMobile ? (mobileCols || "1fr") : cols;
+  return <div style={{ display:"grid", gridTemplateColumns:nc, gap, marginBottom:isMobile?10:14 }}>{children}</div>;
 }
 
 export function Field({ l, children, span }) {
@@ -390,16 +432,19 @@ export function HonorariosCard({ convenio, regiao, sessoesAuth }) {
 }
 
 // ── BodyMap ─────────────────────────────────────────────────────────────────
+import Body from "react-muscle-highlighter";
+
 const C_BODY = {
-  green: "#4ADE80",
-  surface: "#111822",
-  card: "#19243A",
-  border: "#1F2E45",
-  textMuted: "#5E7A96",
+  green: "var(--green)",
+  surface: "var(--surface)",
+  card: "var(--card)",
+  border: "var(--border)",
+  textMuted: "var(--textMuted)",
 };
 
-// Mapeia IDs do SASYRA → slugs da biblioteca react-muscle-highlighter
-// Cada parte especifica o slug para vista frontal (F) e posterior (B)
+const SVG_W = 724;
+const SVG_H = 1448;
+
 const PART_SLUG = {
   "Cervical":    { F:"neck",        B:"neck" },
   "Torácica":    { F:"trapezius",   B:"upper-back" },
@@ -421,7 +466,28 @@ const PART_SLUG = {
   "Pé E":        { F:"feet",        B:"feet",        side:"left" },
 };
 
-// Reverse map: slug|side|view → partId
+// Coordenadas SVG aproximadas (centro da região) para cada parte
+const LABEL_POS = {
+  "Cervical":    { F:[362,270], B:[1086,270] },
+  "Torácica":    { F:[362,350], B:[1086,400] },
+  "Lombar":      { F:[362,540], B:[1086,600] },
+  "Sacroilíaca": { F:[362,460], B:[1086,700] },
+  "Ombro D":     { F:[450,340], B:[1228,340] },
+  "Ombro E":     { F:[275,340], B:[980,340] },
+  "Cotovelo D":  { F:[525,490], B:[1210,500] },
+  "Cotovelo E":  { F:[200,490], B:[930,500] },
+  "Punho/Mão D": { F:[595,680], B:[1318,650] },
+  "Punho/Mão E": { F:[130,680], B:[878,650] },
+  "Quadril D":   { F:[425,840], B:[1160,850] },
+  "Quadril E":   { F:[300,840], B:[1000,850] },
+  "Joelho D":    { F:[435,1008], B:[1170,1150] },
+  "Joelho E":    { F:[290,1008], B:[990,1150] },
+  "Tornozelo D": { F:[430,1250], B:[1150,1260] },
+  "Tornozelo E": { F:[295,1250], B:[998,1260] },
+  "Pé D":        { F:[450,1340], B:[1155,1340] },
+  "Pé E":        { F:[275,1340], B:[970,1340] },
+};
+
 const SLUG_REV = {};
 Object.entries(PART_SLUG).forEach(([id, m]) => {
   ["F","B"].forEach(v => {
@@ -432,6 +498,8 @@ Object.entries(PART_SLUG).forEach(([id, m]) => {
 export function BodyMap({ value, onChange, sex }) {
   const [view, setView] = useState("front");
   const kv = view === "front" ? "F" : "B";
+  const isMobile = useMediaQuery("(max-width:767px)");
+  const bodyScale = isMobile ? 0.9 : 1.4;
 
   const selectedData = useMemo(() => {
     const groups = {};
@@ -462,12 +530,28 @@ export function BodyMap({ value, onChange, sex }) {
   };
 
   const tglStyle = (v) => ({
-    background: view === v ? "#4ADE8020" : "transparent",
-    border: view === v ? "1px solid #4ADE8060" : `1px solid ${C_BODY.border}`,
+    background: view === v ? "rgba(var(--green-rgb), 0.125)" : "transparent",
+    border: view === v ? "1px solid rgba(var(--green-rgb), 0.375)" : `1px solid ${C_BODY.border}`,
     borderRadius: 6, padding: "4px 14px", fontSize: 11, fontWeight: view === v ? 700 : 400,
-    color: view === v ? "#4ADE80" : C_BODY.textMuted,
+    color: view === v ? "var(--green)" : C_BODY.textMuted,
     cursor: "pointer", fontFamily: "'Inter','Segoe UI',sans-serif",
   });
+
+  const labelStyle = {
+    position: "absolute",
+    transform: "translate(-50%,-50%)",
+    background: "rgba(0,0,0,0.8)",
+    color: "var(--green)",
+    fontSize: 10,
+    fontWeight: 700,
+    padding: "2px 8px",
+    borderRadius: 4,
+    whiteSpace: "nowrap",
+    pointerEvents: "none",
+    fontFamily: "'Inter','Segoe UI',sans-serif",
+    zIndex: 10,
+    border: "1px solid rgba(var(--green-rgb), 0.3)",
+  };
 
   return (
     <div style={{ textAlign:"center" }}>
@@ -475,17 +559,31 @@ export function BodyMap({ value, onChange, sex }) {
         <button onClick={() => setView("front")} style={tglStyle("front")}>Frente</button>
         <button onClick={() => setView("back")} style={tglStyle("back")}>Costas</button>
       </div>
-      <Body
-        data={selectedData}
-        side={view}
-        gender={sex === "Feminino" ? "female" : "male"}
-        onBodyPartPress={handlePartPress}
-        defaultFill="#2A3F5C"
-        defaultStroke={C_BODY.border}
-        defaultStrokeWidth={0.5}
-        scale={1}
-        border="#3D5675"
-      />
+      <div style={{ position:"relative", display:"inline-block" }}>
+        <Body
+          data={selectedData}
+          side={view}
+          gender={sex === "Feminino" ? "female" : "male"}
+          onBodyPartPress={handlePartPress}
+          defaultFill="var(--bodyFill)"
+          defaultStroke="var(--bodyStroke)"
+          defaultStrokeWidth={0.5}
+          scale={bodyScale}
+          border="#3D5675"
+        />
+        {(value||[]).map(id => {
+          const pos = LABEL_POS[id];
+          if (!pos) return null;
+          const [sx, sy] = pos[kv];
+          const left = kv === "F" ? (sx / SVG_W) * 100 : ((sx - SVG_W) / SVG_W) * 100;
+          const top = (sy / SVG_H) * 100;
+          return (
+            <div key={id} style={{ ...labelStyle, left: left + "%", top: top + "%" }}>
+              {id}
+            </div>
+          );
+        })}
+      </div>
       <div style={{ fontSize:10, color: C_BODY.textMuted, marginTop:6, lineHeight:1.4 }}>
         Clique nas áreas do corpo para adicionar/remover
       </div>

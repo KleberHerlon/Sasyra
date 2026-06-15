@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { AudioField, NumericDrum, EvaSlider, TagSelect, SingleSelect, MRCSelect, GonioRow, TestCard, SessionCounter, HonorariosCard, Section, Row, Field, BodyMap } from "./components";
+import { AudioField, NumericDrum, EvaSlider, TagSelect, SingleSelect, GonioRow, MRCRow, TestCard, SessionCounter, HonorariosCard, Section, Row, Field, BodyMap, useMediaQuery } from "./components";
 
 const C = {
-  bg: "#0E141B", surface: "#111822", card: "#19243A", cardAlt: "#162030",
-  border: "#1F2E45", borderLight: "#2A3F5C", green: "#4ADE80", greenDim: "#22C55E",
-  greenDeep: "#0D9E5C", greenBg: "rgba(74,222,128,0.09)", greenBgHov: "rgba(74,222,128,0.16)",
-  amber: "#FBBF24", amberBg: "rgba(251,191,36,0.10)", red: "#F87171", redBg: "rgba(248,113,113,0.09)",
-  blue: "#60A5FA", blueBg: "rgba(96,165,250,0.09)", purple: "#A78BFA", purpleBg: "rgba(167,139,250,0.09)",
-  text: "#DDE6F0", textSub: "#A8BECC", textMuted: "#5E7A96", textDim: "#364D62", white: "#FFFFFF",
+  bg: "var(--bg)", surface: "var(--surface)", card: "var(--card)", cardAlt: "var(--cardAlt)",
+  border: "var(--border)", borderLight: "var(--borderLight)", green: "var(--green)", greenDim: "var(--greenDim)",
+  greenDeep: "var(--greenDeep)", greenBg: "var(--greenBg)", greenBgHov: "var(--greenBgHov)",
+  amber: "var(--amber)", amberBg: "var(--amberBg)", red: "var(--red)", redBg: "var(--redBg)",
+  blue: "var(--blue)", blueBg: "var(--blueBg)", purple: "var(--purple)", purpleBg: "var(--purpleBg)",
+  text: "var(--text)", textSub: "var(--textSub)", textMuted: "var(--textMuted)", textDim: "var(--textDim)", white: "var(--white)",
 };
 const F = "'Inter','Segoe UI',system-ui,sans-serif";
 const inp = (extra = {}) => ({ width: "100%", boxSizing: "border-box", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 13, padding: "9px 12px", outline: "none", fontFamily: F, ...extra });
@@ -42,13 +42,14 @@ const CIF = {
 const cardStyle = (extra = {}) => ({ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px 22px", marginBottom: 14, ...extra });
 
 function CollapsibleSection({ title, icon, badge, expanded, onToggle, children }) {
+  const isMobile = useMediaQuery("(max-width:767px)");
   return (
-    <div style={cardStyle()}>
+    <div style={{ ...cardStyle(), padding: isMobile ? "14px 12px" : "20px 22px" }}>
       <div onClick={onToggle}
-        style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", paddingBottom:expanded?12:0, borderBottom:expanded?`1px solid ${C.border}`:"none", marginBottom:expanded?18:0 }}>
+        style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", paddingBottom:expanded?12:0, borderBottom:expanded?`1px solid ${C.border}`:"none", marginBottom:expanded?isMobile?14:18:0 }}>
         <span style={{ fontSize:10, color:C.textMuted, transition:"transform 0.15s", transform:expanded?"rotate(90deg)":"rotate(0deg)" }}>▶</span>
         <span style={{ fontSize:16 }}>{icon}</span>
-        <h3 style={{ margin:0, fontSize:11, fontWeight:800, letterSpacing:"0.11em", textTransform:"uppercase", color:C.green, flex:1 }}>{title}</h3>
+        <h3 style={{ margin:0, fontSize:isMobile?10:11, fontWeight:800, letterSpacing:"0.11em", textTransform:"uppercase", color:C.green, flex:1 }}>{title}</h3>
         {badge && <span style={{ fontSize:11, background:C.amberBg, color:C.amber, border:`1px solid ${C.amber}40`, borderRadius:20, padding:"2px 10px" }}>{badge}</span>}
       </div>
       {expanded && <div>{children}</div>}
@@ -58,8 +59,9 @@ function CollapsibleSection({ title, icon, badge, expanded, onToggle, children }
 
 function CollapsibleSub({ title, defaultOpen = true, children }) {
   const [open, setOpen] = useState(defaultOpen);
+  const isMobile = useMediaQuery("(max-width:767px)");
   return (
-    <div style={{ marginBottom: 14, background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 14px" }}>
+    <div style={{ marginBottom: 14, background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 10, padding: isMobile ? "8px 10px" : "10px 14px" }}>
       <div onClick={() => setOpen(!open)}
         style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none", paddingBottom: open ? 8 : 0, borderBottom: open ? `1px solid ${C.border}` : "none", marginBottom: open ? 10 : 0 }}>
         <span style={{ fontSize: 10, color: C.textMuted, transition: "transform 0.15s", transform: open ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
@@ -81,7 +83,7 @@ export default function Assessment({
   avds, setAvds, objTrat, setObjTrat, nivelAti, setNivelAti,
   postura, setPostura, marcha, setMarcha, edema, setEdema,
   palpacao, setPalpacao, sensib, setSensib, reflexos, setReflexos,
-  forca, setForca,
+  forca, addF, updF, remF,
   gonio, addG, updG, remG,
   tests, setTests,
   obs, setObs,
@@ -95,6 +97,7 @@ export default function Assessment({
     .sort((a, b) => (b.id || 0) - (a.id || 0));
   const [expandedSections, setExpandedSections] = useState([]);
   const toggleSection = (key) => setExpandedSections(p => p.includes(key) ? p.filter(x => x !== key) : [...p, key]);
+  const isMobile = useMediaQuery("(max-width:767px)");
   return (
     <>
       {/* Histórico de Avaliações */}
@@ -144,7 +147,7 @@ export default function Assessment({
         </Row>
 
         <CollapsibleSub title="Dados administrativos e financeiros">
-          <Row cols="1fr 1fr 1fr">
+          <Row cols="1fr 1fr 1fr" mobileCols="1fr">
             <Field l="Convênio / Particular">
               <select value={pt.convenio} onChange={e => up("convenio", e.target.value)} style={sel()}>
                 <option value="">Selecionar…</option>
@@ -166,7 +169,7 @@ export default function Assessment({
         </CollapsibleSub>
 
         <CollapsibleSub title="Antropometria">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 14 }}>
             <NumericDrum label="Peso" value={pt.peso} onChange={v => up("peso", String(v))} min={30} max={250} step={0.5} unit="kg" />
             <NumericDrum label="Altura" value={pt.altura} onChange={v => up("altura", String(v))} min={100} max={220} step={1} unit="cm" />
             <div>
@@ -378,21 +381,22 @@ export default function Assessment({
         </CollapsibleSub>
 
         <CollapsibleSub title="Força Muscular — Escala MRC (0–5)">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10 }}>
-            {[["quadricepsD", "Quadríceps D"], ["quadricepsE", "Quadríceps E"], ["isquiotibialD", "Isquiotib. D"], ["isquiotibialE", "Isquiotib. E"], ["gluteoD", "Glúteo D"], ["gluteoE", "Glúteo E"], ["manguitoD", "Manguito D"], ["manguitoE", "Manguito E"], ["tibialAnterior", "Tibial Ant."], ["gastrocnemio", "Gastrocnêmio"], ["bicepsD", "Bíceps D"], ["bicepsE", "Bíceps E"]].map(([k, l2]) => (
-              <div key={k}>
-                <span style={{ ...lbl(), fontSize: 9 }}>{l2}</span>
-                <MRCSelect value={forca[k]} onChange={v => setForca(f => ({ ...f, [k]: v }))} />
-              </div>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 100px" : "2fr 200px", gap: 8, paddingBottom: 8, borderBottom: `1px solid ${C.border}`, marginBottom: 4 }}>
+            {["Músculo", "Grau"].map((h, i) => (
+              <span key={i} style={{ fontSize: 9, fontWeight: 700, color: C.textDim, letterSpacing: "0.08em", textTransform: "uppercase", textAlign: i >= 1 ? "center" : "left" }}>{h}</span>
             ))}
           </div>
+          {forca.map(row => (
+            <MRCRow key={row.id} row={row} onUpdate={u => updF(row.id, u)} onRemove={() => remF(row.id)} />
+          ))}
+          <button onClick={addF} style={{ background:"transparent", color:C.green, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 16px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:F, marginTop:12 }}>+ Adicionar músculo</button>
         </CollapsibleSub>
       </CollapsibleSection>
 
       {/* Goniometria */}
       <CollapsibleSection title="Goniometria" icon="📐" badge={`${gonio.filter(g => g.value).length} med.`} expanded={expandedSections.includes("gonio")} onToggle={()=>toggleSection("gonio")}>
-        <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1.8fr 76px 72px 28px", gap: 8, paddingBottom: 8, borderBottom: `1px solid ${C.border}`, marginBottom: 4 }}>
-          {["Articulação", "Movimento", "Grau", "Ref.", ""].map((h, i) => (
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr 50px" : "1.8fr 1.8fr 76px 72px 28px", gap: 8, paddingBottom: 8, borderBottom: `1px solid ${C.border}`, marginBottom: 4 }}>
+          {(isMobile ? ["Articulação", "Movimento", "Grau"] : ["Articulação", "Movimento", "Grau", "Ref.", ""]).map((h, i) => (
             <span key={i} style={{ fontSize: 9, fontWeight: 700, color: C.textDim, letterSpacing: "0.08em", textTransform: "uppercase", textAlign: i >= 2 ? "center" : "left" }}>{h}</span>
           ))}
         </div>
