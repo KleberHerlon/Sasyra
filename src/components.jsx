@@ -45,9 +45,9 @@ const lbl = (extra={}) => ({ display:"block", fontSize:10, fontWeight:700, lette
 const cardStyle = (extra={}) => ({ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:"20px 22px", marginBottom:14, ...extra });
 
 const iconBtn = (active=false, activeColor=C.green, extra={}) => ({ background: active ? `${activeColor}18` : C.surface, border:`1px solid ${active ? activeColor+"50" : C.border}`, color: active ? activeColor : C.textMuted, borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight: active ? 700 : 400, cursor:"pointer", fontFamily:F, transition:"all 0.12s", ...extra });
+export const JOINTS = ["Coluna Cervical","Coluna Torácica","Coluna Lombar","Ombro D","Ombro E","Cotovelo D","Cotovelo E","Punho D","Punho E","Quadril D","Quadril E","Joelho D","Joelho E","Tornozelo D","Tornozelo E","ATM D","ATM E"];
 
-const JOINTS = ["Coluna Cervical","Coluna Torácica","Coluna Lombar","Ombro D","Ombro E","Cotovelo D","Cotovelo E","Punho D","Punho E","Quadril D","Quadril E","Joelho D","Joelho E","Tornozelo D","Tornozelo E","ATM D","ATM E"];
-const MVMT = {
+export const MVMT = {
   "Coluna Cervical":["Flexão","Extensão","Inclinação D","Inclinação E","Rotação D","Rotação E"],
   "Coluna Torácica":["Flexão","Extensão","Rotação D","Rotação E"],
   "Coluna Lombar":["Flexão","Extensão","Inclinação D","Inclinação E","Rotação D","Rotação E"],
@@ -77,8 +77,8 @@ const REF = {
   "Dorsiflexão|Tornozelo D":"0–20","Plantarflexão|Tornozelo D":"0–50","Inversão|Tornozelo D":"0–35","Eversão|Tornozelo D":"0–15",
   "Dorsiflexão|Tornozelo E":"0–20","Plantarflexão|Tornozelo E":"0–50","Inversão|Tornozelo E":"0–35","Eversão|Tornozelo E":"0–15",
 };
-function getRef(mv, jt) { return REF[`${mv}|${jt}`] || ""; }
-function isOutOfRange(val, refStr) {
+export function getRef(mv, jt) { return REF[`${mv}|${jt}`] || ""; }
+export function isOutOfRange(val, refStr) {
   if (!refStr||!val) return false;
   const m = refStr.match(/(\d+)[–-](\d+)/);
   if (!m) return false;
@@ -446,20 +446,31 @@ const SVG_W = 724;
 const SVG_H = 1448;
 
 const PART_SLUG = {
+  "Cabeça":      { F:"head",        B:"head" },
   "Cervical":    { F:"neck",        B:"neck" },
-  "Torácica":    { F:"trapezius",   B:"upper-back" },
-  "Lombar":      { F:"abs",         B:"lower-back" },
-  "Sacroilíaca": { F:"obliques",    B:"gluteal" },
+  "Trapézio":    { F:"trapezius",   B:"trapezius" },
+  "Torácica":    { B:"upper-back" },
+  "Peitoral":    { F:"chest" },
+  "Abdômen":     { F:"abs" },
+  "Lombar":      { B:"lower-back" },
+  "Sacroilíaca": { F:"obliques" },
+  "Glúteos":     { B:"gluteal" },
   "Ombro D":     { F:"deltoids",    B:"deltoids",    side:"right" },
   "Ombro E":     { F:"deltoids",    B:"deltoids",    side:"left" },
-  "Cotovelo D":  { F:"biceps",      B:"triceps",     side:"right" },
-  "Cotovelo E":  { F:"biceps",      B:"triceps",     side:"left" },
-  "Punho/Mão D": { F:"forearm",     B:"forearm",     side:"right" },
-  "Punho/Mão E": { F:"forearm",     B:"forearm",     side:"left" },
+  "Braço D":     { F:"biceps",      B:"triceps",     side:"right" },
+  "Braço E":     { F:"biceps",      B:"triceps",     side:"left" },
+  "Antebraço D": { F:"forearm",     B:"forearm",     side:"right" },
+  "Antebraço E": { F:"forearm",     B:"forearm",     side:"left" },
+  "Mão D":       { F:"hands",       B:"hands",       side:"right" },
+  "Mão E":       { F:"hands",       B:"hands",       side:"left" },
   "Quadril D":   { F:"quadriceps",  B:"hamstring",   side:"right" },
   "Quadril E":   { F:"quadriceps",  B:"hamstring",   side:"left" },
+  "Adutores D":  { F:"adductors",   B:"adductors",   side:"right" },
+  "Adutores E":  { F:"adductors",   B:"adductors",   side:"left" },
   "Joelho D":    { F:"knees",       B:"calves",      side:"right" },
   "Joelho E":    { F:"knees",       B:"calves",      side:"left" },
+  "Perna D":     { F:"tibialis",                    side:"right" },
+  "Perna E":     { F:"tibialis",                    side:"left" },
   "Tornozelo D": { F:"ankles",      B:"ankles",      side:"right" },
   "Tornozelo E": { F:"ankles",      B:"ankles",      side:"left" },
   "Pé D":        { F:"feet",        B:"feet",        side:"right" },
@@ -468,20 +479,31 @@ const PART_SLUG = {
 
 // Coordenadas SVG aproximadas (centro da região) para cada parte
 const LABEL_POS = {
+  "Cabeça":      { F:[362,180], B:[1086,180] },
   "Cervical":    { F:[362,270], B:[1086,270] },
-  "Torácica":    { F:[362,350], B:[1086,400] },
-  "Lombar":      { F:[362,540], B:[1086,600] },
-  "Sacroilíaca": { F:[362,460], B:[1086,700] },
+  "Trapézio":    { F:[362,305], B:[1086,305] },
+  "Torácica":    { B:[1086,420] },
+  "Peitoral":    { F:[362,355] },
+  "Abdômen":     { F:[362,510] },
+  "Lombar":      { B:[1086,550] },
+  "Sacroilíaca": { F:[362,460] },
+  "Glúteos":     { B:[1086,720] },
   "Ombro D":     { F:[450,340], B:[1228,340] },
   "Ombro E":     { F:[275,340], B:[980,340] },
-  "Cotovelo D":  { F:[525,490], B:[1210,500] },
-  "Cotovelo E":  { F:[200,490], B:[930,500] },
-  "Punho/Mão D": { F:[595,680], B:[1318,650] },
-  "Punho/Mão E": { F:[130,680], B:[878,650] },
+  "Braço D":     { F:[525,490], B:[1210,500] },
+  "Braço E":     { F:[200,490], B:[930,500] },
+  "Antebraço D": { F:[595,680], B:[1318,650] },
+  "Antebraço E": { F:[130,680], B:[878,650] },
+  "Mão D":       { F:[670,720], B:[1400,690] },
+  "Mão E":       { F:[55,720],  B:[790,690]  },
   "Quadril D":   { F:[425,840], B:[1160,850] },
   "Quadril E":   { F:[300,840], B:[1000,850] },
-  "Joelho D":    { F:[435,1008], B:[1170,1150] },
-  "Joelho E":    { F:[290,1008], B:[990,1150] },
+  "Adutores D":  { F:[425,920], B:[1160,950] },
+  "Adutores E":  { F:[300,920], B:[1000,950] },
+  "Joelho D":    { F:[435,1008], B:[1170,1100] },
+  "Joelho E":    { F:[290,1008], B:[990,1100] },
+  "Perna D":     { F:[435,1130] },
+  "Perna E":     { F:[290,1130] },
   "Tornozelo D": { F:[430,1250], B:[1150,1260] },
   "Tornozelo E": { F:[295,1250], B:[998,1260] },
   "Pé D":        { F:[450,1340], B:[1155,1340] },
@@ -491,9 +513,42 @@ const LABEL_POS = {
 const SLUG_REV = {};
 Object.entries(PART_SLUG).forEach(([id, m]) => {
   ["F","B"].forEach(v => {
+    if (!m[v]) return;
     SLUG_REV[`${m[v]}|${m.side||""}|${v}`] = id;
   });
 });
+
+const BODY_DETAILS = {
+  "Cabeça":      { joint:"Crânio, Articulação Temporomandibular (ATM)", muscles:"Músculos da mastigação (Masseter, Temporal, Pterigóideos), Músculos da face, Músculos do crânio" },
+  "Cervical":    { joint:"Coluna Cervical (C1-C7)", muscles:"Esternocleidomastóideo, Trapézio descendente, Escalenos, Esplênios, Paravertebrais cervicais" },
+  "Trapézio":    { joint:"Cintura escapular (escápula e clavícula)", muscles:"Trapézio (descendente, transverso e ascendente)" },
+  "Torácica":    { joint:"Coluna Torácica (T1-T12)", muscles:"Paravertebrais torácicos, Romboides, Latíssimo do dorso, Intercostais" },
+  "Peitoral":    { joint:"Articulação Esternocostal, Costovertebral", muscles:"Peitoral maior, Peitoral menor, Serrátil anterior" },
+  "Abdômen":     { joint:"Parede abdominal", muscles:"Reto abdominal, Oblíquo externo, Oblíquo interno, Transverso abdominal" },
+  "Lombar":      { joint:"Coluna Lombar (L1-L5)", muscles:"Paravertebrais lombares, Quadrado lombar, Multífidos, Iliopsoas" },
+  "Sacroilíaca": { joint:"Articulação Sacroilíaca", muscles:"Glúteo máximo, Piriforme, Iliopsoas, Obturadores, Gêmeos" },
+  "Glúteos":     { joint:"Articulação Coxofemoral (posterior)", muscles:"Glúteo máximo, Glúteo médio, Glúteo mínimo, Piriforme" },
+  "Ombro D":     { joint:"Glenoumeral, Acromioclavicular, Esternoclavicular", muscles:"Supraespinhal, Infraespinhal, Subescapular, Redondo menor (Manguito Rotador), Deltoide, Bíceps braquial" },
+  "Ombro E":     { joint:"Glenoumeral, Acromioclavicular, Esternoclavicular", muscles:"Supraespinhal, Infraespinhal, Subescapular, Redondo menor (Manguito Rotador), Deltoide, Bíceps braquial" },
+  "Braço D":     { joint:"Articulação Úmero-Ulnar, Úmero-Radial (Cotovelo)", muscles:"Bíceps braquial, Tríceps braquial, Braquial, Braquiorradial" },
+  "Braço E":     { joint:"Articulação Úmero-Ulnar, Úmero-Radial (Cotovelo)", muscles:"Bíceps braquial, Tríceps braquial, Braquial, Braquiorradial" },
+  "Antebraço D": { joint:"Articulação Radiocárpica, Médio-cárpica (Punho)", muscles:"Flexores radial/ulnar do carpo, Extensores radial/ulnar do carpo, Palmar longo, Pronadores, Supinadores" },
+  "Antebraço E": { joint:"Articulação Radiocárpica, Médio-cárpica (Punho)", muscles:"Flexores radial/ulnar do carpo, Extensores radial/ulnar do carpo, Palmar longo, Pronadores, Supinadores" },
+  "Mão D":       { joint:"Articulações Carpometacárpicas, Metacarpo-falângicas, Interfalângicas", muscles:"Tenares, Hipotenares, Interósseos, Lombricais, Flexores/extensores dos dedos" },
+  "Mão E":       { joint:"Articulações Carpometacárpicas, Metacarpo-falângicas, Interfalângicas", muscles:"Tenares, Hipotenares, Interósseos, Lombricais, Flexores/extensores dos dedos" },
+  "Quadril D":   { joint:"Articulação Coxofemoral", muscles:"Iliopsoas, Glúteo máximo, Glúteo médio, Glúteo mínimo, Piriforme, Obturadores, Quadrado femoral, Tensor da fáscia lata" },
+  "Quadril E":   { joint:"Articulação Coxofemoral", muscles:"Iliopsoas, Glúteo máximo, Glúteo médio, Glúteo mínimo, Piriforme, Obturadores, Quadrado femoral, Tensor da fáscia lata" },
+  "Adutores D":  { joint:"Articulação Coxofemoral (compartimento medial)", muscles:"Adutor longo, Adutor curto, Adutor magno, Pectíneo, Grácil" },
+  "Adutores E":  { joint:"Articulação Coxofemoral (compartimento medial)", muscles:"Adutor longo, Adutor curto, Adutor magno, Pectíneo, Grácil" },
+  "Joelho D":    { joint:"Articulação Tibiofemoral, Patelofemoral", muscles:"Quadríceps femoral, Isquiotibiais (Semitendíneo, Semimembranáceo, Bíceps femoral), Pata de Ganso, Gastrocnêmio, Poplíteo" },
+  "Joelho E":    { joint:"Articulação Tibiofemoral, Patelofemoral", muscles:"Quadríceps femoral, Isquiotibiais (Semitendíneo, Semimembranáceo, Bíceps femoral), Pata de Ganso, Gastrocnêmio, Poplíteo" },
+  "Perna D":     { joint:"Articulação Talocrural, Tibiofibular", muscles:"Tibial anterior, Extensor longo dos dedos, Fibular longo, Fibular curto, Sóleo" },
+  "Perna E":     { joint:"Articulação Talocrural, Tibiofibular", muscles:"Tibial anterior, Extensor longo dos dedos, Fibular longo, Fibular curto, Sóleo" },
+  "Tornozelo D": { joint:"Articulação Talocrural, Subtalar", muscles:"Tibial anterior, Fibulares, Gastrocnêmio, Sóleo, Tibial posterior, Flexor longo dos dedos" },
+  "Tornozelo E": { joint:"Articulação Talocrural, Subtalar", muscles:"Tibial anterior, Fibulares, Gastrocnêmio, Sóleo, Tibial posterior, Flexor longo dos dedos" },
+  "Pé D":        { joint:"Subtalar, Mediotársicas, Metatarsofalângicas, Interfalângicas", muscles:"Flexor curto dos dedos, Extensor curto dos dedos, Abdutor do hálux, Adutor do hálux, Interósseos, Lombricais, Quadrado plantar" },
+  "Pé E":        { joint:"Subtalar, Mediotársicas, Metatarsofalângicas, Interfalângicas", muscles:"Flexor curto dos dedos, Extensor curto dos dedos, Abdutor do hálux, Adutor do hálux, Interósseos, Lombricais, Quadrado plantar" },
+};
 
 export function BodyMap({ value, onChange, sex }) {
   const [view, setView] = useState("front");
@@ -521,8 +576,12 @@ export function BodyMap({ value, onChange, sex }) {
   const handlePartPress = (_part, side) => {
     const slug = _part?.slug;
     if (!slug) return;
-    const key = `${slug}|${side||""}|${kv}`;
-    const id = SLUG_REV[key];
+    let key = `${slug}|${side||""}|${kv}`;
+    let id = SLUG_REV[key];
+    if (!id) {
+      key = `${slug}||${kv}`;
+      id = SLUG_REV[key];
+    }
     if (id) {
       const sel = value?.includes(id);
       onChange?.(sel ? value.filter(x => x !== id) : [...(value || []), id]);
@@ -584,6 +643,24 @@ export function BodyMap({ value, onChange, sex }) {
           );
         })}
       </div>
+      {(value||[]).length > 0 && (
+        <div style={{ marginTop:10, textAlign:"left", background:"var(--card)", border:"1px solid var(--border)", borderRadius:10, padding:"10px 12px" }}>
+          <div style={{ fontSize:9, fontWeight:800, color:"var(--textMuted)", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>
+            Áreas selecionadas — articulação e músculos
+          </div>
+          {(value||[]).map(id => {
+            const d = BODY_DETAILS[id];
+            if (!d) return null;
+            return (
+              <div key={id} style={{ marginBottom:6, padding:"6px 8px", background:"var(--surface)", borderRadius:6, border:"1px solid var(--borderLight)" }}>
+                <div style={{ fontSize:11, fontWeight:700, color:"var(--green)" }}>{id}</div>
+                <div style={{ fontSize:10, color:"var(--textSub)", marginTop:2 }}>Articulação: {d.joint}</div>
+                <div style={{ fontSize:10, color:"var(--textMuted)", marginTop:1 }}>Músculos: {d.muscles}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
       <div style={{ fontSize:10, color: C_BODY.textMuted, marginTop:6, lineHeight:1.4 }}>
         Clique nas áreas do corpo para adicionar/remover
       </div>

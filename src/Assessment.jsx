@@ -79,6 +79,7 @@ export default function Assessment({
   melhora, setMelhora, piora, setPiora,
   hda, setHda, comorbid, setComorbid, antec, setAntec, meds, setMeds,
   yellowFlagsState, setYellowFlagsState,
+  selectedRedFlags, setSelectedRedFlags,
   evaMov, setEvaMov, evaRep, setEvaRep,
   avds, setAvds, objTrat, setObjTrat, nivelAti, setNivelAti,
   postura, setPostura, marcha, setMarcha, edema, setEdema,
@@ -184,9 +185,14 @@ export default function Assessment({
 
       {/* Queixa e Anamnese */}
       <CollapsibleSection title="Queixa Principal e Anamnese" icon="📝" expanded={expandedSections.includes("queixa")} onToggle={()=>toggleSection("queixa")}>
-        <Field l="Queixa principal — digite ou use o microfone">
+        <div style={{ background:"var(--redBg)", border:"1.5px solid var(--red)", borderRadius:12, padding:"14px 16px", marginBottom:16 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, flexWrap:"wrap" }}>
+            <span style={{ background:"var(--red)", color:"#fff", fontSize:9, fontWeight:900, letterSpacing:"0.08em", padding:"2px 10px", borderRadius:4, lineHeight:"18px" }}>OBRIGATÓRIO</span>
+            <span style={{ fontSize:11, fontWeight:800, color:"var(--red)", letterSpacing:"0.1em", textTransform:"uppercase" }}>Queixa principal</span>
+            <span style={{ fontSize:11, color:"var(--textSub)", fontWeight:400 }}>— digite ou use o microfone</span>
+          </div>
           <AudioField value={queixa} onChange={v => { const t = typeof v === "function" ? v(queixa) : v; setQueixa(t); setQueixaKey(detectKB(t)); }} placeholder="Ex: Lombalgia com irradiação para MMII há 3 semanas após queda…" rows={2} />
-        </Field>
+        </div>
 
         {kb && (
           <div style={{ background: C.greenBg, border: `1px solid ${C.green}40`, borderRadius: 10, padding: "12px 14px", margin: "12px 0" }}>
@@ -223,10 +229,21 @@ export default function Assessment({
             <div style={{ background: C.redBg, border: `1px solid ${C.red}40`, borderRadius: 8, padding: "8px 12px", marginBottom: 10 }}>
               <div style={{ fontSize: 10, fontWeight: 800, color: C.red, letterSpacing: "0.1em", marginBottom: 6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                {kb.redFlags.map(f => (
-                  <span key={f} style={{ fontSize: 11, color: C.red, background: C.redBg, border: `1px solid ${C.red}30`, borderRadius: 6, padding: "2px 10px" }}>{f}</span>
-                ))}
+                {kb.redFlags.map(f => {
+                  const active = selectedRedFlags?.includes(f);
+                  return (
+                    <button key={f} onClick={() => setSelectedRedFlags(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f])}
+                      style={{ fontSize: 11, color: active ? "#fff" : C.red, background: active ? C.red : C.redBg, border: `1px solid ${C.red}50`, borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontFamily: F, fontWeight: active ? 700 : 400, transition: "all 0.12s" }}>
+                      {active && "✓ "}{f}
+                    </button>
+                  );
+                })}
               </div>
+              {selectedRedFlags?.length > 0 && (
+                <div style={{ marginTop: 6, fontSize: 10, color: C.red, fontWeight: 600 }}>
+                  ⚠ {selectedRedFlags.length} red flag(s) selecionada(s) — serão incluídas no Relatório e na Evolução do paciente
+                </div>
+              )}
             </div>
 
             <div style={{ fontSize: 11, color: C.textSub, lineHeight: 1.7 }}>

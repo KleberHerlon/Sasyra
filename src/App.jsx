@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
-import { EvaSlider, TagSelect, SingleSelect, AudioField, useProgress, Section, Row, Field, SubHeading, useMediaQuery } from "./components";
+import { EvaSlider, TagSelect, SingleSelect, AudioField, useProgress, Section, Row, Field, SubHeading, useMediaQuery, GonioRow, MRCRow, MUSCLES, JOINTS, MVMT, getRef, isOutOfRange } from "./components";
 import Assessment from "./Assessment";
+import ScaleModal from "./ScaleModal";
+import SCALES from "./scales";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -123,6 +125,247 @@ const EVIDENCE = {
     escalas:["PRTEE (Patient-Rated Tennis Elbow Evaluation)","DASH","VAS","NPRS","Global Rating of Change (GRC)"],
     atualizacao:"MINT Trial Lancet 2013 | Cochrane Elbow 2019 | BJSM 2021",
   },
+  // ── Top 50 patologias ortopédicas ────────────────────────────────────
+  "fascite-plantar":{
+    cif:["b28015","b710","b770","d450","d455"],
+    escalas:["FAAM","VAS / NPRS","Foot Function Index (FFI)"],
+    atualizacao:"CPG JOSPT 2021 | Cochrane Foot 2022",
+  },
+  "tendinopatia-aquiles":{
+    cif:["b28015","b710","b730","b770","d450","d455"],
+    escalas:["VISA-A (Victorian Institute of Sport Assessment – Achilles)","FAAM","NPRS"],
+    atualizacao:"BJSM 2020 | CPG JOSPT 2021",
+  },
+  "entorse-tornozelo":{
+    cif:["b28015","b710","b715","b770","d450","d455"],
+    escalas:["CAIT (Cumberland Ankle Instability Tool)","FAAM","NPRS"],
+    atualizacao:"PEACE & LOVE BJSM 2019 | CPG JOSPT 2021",
+  },
+  "sindrome-patelo femoral":{
+    cif:["b28015","b710","b730","b770","d450","d455","d410"],
+    escalas:["AKPS (Anterior Knee Pain Scale)","KOOS","NPRS"],
+    atualizacao:"BJSM 2020 | CPG JOSPT 2023",
+  },
+  "tendinopatia-patelar":{
+    cif:["b28015","b710","b730","d450","d455"],
+    escalas:["VISA-P (Victorian Institute of Sport Assessment – Patellar)","KOOS","NPRS"],
+    atualizacao:"BJSM 2021 | CPG JOSPT 2023",
+  },
+  lca:{
+    cif:["b28015","b710","b715","b730","b770","d450","d455","d410"],
+    escalas:["IKDC Subjective Knee Form","Lysholm Knee Score","ACL-RSI","KOOS"],
+    atualizacao:"MOON Protocol 2022 | AJSM 2023",
+  },
+  "lesao-meniscal":{
+    cif:["b28015","b710","b715","b730","d450","d455","d410"],
+    escalas:["KOOS","Lysholm Knee Score","IKDC"],
+    atualizacao:"ESCAPE Trial NEJM 2018 | CPG JOSPT 2022",
+  },
+  "artrose-joelho":{
+    cif:["b28015","b710","b730","d450","d455","d410"],
+    escalas:["KOOS","WOMAC","Oxford Knee Score","NPRS"],
+    atualizacao:"OARSI 2023 | NEJM 2019 | CPG JOSPT 2022",
+  },
+  "tendinopatia-gluteo":{
+    cif:["b28015","b710","b730","d410","d450"],
+    escalas:["VISA-G","NPRS","Global Rating of Change"],
+    atualizacao:"BJSM 2020 | CPG JOSPT 2022",
+  },
+  "impacto-femoroacetabular":{
+    cif:["b28015","b710","b715","b730","d410","d450","d455"],
+    escalas:["iHOT-12 (International Hip Outcome Tool)","HOS (Hip Outcome Score)","NPRS"],
+    atualizacao:"BJSM 2021 | CPG JOSPT 2022",
+  },
+  coxartrose:{
+    cif:["b28015","b710","b730","d410","d450","d455"],
+    escalas:["HOOS (Hip disability and Osteoarthritis Outcome Score)","WOMAC","NPRS"],
+    atualizacao:"OARSI 2023 | CPG JOSPT 2022",
+  },
+  "hernia-disco-lombar":{
+    cif:["b28013","b710","b730","d410","d415","d450","d850"],
+    escalas:["Oswestry Disability Index (ODI)","Roland Morris Disability Questionnaire","NPRS"],
+    atualizacao:"CPG NICE 2023 | Cochrane Back 2022",
+  },
+  "estenose-lombar":{
+    cif:["b28013","b710","b730","b770","d450","d455","d410"],
+    escalas:["Swiss Spinal Stenosis Questionnaire","ODI","NPRS"],
+    atualizacao:"CPG NICE 2023 | JOSPT 2022",
+  },
+  espondilolistese:{
+    cif:["b28013","b710","b730","d410","d415","d450"],
+    escalas:["ODI","NPRS","Fear Avoidance Beliefs Questionnaire"],
+    atualizacao:"Spine J 2021 | CPG NICE 2023",
+  },
+  "hernia-disco-cervical":{
+    cif:["b28010","b710","d445","d430"],
+    escalas:["NDI (Neck Disability Index)","NPRS","DASH"],
+    atualizacao:"CPG JOSPT 2023 | Cochrane Back 2022",
+  },
+  "radiculopatia-cervical":{
+    cif:["b28010","b710","b730","d445","d430"],
+    escalas:["NDI","NPRS","DASH"],
+    atualizacao:"CPG JOSPT 2023",
+  },
+  "impacto-ombro":{
+    cif:["b28014","b710","b715","b730","d445","d430"],
+    escalas:["DASH","WORC","ASES","NPRS"],
+    atualizacao:"CSAW Trial Lancet 2018 | CPG JOSPT 2022",
+  },
+  "manguito-rotador":{
+    cif:["b28014","b710","b715","b730","d445","d430"],
+    escalas:["DASH","WORC","ASES","NPRS","Oxford Shoulder Score"],
+    atualizacao:"CSAW Trial Lancet 2018 | CPG JOSPT 2022",
+  },
+  "capsulite-adesiva":{
+    cif:["b28014","b710","b715","d445","d430"],
+    escalas:["DASH","Oxford Shoulder Score","Spadi (Shoulder Pain and Disability Index)","NPRS"],
+    atualizacao:"CPG JOSPT 2022 | Cochrane Shoulder 2022",
+  },
+  "instabilidade-ombro":{
+    cif:["b28014","b710","b715","b730","d445","d430"],
+    escalas:["WOSI (Western Ontario Shoulder Instability Index)","DASH","NPRS"],
+    atualizacao:"CPG JOSPT 2022 | BJSM 2021",
+  },
+  "epicondilite-lateral":{
+    cif:["b28014","b710","b730","d445","d4401"],
+    escalas:["PRTEE","DASH","NPRS"],
+    atualizacao:"MINT Trial Lancet 2013 | BJSM 2021",
+  },
+  "epicondilite-medial":{
+    cif:["b28014","b710","b730","d445","d4401"],
+    escalas:["PRTEE","DASH","NPRS"],
+    atualizacao:"BJSM 2021",
+  },
+  "tunel-carpo":{
+    cif:["b28014","b710","b730","d445","d4401"],
+    escalas:["Boston Carpal Tunnel Questionnaire (BCTQ)","DASH","NPRS"],
+    atualizacao:"CPG JOSPT 2022 | Cochrane 2021",
+  },
+  "de-quervain":{
+    cif:["b28014","b710","b730","d445","d4401"],
+    escalas:["DASH","NPRS","Patient-Rated Wrist Evaluation"],
+    atualizacao:"CPG JOSPT 2022",
+  },
+  "osteoartrite-mao":{
+    cif:["b28014","b710","b730","d445","d4401"],
+    escalas:["AUSCAN (Australian/Canadian Hand OA Index)","DASH","NPRS"],
+    atualizacao:"OARSI 2023 | Cochrane 2022",
+  },
+  dtm:{
+    cif:["b28010","b710","b730"],
+    escalas:["Fonseca Anamnestic Index","RDC/TMD","NPRS"],
+    atualizacao:"CPG JOSPT 2022 | Cochrane 2021",
+  },
+  escoliose:{
+    cif:["b710","b730","b770","d410","d415"],
+    escalas:["SRS-22 (Scoliosis Research Society)","Roland Morris","NPRS"],
+    atualizacao:"Cochrane 2021 | SOSORT 2022",
+  },
+  hipercifose:{
+    cif:["b710","b730","b770","d410","d415"],
+    escalas:["NPRS","SRS-22"],
+    atualizacao:"CPG JOSPT 2022",
+  },
+  canelite:{
+    cif:["b28015","b710","b730","d450","d455"],
+    escalas:["NPRS","FAAM"],
+    atualizacao:"BJSM 2021 | CPG JOSPT 2022",
+  },
+  "estiramento-isquiotibiais":{
+    cif:["b28015","b710","b730","d410","d450","d455"],
+    escalas:["NPRS","Limb Symmetry Index"],
+    atualizacao:"BJSM 2021 | CPG JOSPT 2022",
+  },
+  "distensao-gemeos":{
+    cif:["b28015","b710","b730","d450"],
+    escalas:["NPRS","FAAM"],
+    atualizacao:"BJSM 2021",
+  },
+  pubalgia:{
+    cif:["b28015","b710","b730","d410","d450","d455"],
+    escalas:["NPRS","HAGOS (Copenhagen Hip and Groin Outcome Score)"],
+    atualizacao:"BJSM 2021 | CPG JOSPT 2022",
+  },
+  "trato-iliotibial":{
+    cif:["b28015","b710","b730","d410","d450","d455"],
+    escalas:["NPRS","KOOS","Lysholm"],
+    atualizacao:"BJSM 2021",
+  },
+  condromalacia:{
+    cif:["b28015","b710","b730","d410","d450","d455"],
+    escalas:["AKPS","KOOS","NPRS"],
+    atualizacao:"BJSM 2021 | CPG JOSPT 2023",
+  },
+  "bursite-olecraniana":{
+    cif:["b28014","b710","d445"],
+    escalas:["DASH","NPRS"],
+    atualizacao:"Cochrane 2021",
+  },
+  "dedo-gatilho":{
+    cif:["b28014","b710","b730","d4401"],
+    escalas:["DASH","NPRS","Patient-Rated Wrist Evaluation"],
+    atualizacao:"CPG JOSPT 2022",
+  },
+  "desfiladeiro-toracico":{
+    cif:["b28014","b710","b730","d445","d430"],
+    escalas:["DASH","NPRS"],
+    atualizacao:"CPG JOSPT 2022 | Cochrane 2021",
+  },
+  fibromialgia:{
+    cif:["b280","b1265","b730","b740"],
+    escalas:["Fibromyalgia Impact Questionnaire (FIQ)","WPI (Widespread Pain Index)","SSS (Symptom Severity Scale)","TSK-17"],
+    atualizacao:"Cochrane 2022 | EULAR 2023",
+  },
+  "esporao-calcaneo":{
+    cif:["b28015","b710","b770","d450"],
+    escalas:["FAAM","NPRS","Foot Function Index"],
+    atualizacao:"CPG JOSPT 2021",
+  },
+  "artrite-reumatoide":{
+    cif:["b280","b710","b730","b740","d445","d450","d4401"],
+    escalas:["HAQ (Health Assessment Questionnaire)","DAS28 (Disease Activity Score)","DASH"],
+    atualizacao:"EULAR 2023 | Cochrane 2022",
+  },
+  "pos-artroplastia-joelho":{
+    cif:["b28015","b710","b730","b770","d450","d455","d410"],
+    escalas:["KOOS","WOMAC","Oxford Knee Score","NPRS"],
+    atualizacao:"OARSI 2023 | CPG JOSPT 2022",
+  },
+  "pos-artroplastia-quadril":{
+    cif:["b28015","b710","b730","d410","d450","d455"],
+    escalas:["HOOS","WOMAC","Oxford Hip Score","NPRS"],
+    atualizacao:"OARSI 2023 | CPG JOSPT 2022",
+  },
+  "fratura-colles":{
+    cif:["b28014","b710","b730","d445","d4401"],
+    escalas:["DASH","Patient-Rated Wrist Evaluation","NPRS"],
+    atualizacao:"CPG JOSPT 2022 | Cochrane 2021",
+  },
+  "miosite-ossificante":{
+    cif:["b28015","b710","b730"],
+    escalas:["NPRS","DASH"],
+    atualizacao:"Cochrane 2021",
+  },
+  "tendinopatia-biceps":{
+    cif:["b28014","b710","b730","d445"],
+    escalas:["DASH","WORC","NPRS"],
+    atualizacao:"CPG JOSPT 2022 | BJSM 2021",
+  },
+  "subluxacao-patelar":{
+    cif:["b28015","b710","b715","b730","d410","d450","d455"],
+    escalas:["AKPS","KOOS","NPRS"],
+    atualizacao:"BJSM 2021 | CPG JOSPT 2023",
+  },
+  metatarsalgia:{
+    cif:["b28015","b710","b770","d450"],
+    escalas:["FAAM","NPRS","Foot Function Index"],
+    atualizacao:"CPG JOSPT 2021",
+  },
+  "neuroma-morton":{
+    cif:["b28015","b710","b770","d450"],
+    escalas:["FAAM","NPRS","VAS"],
+    atualizacao:"CPG JOSPT 2021 | Cochrane 2022",
+  },
 };
 
 // ── Knowledge Base (atualizada) ───────────────────────────────────────────────
@@ -221,16 +464,399 @@ const KB = {
     yellowFlags:["Atividade ocupacional repetitiva (pinça, digitação, parafusar)","Esportista de raquete / arremessador","Baixa adesão ao repouso relativo","Uso excessivo de mouse/teclado"],
     escalas:EVIDENCE.cotovelo.escalas,
   },
+  // ── Top 50 patologias ortopédicas ────────────────────────────────────
+  "fascite-plantar":{
+    label:"Fascite Plantar",
+    redFlags:["Dor na face medial do calcâneo aos primeiros passos (dor matinal)","Ausência de melhora após 6 meses de conservador","Parestesia / queimação (suspeitar de neuroma)","Edema difuso (suspeitar de fratura por estresse)"],
+    goldStandard:"Alongamento específico da fáscia (Windlass) + excêntrico de Aquiles. Exercício resistido de flexores plantares. Evitar corticoide local (> 3 infiltrações aumenta risco de ruptura da fáscia) (CPG JOSPT 2021 – Evidência A). Palmilha / órtese noturna como adjuvante.",
+    escalas:EVIDENCE["fascite-plantar"].escalas,
+  },
+  "tendinopatia-aquiles":{
+    label:"Tendinopatia de Aquiles",
+    redFlags:["Ruptura aguda do tendão (Thompson +)","Tendão com nódulo fixo + dor noturna (suspeitar de xantoma / rotura)","Febre + calor + rubor local (suspeitar de tendinite séptica)","Dor bilateral + artrite (suspeitar de espondiloartropatia)"],
+    goldStandard:"Carga excêntrica (protocolo Alfredson / Silbernagel) – Evidência A. Isométrico para analgesia imediata. Evitar repouso absoluto. Correção de fatores de risco (sobrecarga de treino, encurtamento de gêmeos) (BJSM 2020 – CPG JOSPT 2021).",
+    escalas:EVIDENCE["tendinopatia-aquiles"].escalas,
+  },
+  "entorse-tornozelo":{
+    label:"Entorse de Tornozelo",
+    redFlags:["Fratura maleolar (Ottawa Ankle Rules)","Instabilidade crônica (> 6 meses)","Lesão sindesmática (entorse alta)","Síndrome compartimental do pé"],
+    goldStandard:"PEACE & LOVE (proteção, elevação, evitar AINEs, carga precoce). Propriocepção + fortalecimento (Cochrane 2021 – Evidência A). Órtese funcional e treino neuromuscular previnem recorrência (CPG JOSPT 2021). Evitar imobilização prolongada.",
+    escalas:EVIDENCE["entorse-tornozelo"].escalas,
+  },
+  "sindrome-patelo femoral":{
+    label:"Síndrome da Dor Patelofemoral",
+    redFlags:["Derrame articular significativo (descartar lesão condral)","Instabilidade patelar franca (subluxação/luxação)","Dor óssea noturna (tumor)","Idade < 16 anos + dor patelar (suspeitar de Sinding-Larsen / Osgood-Schlatter)"],
+    goldStandard:"Fortalecimento proximal (glúteo médio + abdutores) + VMO. Controle de alinhamento patelar com banda neuromotora. Correção de valgo dinâmico. Evitar cirurgia antes de 6 meses de conservador (CPG JOSPT 2023 – Evidência A).",
+    escalas:EVIDENCE["sindrome-patelo femoral"].escalas,
+  },
+  "tendinopatia-patelar":{
+    label:"Tendinopatia Patelar",
+    redFlags:["Dor súbita + incapacidade de estender joelho (ruptura)","Derrame articular + sinal da tecla (descartar fratura de patela)","Febre + calor local (infecção)"],
+    goldStandard:"Exercício excêntrico em declive (protocolo Purdam). Isométrico para analgesia. Progressão para saltos pliométricos. Evitar corticoide peritendíneo (risco de ruptura) (BJSM 2021 – CPG JOSPT 2023).",
+    escalas:EVIDENCE["tendinopatia-patelar"].escalas,
+  },
+  lca:{
+    label:"Lesão do LCA",
+    redFlags:["Hemartrose aguda pós-trauma","Fratura-avulsão da espinha tibial","Síndrome compartimental aguda","Lesão combinada ligamentar + meniscal (LCA + LCM + menisco)"],
+    goldStandard:"Reabilitação pré-operatória (protocolo pré-hab) essencial antes de LCA. Programa neuromuscular pós-reconstrução reduz re-lesão em 50% (MOON Protocol 2022 – Evidência A). Critério de RTS (Return to Sport): simetria ≥ 90% em força e hop tests + ACL-RSI ≥ 56.",
+    escalas:EVIDENCE.lca.escalas,
+  },
+  "lesao-meniscal":{
+    label:"Lesão Meniscal",
+    redFlags:["Bloqueio mecânico do joelho (corpo livre)","Joelho cedendo (instabilidade associada a LCA)","Derrame de repetição + dor à hiperflexão","Suspeita de lesão de menisco em cesto (bucket-handle)"],
+    goldStandard:"Menisco degenerativo: exercício = cirurgia (ESCAPE trial NEJM 2018 – Evidência A). Meniscectomia parcial indicada se bloqueio mecânico ou falha de conservador > 3 meses. Sutura meniscal em pacientes jovens com lesão redutível.",
+    escalas:EVIDENCE["lesao-meniscal"].escalas,
+  },
+  "artrose-joelho":{
+    label:"Osteoartrite de Joelho",
+    redFlags:["Dor noturna intensa / em repouso (suspeitar de necrose avascular)","Derrame quente + febre (artrite séptica)","Deformidade progressiva (varo/valgo acentuado)","Perda rápida de espaço articular (< 6 meses)"],
+    goldStandard:"Exercício aeróbio + fortalecimento é padrão-ouro (OARSI 2023 – Evidência A). Controle de peso (IMC < 27) reduz progressão. Evitar artroscopia em OA isolado (NEJM 2018). Optar por prótese quando falha do conservador.",
+    escalas:EVIDENCE["artrose-joelho"].escalas,
+  },
+  "tendinopatia-gluteo":{
+    label:"Tendinopatia de Glúteo / Bursite Trocantérica",
+    redFlags:["Dor intensa noturna que acorda paciente","Claudicação importante","Atrofia glútea significativa","Queda recente (suspeitar de fratura de fêmur proximal)"],
+    goldStandard:"Exercício excêntrico de glúteo médio + glúteo máximo. Isométrico lateral em decúbito. Evitar repouso e corticoide local em excesso. Reabilitação progressiva (CPG JOSPT 2022 – Evidência A).",
+    escalas:EVIDENCE["tendinopatia-gluteo"].escalas,
+  },
+  "impacto-femoroacetabular":{
+    label:"Impacto Femoroacetabular",
+    redFlags:["Dor súbita + impotência funcional (suspeitar de lesão labral aguda)","Atrofia glútea rápida","Sintomas bilaterais + rigidez matinal (espondiloartropatia)"],
+    goldStandard:"Fortalecimento de glúteo + core + controle rotacional. Evitar cirurgia antes de 6 meses de reabilitação. Artroscopia de quadril para lesão labral refratária (CPG JOSPT 2022 – Evidência B).",
+    escalas:EVIDENCE["impacto-femoroacetabular"].escalas,
+  },
+  coxartrose:{
+    label:"Artrose de Quadril",
+    redFlags:["Perda rápida de espaço articular","Dor à noite / em repouso","Claudicação progressiva","Desabamento da cabeça femoral (necrose avascular)"],
+    goldStandard:"Fortalecimento de abdutores + extensores de quadril. Hidroterapia e ciclismo de baixa resistência. Controle de peso. Prótese total de quadril quando falha do conservador (OARSI 2023 – Evidência A).",
+    escalas:EVIDENCE.coxartrose.escalas,
+  },
+  "hernia-disco-lombar":{
+    label:"Hérnia de Disco Lombar",
+    redFlags:["Déficit neurológico progressivo / paresia","Síndrome da cauda equina (bexiga/reto)","Perda de controle esfincteriano","Anestesia em sela","Piora progressiva apesar de tratamento"],
+    goldStandard:"Fortalecimento de core + estabilização segmentar. Terapia manual + PNE. Indicar cirurgia (microdiscectomia) se déficit neurológico progressivo ou falha do conservador > 6 semanas (Cochrane 2022 – Evidência A).",
+    escalas:EVIDENCE["hernia-disco-lombar"].escalas,
+  },
+  "estenose-lombar":{
+    label:"Estenose do Canal Lombar",
+    redFlags:["Claudicação neurogênica progressiva","Síndrome da cauda equina","Perda de força / atrofia de membros inferiores","Incontinência urinária / fecal"],
+    goldStandard:"Fortalecimento de extensores de tronco + flexão lombar + bicicleta. PNE + terapia manual. Opções cirúrgicas (laminectomia) se falha de 6 meses de conservador ou déficit progressivo (CPG NICE 2023 – Evidência A).",
+    escalas:EVIDENCE["estenose-lombar"].escalas,
+  },
+  espondilolistese:{
+    label:"Espondilolistese",
+    redFlags:["Déficit neurológico progressivo","Instabilidade segmentar (deslizamento > 50%)","Dor que piora com extensão lombar","Sinais de radiculopatia progressiva"],
+    goldStandard:"Exercício de estabilização segmentar + controle motor. Evitar extensão lombar ativa. Cirurgia se instabilidade progressiva ou déficit neurológico (Spine J 2021 – Evidência A).",
+    escalas:EVIDENCE.espondilolistese.escalas,
+  },
+  "hernia-disco-cervical":{
+    label:"Hérnia de Disco Cervical",
+    redFlags:["Mielopatia cervical (Babinski +, hiperreflexia, clônus)","Déficit motor progressivo","Síndrome de Horner","Paresia do nervo frênico (elevação do diafragma)"],
+    goldStandard:"Fortalecimento de flexores profundos do pescoço + alongamento de escalenos. Tração cervical intermitente. ULTT neurogliding. Cirurgia (artrodese/discectomia) se déficit progressivo ou falha de 6-8 semanas (CPG JOSPT 2023 – Evidência B).",
+    escalas:EVIDENCE["hernia-disco-cervical"].escalas,
+  },
+  "radiculopatia-cervical":{
+    label:"Radiculopatia Cervical",
+    redFlags:["Mielopatia associada","Perda de força progressiva","Atrofia muscular rápida","Dor refratária a tratamento"],
+    goldStandard:"ULTT + neurogliding (Evidência A). Técnicas de mobilização neural. Exercício de controle motor profundo. Tração cervical de baixa carga. Cirurgia para compressão refratária (CPG JOSPT 2023).",
+    escalas:EVIDENCE["radiculopatia-cervical"].escalas,
+  },
+  "impacto-ombro":{
+    label:"Síndrome do Impacto do Ombro",
+    redFlags:["Ruptura completa do manguito em paciente < 40 anos","Perda ativa e passiva de movimento (capsulite)","Síndrome de Pancoast (dor + Horner)","Tumor de úmero proximal"],
+    goldStandard:"Fortalecimento de manguito + escapular (CSAW trial, Lancet 2018 – Evidência A). Exercício = cirurgia. Acromioplastia não é superior ao exercício. Corticoterapia intra-articular de curto prazo (≤ 3 injeções).",
+    escalas:EVIDENCE["impacto-ombro"].escalas,
+  },
+  "manguito-rotador":{
+    label:"Lesão do Manguito Rotador",
+    redFlags:["Ruptura traumática aguda em jovem","Fraqueza significativa (MRC ≤ 3)","Pseudoparalisia do ombro (incapacidade de elevar)","Atrofia de fossa supraespinhal"],
+    goldStandard:"Ruptura parcial: reforço concêntrico → excêntrico → retorno ao esporte. Ruptura total em < 65 anos: considerar reparo cirúrgico. Pós-operatório: protocolo progressivo (CPG JOSPT 2022 – Evidência A).",
+    escalas:EVIDENCE["manguito-rotador"].escalas,
+  },
+  "capsulite-adesiva":{
+    label:"Capsulite Adesiva (Ombro Congelado)",
+    redFlags:["Sinais de tumor (dor noturna, perda de peso)","Luxação glenoumeral recente","Diabetes mal controlado (fator de mau prognóstico)","Imobilização prolongada"],
+    goldStandard:"Mobilização passiva progressiva + corticoide intra-articular no estágio inicial (CPG JOSPT 2022 – Evidência A). Hidrodilatação como adjuvante. Manipulação sob anestesia em casos refratários. Reabilitação ≥ 6 meses.",
+    escalas:EVIDENCE["capsulite-adesiva"].escalas,
+  },
+  "instabilidade-ombro":{
+    label:"Instabilidade Anterior do Ombro",
+    redFlags:["Luxação traumática em paciente < 25 anos (alta recidiva)","Lesão de Bankart + Hill-Sachs engaging","Luxação irredutível","Lesão neurovascular (nervo axilar)"],
+    goldStandard:"Reabilitação de controle escapular + RI e RE excêntrica. Teste de apreensão/relocação. Se falha de 6 meses: cirurgia (Bankart) (CPG JOSPT 2022 – Evidência A).",
+    escalas:EVIDENCE["instabilidade-ombro"].escalas,
+  },
+  "epicondilite-lateral":{
+    label:"Epicondilite Lateral (Cotovelo de Tenista)",
+    redFlags:["Perda de extensão ativa do cotovelo","Tumor / fratura de cabeça de rádio","Artrose úmero-ulnar avançada","Síndrome do túnel radial (compressão nervosa)"],
+    goldStandard:"Isométrico de extensores de punho (0° extensão) → excêntrico. Corticoide: evitar (recidiva > 72%). Ondas de choque se refratário (BJSM 2021 – MINT trial Cochrane 2019 – Evidência A).",
+    escalas:EVIDENCE["epicondilite-lateral"].escalas,
+  },
+  "epicondilite-medial":{
+    label:"Epicondilite Medial (Cotovelo de Golfista)",
+    redFlags:["Ulnar neurite associada (parestesia 4º-5º dedos)","Instabilidade em valgo / LCU","Fratura da epitróclea em jovens atletas"],
+    goldStandard:"Isométrico de flexores de punho + pronadores. Fortalecimento excêntrico progressivo. Evitar sobrecarga em valgo. Cirurgia de liberação se refratário (BJSM 2021 – Evidência B).",
+    escalas:EVIDENCE["epicondilite-medial"].escalas,
+  },
+  "tunel-carpo":{
+    label:"Síndrome do Túnel do Carpo",
+    redFlags:["Atrofia tenar progressiva","Perda de sensibilidade permanente","Sinal de Tinel / Phalen negativos (repensar diagnóstico)","Sintomas proximais (sugerem radiculopatia cervical)"],
+    goldStandard:"Órtese neutra noturna + exercícios de deslizamento tendíneo. Eletromiografia após 6 semanas se falha. Corticoterapia local como adjuvante de curto prazo. Liberação cirúrgica se atrofia ou falha de conservador (CPG JOSPT 2022 – Evidência A).",
+    escalas:EVIDENCE["tunel-carpo"].escalas,
+  },
+  "de-quervain":{
+    label:"Tenossinovite de De Quervain",
+    redFlags:["Teste de Finkelstein negativo (repensar diagnóstico)","Sintomas bilaterais + artrite (espondiloartropatia)","Tumor palpável na tabaqueira anatômica"],
+    goldStandard:"Órtese de polegar + repouso relativo. Exercício de deslizamento tendíneo. Corticoide local como adjuvante. Cirurgia de liberação se refratário > 6 meses (CPG JOSPT 2022 – Evidência B).",
+    escalas:EVIDENCE["de-quervain"].escalas,
+  },
+  "osteoartrite-mao":{
+    label:"Osteoartrite de Mão / Rizartrose",
+    redFlags:["Nódulos de Heberden/Bouchard agudamente inflamados","Derrame articular + rubor (descartar artrite microcristalina)","Deformidade progressiva em dorso de camelo (CMC)"],
+    goldStandard:"Órtese CMC + exercícios de fortalecimento de oposição e pinça. Termoterapia (calor). Evitar sobrecarga de pinça. Cirurgia (artroplastia/artrodese) se refratário (OARSI 2023 – Evidência B).",
+    escalas:EVIDENCE["osteoartrite-mao"].escalas,
+  },
+  dtm:{
+    label:"Disfunção Temporomandibular (DTM)",
+    redFlags:["Cefaleia matinal + desgaste dentário severo (bruxismo)","Limitação severa de abertura < 20mm","Sinais neurológicos (nevralgia do trigêmeo)","Luxação recidivante de ATM"],
+    goldStandard:"Placa oclusal / goteira noturna para bruxismo. Mobilização ativa-assistida de ATM. Exercícios posturais (cervical + escapular). Terapia manual intraoral se dor muscular (CPG JOSPT 2022 – Evidência A).",
+    escalas:EVIDENCE.dtm.escalas,
+  },
+  escoliose:{
+    label:"Escoliose Idiopática",
+    redFlags:["Progressão do ângulo de Cobb > 5°/ano","Dor noturna + febre (tumor medular)","Sinais neurológicos (hiperreflexia, Babinski)","Curva > 50° (disfunção respiratória)"],
+    goldStandard:"Cobb < 25° em adolescente: exercícios específicos (SEAS, Schroth) (SOSORT 2022 – Evidência A). 25-45°: órtese TLSO. > 50° em adulto: artrodese vertebral. Acompanhamento semestral na fase de crescimento.",
+    escalas:EVIDENCE.escoliose.escalas,
+  },
+  hipercifose:{
+    label:"Hipercifose Torácica",
+    redFlags:["Cifose rígida / angular (suspeitar de fratura ou Scheuermann)","Dor noturna + febre (tuberculose/osteomielite de coluna)","Sinais neurológicos + hipercifose progressiva","Perda de altura vertebral (fratura osteoporótica)"],
+    goldStandard:"Extensão torácica ativa + fortalecimento de extensores de tronco. Mobilização articular de coluna. Exercício postural global. Controle de osteoporose em idosos. Órtese para Scheuermann em adolescentes (CPG JOSPT 2022 – Evidência B).",
+    escalas:EVIDENCE.hipercifose.escalas,
+  },
+  canelite:{
+    label:"Canelite (Síndrome do Estresse Tibial)",
+    redFlags:["Dor pontual com percussão (fratura por estresse)","Edema localizado + calor (fratura)","Dor bilateral + fatores de risco (osteoporose)"],
+    goldStandard:"Controle de carga de treino (reduzir volume/intensidade). Exercício excêntrico de tibial anterior + sóleo. Correção de pisada / calçado adequado. Retorno progressivo (CPG JOSPT 2022 – Evidência B).",
+    escalas:EVIDENCE.canelite.escalas,
+  },
+  "estiramento-isquiotibiais":{
+    label:"Estiramento de Isquiotibiais",
+    redFlags:["Hematoma importante / gap muscular palpável (rotura grau III)","Dor à palpação de túber isquiático (suspeitar de avulsão)","Sintomas neurológicos (irradiação posterior)","Recidiva frequente (fragilidade cicatricial)"],
+    goldStandard:"Fase aguda: protocolo PEACE & LOVE. Exercício excêntrico nórdico (PREVINE recidiva em 50% – BJSM 2021 – Evidência A). Fortalecimento concêntrico → excêntrico → pliométrico. Critérios de retorno ao esporte: sem dor + força ≥ 90% bilateral.",
+    escalas:EVIDENCE["estiramento-isquiotibiais"].escalas,
+  },
+  "distensao-gemeos":{
+    label:"Distensão de Gêmeos (Panturrilha)",
+    redFlags:["Hematoma difuso + incapacidade de apoio (rotura de Aquiles)","Gap palpável no ventre muscular (rotura grau III)","Síndrome compartimental (dor desproporcional + edema)"],
+    goldStandard:"Fase aguda: repouso relativo, elevação. Após 72h: alongamento leve + fortalecimento isométrico. Progressão para carga completa (BJSM 2021 – Evidência B).",
+    escalas:EVIDENCE["distensao-gemeos"].escalas,
+  },
+  pubalgia:{
+    label:"Pubalgia / Osteíte Púbica",
+    redFlags:["Hérnia inguinal encarcerada","Testículo doloroso (torção testicular)","Sintomas urinários / prostatite","Dor unilateral + irradiação (radiculopatia lombar)"],
+    goldStandard:"Fortalecimento de adutores + core + estabilização pélvica. Alongamento de isquiotibiais. Retorno progressivo ao esporte. Casos refratários: considerar cirurgia (CPG JOSPT 2022 – Evidência B).",
+    escalas:EVIDENCE.pubalgia.escalas,
+  },
+  "trato-iliotibial":{
+    label:"Síndrome do Trato Iliotibial",
+    redFlags:["Dor lateral persistente > 6 meses com falha de tratamento","Bloqueio / estalo lateral doloroso (fricção TFL)","Deformidade em varo (suspeitar de OA avançada)"],
+    goldStandard:"Fortalecimento de abdutores de quadril (glúteo médio). Alongamento da banda iliotibial (em pé). Liberação miofascial (rolo de espuma). Correção de técnica de corrida (CPG JOSPT 2022 – Evidência B).",
+    escalas:EVIDENCE["trato-iliotibial"].escalas,
+  },
+  condromalacia:{
+    label:"Condromalácia Patelar",
+    redFlags:["Derrame articular significativo (lesão condral extensa)","Clique patelar doloroso + instabilidade","Perda de cartilagem em jovens (osteocondrite dissecante)"],
+    goldStandard:"Fortalecimento proximal (glúteo) + VMO + vasto medial. Controle de alinhamento patelar. Evitar agachamento profundo nas fases iniciais. Carga progressiva em cadeia cinética fechada (CPG JOSPT 2023 – Evidência A).",
+    escalas:EVIDENCE.condromalacia.escalas,
+  },
+  "bursite-olecraniana":{
+    label:"Bursite Olecraniana",
+    redFlags:["Calor + rubor + febre (artrite séptica / bursite infecciosa)","Derrame articular persistente > 3 semanas","Ferimento / abrasão local recente (suspeitar de infecção)"],
+    goldStandard:"Evitar compressão local (não apoiar cotovelo). Crioterapia + AINE tópico no estágio inflamatório. Punção aspirativa se bursite séptica (suspeita). Cirurgia (bursectomia) raramente indicada (Cochrane 2021 – Evidência B).",
+    escalas:EVIDENCE["bursite-olecraniana"].escalas,
+  },
+  "dedo-gatilho":{
+    label:"Dedos em Gatilho (Tenossinovite Estenosante)",
+    redFlags:["Sintomas bilaterais + múltiplos dedos (DM / artrite)","Liberação forçada dolorosa com bloqueio (sugere encarceramento)","Perda de movimento ativo (ruptura tendínea)"],
+    goldStandard:"Órtese de extensão de dedo noturna. Exercício de deslizamento tendíneo (DIP + PIP). Corticoide local (efetivo em 70%). Liberação cirúrgica percutânea se refratário (CPG JOSPT 2022 – Evidência A).",
+    escalas:EVIDENCE["dedo-gatilho"].escalas,
+  },
+  "desfiladeiro-toracico":{
+    label:"Síndrome do Desfiladeiro Torácico",
+    redFlags:["Trombose venosa (edema + cianose de MS)","Pulso radial ausente à manobra (vascular)","Sintomas neurológicos progressivos (atrofia tenar, hipotenar)","Síndrome de Horner (tumor de Pancoast)"],
+    goldStandard:"Exercício de estabilização escapular + abertura de desfiladeiro (Elevação de 1º arcos costais). Alongamento de peitoral menor. Correção postural. Se vascular ou neurológico progressivo: cirurgia (CPG JOSPT 2022 – Evidência B).",
+    escalas:EVIDENCE["desfiladeiro-toracico"].escalas,
+  },
+  fibromialgia:{
+    label:"Fibromialgia (Manifestações Ortopédicas)",
+    redFlags:["Dor generalizada > 3 meses com WPI ≥ 7 + SSS ≥ 5 (critérios ACR)","Sintomas de depressão grave / ideação suicida","Fadiga extrema + sono não reparador"],
+    goldStandard:"PNE + exercício aeróbio gradual (caminhada, hidroterapia) – Evidência A. Terapia cognitivo-comportamental + sono. Abordagem multidisciplinar com reumatologia. Evitar opioides e AINEs como tratamento principal (EULAR 2023 – Cochrane 2022).",
+    escalas:EVIDENCE.fibromialgia.escalas,
+  },
+  "esporao-calcaneo":{
+    label:"Esporão de Calcâneo",
+    redFlags:["Dor matinal intensa + edema difuso (suspeitar de fasciíte grave)","Parestesia em planta do pé (suspeitar de neuroma)","Dor óssea à palpação (fratura por estresse)"],
+    goldStandard:"Alongamento de Windlass (dedos em dorsiflexão) + excêntrico de Aquiles. Palmilha com orifício de descarga. ONDAS DE CHOQUE se refratário (CPG JOSPT 2021 – Evidência A). Evitar cirurgia (liberação da fáscia) pela alta taxa de complicações.",
+    escalas:EVIDENCE["esporao-calcaneo"].escalas,
+  },
+  "artrite-reumatoide":{
+    label:"Artrite Reumatóide (Manejo Ortopédico)",
+    redFlags:["Deformidade em dorso de camelo / desvio ulnar dos dedos","Luxação atlanto-axial (instabilidade C1-C2)","Nódulos reumatoides compressivos","Vasculite / ulceração de extremidades"],
+    goldStandard:"Abordagem multidisciplinar com reumatologista para DMARDs. Exercício aeróbio de baixo impacto + fortalecimento. Hidroterapia. Órteses de repouso/manutenção. Evitar mobilização agressiva em articulações instáveis (EULAR 2023 – Evidência A).",
+    escalas:EVIDENCE["artrite-reumatoide"].escalas,
+  },
+  "pos-artroplastia-joelho":{
+    label:"Pós-Operatório de Artroplastia de Joelho",
+    redFlags:["Sinais de infecção (calor, rubor, febre, drenagem)","Trombose venosa profunda (TVP – edema unilateral + dor na panturrilha)","Instabilidade / luxação do implante","Ganho de flexão < 60° em 2 semanas"],
+    goldStandard:"Mobilização precoce (P.E.A.C.E.). Fortalecimento de quadríceps em cadeia aberta. Extensão completa passiva (prono). CPM como adjuvante. Progressão para descarga de peso conforme orientação médica. Órtese de extensão se déficit (OARSI 2023 – Evidência A).",
+    escalas:EVIDENCE["pos-artroplastia-joelho"].escalas,
+  },
+  "pos-artroplastia-quadril":{
+    label:"Pós-Operatório de Artroplastia de Quadril",
+    redFlags:["Luxação do implante (posição não fisiológica + dor intensa)","Sinais de infecção profunda","TVP (edema unilateral + Homans + Wells)","Diferença de MMII significativa > 2cm"],
+    goldStandard:"Precaução de luxação (via posterior: evitar flexão > 90° + adução + RI). Fortalecimento de abdutores + extensores. Marcha com andador → muleta → sem suporte. Mobilização precoce (OARSI 2023 – Evidência A).",
+    escalas:EVIDENCE["pos-artroplastia-quadril"].escalas,
+  },
+  "fratura-colles":{
+    label:"Fratura de Colles (Punho) – Reabilitação",
+    redFlags:["Perda de redução / desvio radial","Síndrome compartimental do antebraço (dor desproporcional + edema)","Parestesia em território mediano (compressão aguda)","Pseudartrose / retardo de consolidação"],
+    goldStandard:"Fase de imobilização: exercícios de dedos + ombro + cotovelo. Fase pós-imobilização: deslizamento tendíneo + fortalecimento progressivo. Evitar carga axial precoce. Órtese de proteção nos primeiros 3 meses (CPG JOSPT 2022 – Evidência B).",
+    escalas:EVIDENCE["fratura-colles"].escalas,
+  },
+  "miosite-ossificante":{
+    label:"Miosite Ossificante",
+    redFlags:["Calcificação exuberante limitando ADM","Dor intensa + piora progressiva","Síndrome compartimental associada","Neoplasia óssea suspeita (osteossarcoma)"],
+    goldStandard:"Repouso relativo + crioterapia na fase aguda. Evitar alongamento forçado e massagem profunda (risco de aumentar calcificação). Mobilização suave. Casos com limitação funcional: considerar excisão cirúrgica após 6-12 meses (Cochrane 2021 – Evidência B).",
+    escalas:EVIDENCE["miosite-ossificante"].escalas,
+  },
+  "tendinopatia-biceps":{
+    label:"Tendinopatia do Bíceps Braquial",
+    redFlags:["Rotura completa (Sinal de Popeye + fraqueza de supinação)","Lesão associada do manguito rotador (70% dos casos)","Dor à palpação no sulco bicipital + Speed test +"],
+    goldStandard:"Fortalecimento de bíceps (excêntrico). Tenodese cirúrgica se rotura sintomática completa. Reabilitação deve incluir correção de impacto subacromial (CPG JOSPT 2022 – Evidência B).",
+    escalas:EVIDENCE["tendinopatia-biceps"].escalas,
+  },
+  "subluxacao-patelar":{
+    label:"Subluxação Patelar",
+    redFlags:["Luxação patelar traumática + hemartrose","Osteocondral fracture (corpo livre intra-articular)","Ângulo Q > 20° + instabilidade recorrente","Falha de tratamento conservador > 6 meses"],
+    goldStandard:"Fortalecimento de VMO e glúteo médio. Banda patelar para controle de alinhamento. Treino proprioceptivo. Cirurgia (tuberosidade tibial + liberação lateral) se instabilidade recorrente (CPG JOSPT 2023 – Evidência A).",
+    escalas:EVIDENCE["subluxacao-patelar"].escalas,
+  },
+  metatarsalgia:{
+    label:"Metatarsalgia",
+    redFlags:["Dor pontual com percussão / estresse (fratura por estresse de metatarso)","Parestesia em 2º-3º pododáctilos (neuroma de Morton)","Deformidade de dedos em garra / martelo (pé cavo)","Subluxação metatarsofalângica"],
+    goldStandard:"Palmilha com metatarsal pad (barra retrocapital). Fortalecimento de intrínsecos do pé + flexores de dedos. Calçado com bico largo e amortecedor. Correção de descarga de peso (CPG JOSPT 2021 – Evidência B).",
+    escalas:EVIDENCE.metatarsalgia.escalas,
+  },
+  "neuroma-morton":{
+    label:"Neuroma de Morton",
+    redFlags:["Teste de Mulder negativo (repensar diagnóstico)","Dor lombar irradiada (radiculopatia)","Sinais de compressão medular","Massa palpável > 1cm (suspeitar de tumor de partes moles)"],
+    goldStandard:"Calçado adequado (bico largo + palmilha com meteatoarso pad). Fortalecimento de intrínsecos do pé. Mobilização de metatarsofalângicas. Terapia manual neural. Infiltração com corticoide/álcool como adjuvante. Cirurgia (neurectomia) se refratário (CPG JOSPT 2021 – Evidência B).",
+    escalas:EVIDENCE["neuroma-morton"].escalas,
+  },
 };
 
 const detectKB = txt => {
-  const t = txt.toLowerCase();
-  if (t.match(/lomb|costas/)) return "lombalgia";
-  if (t.match(/cerv|pescoço/)) return "cervicalgia";
-  if (t.match(/joelh|gon/)) return "gonalgia";
-  if (t.match(/ombr/)) return "ombralgia";
-  if (t.match(/tornoz|pé |pe |fasci|aquile/)) return "tornozelo";
-  if (t.match(/cotov|epicond|tênisist|golfist/)) return "cotovelo";
+  const t = txt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const conds = [
+    // ── Sinônimos clínicos populares (antes dos padrões principais) ──────
+    ["lombalgia",            /ciatica|ciatalgia|dor\s*ciatica|isquialgia/],
+    ["lombalgia",            /lomb[aeio]|costa|dor\s*lombar|lombalgia/],
+    ["hernia-disco-lombar",  /hernia\s*(de\s*)?disco(?!.*cerv)/],
+    ["cervicalgia",          /cerv|pescoco|cervicalgia/],
+    ["gonalgia",             /joelho\s*(inchado|edema|entorse)/],
+    ["ombralgia",            /bursite(?!.*olecran)/],
+    ["fibromialgia",         /cansaco\s*cronico|fadiga\s*cronica|dor\s*generalizada/],
+    ["tendinopatia-patelar", /joelho\s*(de\s*)?saltador/],
+    ["tendinopatia-biceps",  /tendao\s*(da\s*)?cabeca\s*longa/],
+    // ── Top 50 patologias ortopédicas ─────────────────────────────────
+    ["fascite-plantar",      /fascite\s*plantar|fasceite|windlass/],
+    ["tendinopatia-aquiles", /tendinopatia\s*(de\s*)?aquiles|tendao\s*aquiles|aquileu/],
+    ["entorse-tornozelo",    /entorse\s*(de\s*)?tornozelo|torcao\s*tornozelo|ltfa/],
+    ["sindrome-patelo femoral", /dor\s*patelofemoral|sindrome\s*patelofemoral|patelofemoral/],
+    ["tendinopatia-patelar", /tendinopatia\s*patelar|tendao\s*patelar/],
+    ["lca",                  /lca|lesao\s*(do\s*)?lca|ruptura\s*lca|reconstrucao\s*lca|cruzado\s*anterior/],
+    ["lesao-meniscal",       /lesao\s*meniscal|menisco|meniscectomia/],
+    ["artrose-joelho",       /artrose\s*(de\s*)?joelho|osteoartrite\s*joelho|oa\s*joelho|gonartrose/],
+    ["tendinopatia-gluteo",  /tendinopatia\s*(de\s*)?gluteo|bursite\s*trocanterica|sindrome\s*dolorosa\s*trocanter/],
+    ["impacto-femoroacetabular", /impacto\s*femoroacetabular|pincer|cam\s*lesao/],
+    ["coxartrose",           /artrose\s*(de\s*)?quadril|osteoartrite\s*quadril|coxartrose/],
+    ["lombalgia",            /lomb|costa|dor\s*lombar|lombalgia/],
+    ["hernia-disco-lombar",  /hernia\s*(de\s*)?disco\s*lombar|protrusao\s*discal\s*lombar/],
+    ["estenose-lombar",      /estenose\s*(do\s*)?canal\s*lombar|estenose\s*lombar/],
+    ["espondilolistese",     /espondilolistese|espondilolise/],
+    ["cervicalgia",          /cerv|pescoco|cervicalgia/],
+    ["hernia-disco-cervical",/hernia\s*(de\s*)?disco\s*cervical|protrusao\s*discal\s*cervical/],
+    ["radiculopatia-cervical",/radiculopatia\s*cervical|foraminal|esporao\s*cervical/],
+    ["impacto-ombro",        /sindrome\s*(do\s*)?impacto\s*(do\s*)?ombro|impacto\s*subacromial|pinzamento/],
+    ["manguito-rotador",     /lesao\s*(do\s*)?manguito\s*rotador|manguito|ruptura\s*manguito|supraespinhal/],
+    ["capsulite-adesiva",    /capsulite\s*adesiva|ombro\s*congelado|aderencia\s*articular/],
+    ["instabilidade-ombro",  /instabilidade\s*anterior\s*(do\s*)?ombro|luxacao\s*glenoumeral|bankart/],
+    ["ombralgia",            /ombr|ombralgia/],
+    ["epicondilite-lateral", /epicondilite\s*lateral|cotovelo\s*(de\s*)?tenista|epicondilalgia\s*lateral/],
+    ["epicondilite-medial",  /epicondilite\s*medial|cotovelo\s*(de\s*)?golfista|epicondilalgia\s*medial/],
+    ["cotovelo",             /cotov|olecran/],
+    ["tunel-carpo",          /sindrome\s*(do\s*)?tunel\s*(do\s*)?carpo|tunel\s*carpo|compressao\s*mediano/],
+    ["de-quervain",          /tenossinovite\s*(de\s*)?quervain|de\s*quervain/],
+    ["osteoartrite-mao",     /rizartrose|artrose\s*(de\s*)?mao|artrose\s*dodos/],
+    ["dtm",                  /dtm|disfuncao\s*temporomandibular|atm\s*dor/],
+    ["escoliose",            /escoliose\s*idiopatica|escoliose/],
+    ["hipercifose",          /hipercifose\s*toracica|hipercifose|cifose/],
+    ["canelite",             /canelite|sindrome\s*(do\s*)?estresse\s*tibial|shin\s*splint/],
+    ["estiramento-isquiotibiais", /estiramento\s*(de\s*)?isquiotibiais|isquiotibiais|distensao\s*isquio|posterior\s*coxa/],
+    ["distensao-gemeos",     /distensao\s*(de\s*)?gemeos|panturrilha|gastrocnemio\s*lesao/],
+    ["pubalgia",             /pubalgia|osteite\s*pubica|dor\s*inguinal\s*esforco/],
+    ["trato-iliotibial",     /sindrome\s*(do\s*)?trato\s*iliotibial|banda\s*iliotibial|tfl|iliotibial/],
+    ["condromalacia",        /condromalacia\s*patelar|amolecimento\s*patela/],
+    ["bursite-olecraniana",  /bursite\s*olecraniana/],
+    ["dedo-gatilho",         /dedo\s*gatilho|dedos\s*gatilho|tenossinovite\s*flexor/],
+    ["desfiladeiro-toracico",/desfiladeiro\s*toracico|sindrome\s*do\s*desfiladeiro/],
+    ["fibromialgia",         /fibromialgia/],
+    ["esporao-calcaneo",     /esporao\s*(de\s*)?calcaneo|calcaneo\s*dor/],
+    ["artrite-reumatoide",   /artrite\s*reumatoide|ar\s*joelho/],
+    ["pos-artroplastia-joelho", /artroplastia\s*(de\s*)?joelho|protese\s*(de\s*)?joelho|pos-operatorio\s*joelho/],
+    ["pos-artroplastia-quadril", /artroplastia\s*(de\s*)?quadril|protese\s*(de\s*)?quadril|pos-operatorio\s*quadril/],
+    ["fratura-colles",       /fratura\s*(de\s*)?colles|fratura\s*radio\s*distal|fratura\s*punho/],
+    ["miosite-ossificante",  /miosite\s*ossificante/],
+    ["tendinopatia-biceps",  /tendinopatia\s*(do\s*)?biceps\s*braquial|tendao\s*(da\s*)?cabeca\s*longa/],
+    ["subluxacao-patelar",   /subluxacao\s*patelar|instabilidade\s*patelar/],
+    ["metatarsalgia",        /metatarsalgia|dor\s*metatarso/],
+    ["neuroma-morton",       /neuroma\s*(de\s*)?morton|neuroma/],
+    ["tornozelo",            /tornoz|pe\s|fasci|aquile/],
+  ];
+  for (const [key, regex] of conds) {
+    if (regex.test(t)) return key;
+  }
+  // ── Músculos (agrupados por região) ──────────────────────────────────
+  const muscMap = {
+    "trapezio":"cervicalgia", "quadriceps":"gonalgia", "isquiotibiais":"gonalgia",
+    "gluteo":"lombalgia", "adutores":"coxartrose", "biceps-braquial":"ombralgia",
+    "triceps-braquial":"cotovelo", "gastrocnemio":"tornozelo", "soleo":"tornozelo",
+    "tibial-anterior":"tornozelo", "fibulares":"tornozelo", "peitoral":"ombralgia",
+    "grande-dorsal":"ombralgia", "romboides":"cervicalgia", "serratil-anterior":"ombralgia",
+    "tensor-fascia-lata":"coxartrose", "piriforme":"lombalgia", "iliopsoas":"lombalgia",
+    "reto-abdominal":"lombalgia", "obliquo":"lombalgia", "multifidos":"lombalgia",
+    "quadrado-lombar":"lombalgia", "esternocleidomastoideo":"cervicalgia",
+    "escalenos":"cervicalgia", "popliteo":"gonalgia", "quadrado-plantar":"tornozelo",
+  };
+  const muscTerms = {
+    "trapezio":/trapezio/, "quadriceps":/quadriceps/,
+    "isquiotibiais":/isquiotibiais|isquio/, "gluteo":/gluteo/,
+    "adutores":/adutores/, "biceps-braquial":/biceps\s*braquial/,
+    "triceps-braquial":/triceps\s*braquial/, "gastrocnemio":/gastrocnemio|gemeos/,
+    "soleo":/soleo/, "tibial-anterior":/tibial\s*anterior/,
+    "fibulares":/fibulares|fibular/, "peitoral":/peitoral/,
+    "grande-dorsal":/grande\s*dorsal|latissimo\s*do\s*dorso/, "romboides":/romboides/,
+    "serratil-anterior":/serratil/, "tensor-fascia-lata":/tensor\s*da\s*fascia\s*lata|tfl/,
+    "piriforme":/piriforme/, "iliopsoas":/iliopsoas/,
+    "reto-abdominal":/reto\s*abdominal|abdominal|abdomen/,
+    "obliquo":/obliquo/, "multifidos":/multifidos/,
+    "quadrado-lombar":/quadrado\s*lombar/, "esternocleidomastoideo":/esternocleidomastoideo/,
+    "escalenos":/escalenos/, "popliteo":/popliteo/,
+    "quadrado-plantar":/quadrado\s*plantar/,
+  };
+  for (const [mk, regex] of Object.entries(muscTerms)) {
+    if (regex.test(t)) return muscMap[mk];
+  }
   return "";
 };
 
@@ -250,27 +876,6 @@ function generateCIF({ evaMov, avds, localDor, gonio, tests, yellowFlags, tempoD
   return result;
 }
 
-// ── Goniometria ───────────────────────────────────────────────────────────────
-const REF = {
-  "Flexão|Coluna Cervical":"0–45","Extensão|Coluna Cervical":"0–45","Inclinação D|Coluna Cervical":"0–45","Inclinação E|Coluna Cervical":"0–45","Rotação D|Coluna Cervical":"0–60","Rotação E|Coluna Cervical":"0–60",
-  "Flexão|Coluna Lombar":"0–60","Extensão|Coluna Lombar":"0–25","Inclinação D|Coluna Lombar":"0–25","Inclinação E|Coluna Lombar":"0–25",
-  "Flexão|Ombro D":"0–180","Abdução|Ombro D":"0–180","RE|Ombro D":"0–90","RI|Ombro D":"0–70","Extensão|Ombro D":"0–60",
-  "Flexão|Ombro E":"0–180","Abdução|Ombro E":"0–180","RE|Ombro E":"0–90","RI|Ombro E":"0–70","Extensão|Ombro E":"0–60",
-  "Flexão|Cotovelo D":"0–145","Pronação|Cotovelo D":"0–80","Supinação|Cotovelo D":"0–80",
-  "Flexão|Cotovelo E":"0–145","Pronação|Cotovelo E":"0–80","Supinação|Cotovelo E":"0–80",
-  "Flexão|Quadril D":"0–120","Extensão|Quadril D":"0–30","Abdução|Quadril D":"0–45","RI|Quadril D":"0–45","RE|Quadril D":"0–45",
-  "Flexão|Quadril E":"0–120","Extensão|Quadril E":"0–30","Abdução|Quadril E":"0–45","RI|Quadril E":"0–45","RE|Quadril E":"0–45",
-  "Flexão|Joelho D":"0–135","Flexão|Joelho E":"0–135",
-  "Dorsiflexão|Tornozelo D":"0–20","Plantarflexão|Tornozelo D":"0–50","Inversão|Tornozelo D":"0–35","Eversão|Tornozelo D":"0–15",
-  "Dorsiflexão|Tornozelo E":"0–20","Plantarflexão|Tornozelo E":"0–50","Inversão|Tornozelo E":"0–35","Eversão|Tornozelo E":"0–15",
-};
-function getRef(mv, jt) { return REF[`${mv}|${jt}`] || ""; }
-function isOutOfRange(val, refStr) {
-  if (!refStr||!val) return false;
-  const m = refStr.match(/(\d+)[–-](\d+)/);
-  if (!m) return false;
-  return Number(val) > Number(m[2]);
-}
 
 // ── Logo ──────────────────────────────────────────────────────────────────────
 function LogoSVG() {
@@ -424,16 +1029,36 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
 const PROF_LABELS = { fisio:"Fisioterapeuta", to:"Terapeuta Ocupacional", educFisico:"Educador Físico", outro:"Profissional da Saúde" };
 
 // ── Patient List ──────────────────────────────────────────────────────────────
-function PatientList({ patients, onSelect, onAdd, onLogout, user }) {
+function PatientList({ patients, onSelect, onAdd, onLogout, user, assessmentHistory, onDelete }) {
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const isMobile = useMediaQuery("(max-width:767px)");
+
+  const redFlagCount = useMemo(() => {
+    const map = {};
+    const latest = {};
+    (assessmentHistory||[]).forEach(a => {
+      const pid = a.patientId;
+      const ts = a.id || 0;
+      if (!latest[pid] || ts > latest[pid].ts) {
+        latest[pid] = { ts, count: a.selectedRedFlags?.length || 0 };
+      }
+    });
+    Object.keys(latest).forEach(pid => { map[pid] = latest[pid].count; });
+    return map;
+  }, [assessmentHistory]);
 
   const handleAdd = () => {
     if (!f.nome.trim()) return;
     onAdd({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10) });
     setF({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
     setShowForm(false);
+  };
+
+  const modalOverlay = {
+    position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.6)",
+    display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000,
   };
 
   return (
@@ -494,27 +1119,73 @@ function PatientList({ patients, onSelect, onAdd, onLogout, user }) {
         )}
 
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-          {[...patients].reverse().map(p => (
-            <button key={p.id} onClick={() => onSelect(p)} style={{
-              background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px 18px", cursor:"pointer",
-              textAlign:"left", fontFamily:F, color:C.text, display:"flex", alignItems:"center", gap:14, width:"100%",
-              transition:"all 0.12s"
-            }}>
-              <div style={{ width:40, height:40, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:800, color:C.green, flexShrink:0 }}>{p.nome[0]?.toUpperCase()}</div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontWeight:700, fontSize:14, color:C.text, marginBottom:2 }}>{p.nome}</div>
-                <div style={{ fontSize:11, color:C.textMuted, display:"flex", gap:8, flexWrap:"wrap" }}>
-                  {p.sexo && <span>{p.sexo}</span>}
-                  {p.dataNasc && <span>Nasc: {p.dataNasc}</span>}
-                  {p.profissao && <span>{p.profissao}</span>}
-                  {p.convenio && <span>{p.convenio}</span>}
-                </div>
+          {[...patients].reverse().map(p => {
+            const pid = p.id || p.nome;
+            const count = redFlagCount[pid] || 0;
+            return (
+              <div key={p.id} style={{ display:"flex", gap:8, alignItems:"stretch" }}>
+                <button onClick={() => onSelect(p)} style={{
+                  flex:1, background:C.card, border:`1px solid ${count ? "var(--red)" : C.border}`, borderRadius:12, padding:"16px 18px", cursor:"pointer",
+                  textAlign:"left", fontFamily:F, color:C.text, display:"flex", alignItems:"center", gap:14, width:"100%",
+                  transition:"all 0.12s", borderLeft: count ? `4px solid var(--red)` : `1px solid ${C.border}`
+                }}>
+                  <div style={{ width:40, height:40, background: count ? "var(--redBg)" : C.greenBg, border:`1px solid ${count ? "var(--red)" : C.green}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:800, color: count ? "var(--red)" : C.green, flexShrink:0, position:"relative" }}>
+                    {count ? "🚩" : p.nome[0]?.toUpperCase()}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:700, fontSize:14, color:C.text, marginBottom:2, display:"flex", alignItems:"center", gap:6 }}>
+                      {p.nome}
+                      {count > 0 && <span style={{ fontSize:11, color:"#c00", background:"#fee", borderRadius:6, padding:"2px 6px", border:"1px solid #fcc", whiteSpace:"nowrap" }}>{'🚩'.repeat(count)}</span>}
+                    </div>
+                    <div style={{ fontSize:11, color:C.textMuted, display:"flex", gap:8, flexWrap:"wrap" }}>
+                      {p.sexo && <span>{p.sexo}</span>}
+                      {p.dataNasc && <span>Nasc: {p.dataNasc}</span>}
+                      {p.profissao && <span>{p.profissao}</span>}
+                      {p.convenio && <span>{p.convenio}</span>}
+                    </div>
+                  </div>
+                  <span style={{ color:C.green, fontSize:16 }}>→</span>
+                </button>
+                <button onClick={() => setDeleteTarget(p)}
+                  style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:12, cursor:"pointer", width:48, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, color:C.textDim, fontFamily:F, flexShrink:0, transition:"all 0.12s" }}
+                  title="Excluir paciente">🗑</button>
               </div>
-              <span style={{ color:C.green, fontSize:16 }}>→</span>
-            </button>
-          ))}
+            );
+          })}
         </div>
       </div>
+
+      {/* Modal de exclusão */}
+      {deleteTarget && (
+        <div style={modalOverlay} onClick={() => setDeleteTarget(null)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background:"var(--surface)", border:"1px solid var(--red)", borderRadius:16, padding:"24px 28px",
+            maxWidth:420, width:"90%", textAlign:"center", fontFamily:F,
+          }}>
+            <div style={{ fontSize:40, marginBottom:12 }}>⚠️</div>
+            <div style={{ fontSize:16, fontWeight:800, color:"var(--red)", marginBottom:8 }}>Excluir paciente</div>
+            <div style={{ fontSize:13, color:"var(--textSub)", marginBottom:4, lineHeight:1.6 }}>
+              Tem certeza que deseja excluir permanentemente o paciente?
+            </div>
+            <div style={{ fontSize:15, fontWeight:700, color:"var(--text)", marginBottom:16, padding:"8px 12px", background:"var(--card)", borderRadius:8, border:"1px solid var(--border)" }}>
+              {deleteTarget.nome}
+            </div>
+            <div style={{ fontSize:11, color:"var(--textDim)", marginBottom:18, lineHeight:1.5 }}>
+              Esta ação removerá todos os dados associados: avaliações, evoluções e relatórios. Esta operação <strong style={{color:"var(--red)"}}>não pode ser desfeita</strong>.
+            </div>
+            <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+              <button onClick={() => setDeleteTarget(null)}
+                style={{ background:"transparent", border:"1px solid var(--border)", borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:700, color:"var(--textSub)", cursor:"pointer", fontFamily:F }}>
+                Cancelar
+              </button>
+              <button onClick={() => { onDelete(deleteTarget); setDeleteTarget(null); }}
+                style={{ background:"var(--red)", border:"none", borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:F }}>
+                Sim, desejo excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -555,6 +1226,13 @@ export default function Sasyra() {
 
   const addPatient = (p) => setPatients(ps => [...ps, p]);
 
+  const deletePatient = (p) => {
+    const pid = p.id || p.nome;
+    setPatients(ps => ps.filter(x => (x.id || x.nome) !== pid));
+    setAssessmentHistory(prev => prev.filter(a => a.patientId !== pid));
+    setLogs(l => l.filter(x => x.patientId !== pid));
+  };
+
   const handleLogout = () => { setUser(null); setPatientView(true); setPatients([]); setAssessmentHistory([]); };
 
   // Anamnese
@@ -570,6 +1248,7 @@ export default function Sasyra() {
   const [antec, setAntec] = useState([]);
   const [meds, setMeds] = useState("");
   const [yellowFlagsState, setYellowFlagsState] = useState([]);
+  const [selectedRedFlags, setSelectedRedFlags] = useState([]);
 
   // Funcional
   const [evaMov, setEvaMov] = useState(null);
@@ -606,8 +1285,9 @@ export default function Sasyra() {
 
   // Evolução
   const [logs, setLogs] = useState(() => { try { const d = localStorage.getItem("sasyra_logs"); return d ? JSON.parse(d) : []; } catch { return []; } });
-  const [df, setDf] = useState({ data:new Date().toISOString().slice(0,10), eva:5, procedimentos:[], resposta:"", evolucao:"", metas:"", escalas:"", pa:"" });
+  const [df, setDf] = useState({ data:new Date().toISOString().slice(0,10), eva:5, procedimentos:[], resposta:"", evolucao:"", metas:"", escalas:"", escalaData:null, pa:"", adms:[], mrcs:[] });
   const [expandedCats, setExpandedCats] = useState([]);
+  const [scaleModal, setScaleModal] = useState({ open:false, scale:null });
 
   // ── localStorage ─────────────────────────────────────────────────────────
   useEffect(() => { const t = setTimeout(() => { try { localStorage.setItem("sasyra_patients", JSON.stringify(patients)); } catch { /* storage full or unavailable */ } }, 500); return () => clearTimeout(t); }, [patients]);
@@ -629,19 +1309,31 @@ export default function Sasyra() {
   // ── Assessment History ─────────────────────────────────────────────────────
   const saveAssessment = () => {
     if (!pt.id && !pt.nome) return;
-    setAssessmentHistory(prev => [...prev, {
-      id:Date.now(), date:new Date().toISOString().slice(0,10), patientId:pt.id||pt.nome,
-      queixa, queixaKey, localDor, caraterDor, tempoDor, melhora, piora, hda,
-      comorbid, antec, meds, yellowFlagsState, evaMov, evaRep, avds, objTrat, nivelAti,
-      postura, marcha, edema, palpacao, sensib, reflexos, forca, gonio, tests, obs, regiao,
-    }]);
+    setAssessmentHistory(prev => {
+      const pid = pt.id || pt.nome;
+      // Encontra o índice da última avaliação existente deste paciente
+      const idx = [...prev].reverse().findIndex(a => a.patientId === pid);
+      const entry = {
+        id:Date.now(), date:new Date().toISOString().slice(0,10), patientId:pid,
+        queixa, queixaKey, localDor, caraterDor, tempoDor, melhora, piora, hda,
+        comorbid, antec, meds, yellowFlagsState, selectedRedFlags, evaMov, evaRep, avds, objTrat, nivelAti,
+        postura, marcha, edema, palpacao, sensib, reflexos, forca, gonio, tests, obs, regiao,
+      };
+      if (idx !== -1) {
+        const realIdx = prev.length - 1 - idx;
+        const next = [...prev];
+        next[realIdx] = entry;
+        return next;
+      }
+      return [...prev, entry];
+    });
   };
   const loadAssessment = (a) => {
     setQueixa(a.queixa||""); setQueixaKey(a.queixaKey||"");
     setLocalDor(a.localDor||[]); setCaraterDor(a.caraterDor||[]);
     setTempoDor(a.tempoDor||""); setMelhora(a.melhora||[]); setPiora(a.piora||[]);
     setHda(a.hda||""); setComorbid(a.comorbid||[]); setAntec(a.antec||[]);
-    setMeds(a.meds||""); setYellowFlagsState(a.yellowFlagsState||[]);
+    setMeds(a.meds||""); setYellowFlagsState(a.yellowFlagsState||[]); setSelectedRedFlags(a.selectedRedFlags||[]);
     setEvaMov(a.evaMov??null); setEvaRep(a.evaRep??null);
     setAvds(a.avds||[]); setObjTrat(a.objTrat||[]); setNivelAti(a.nivelAti||"");
     setPostura(a.postura||[]); setMarcha(a.marcha||""); setEdema(a.edema||"");
@@ -653,7 +1345,7 @@ export default function Sasyra() {
   const resetAssessment = () => {
     setQueixa(""); setQueixaKey(""); setLocalDor([]); setCaraterDor([]);
     setTempoDor(""); setMelhora([]); setPiora([]); setHda("");
-    setComorbid([]); setAntec([]); setMeds(""); setYellowFlagsState([]);
+    setComorbid([]); setAntec([]); setMeds(""); setYellowFlagsState([]); setSelectedRedFlags([]);
     setEvaMov(null); setEvaRep(null); setAvds([]); setObjTrat([]); setNivelAti("");
     setPostura([]); setMarcha(""); setEdema(""); setPalpacao(""); setSensib("");
     setReflexos("");     setForca([]);
@@ -719,7 +1411,13 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
 
   const addLog = () => {
     setLogs(l=>[{...df, id:Date.now(), patientId:pt.id||pt.nome, sessaoNum:l.filter(x=>x.patientId===(pt.id||pt.nome)).length+1},...l]);
-    setDf({ data:new Date().toISOString().slice(0,10), eva:5, procedimentos:[], resposta:"", evolucao:"", metas:"", escalas:"", pa:"" });
+    setDf({ data:new Date().toISOString().slice(0,10), eva:5, procedimentos:[], resposta:"", evolucao:"", metas:"", escalas:"", escalaData:null, pa:"", adms:[], mrcs:[] });
+  };
+
+  const handleScaleSave = (result) => {
+    const str = `${result.shortName}: ${result.pct}% — ${result.interpretation}`;
+    setDf(f => ({...f, escalas: str, escalaData: result }));
+    setScaleModal({ open:false, scale:null });
   };
 
   const isMobile = useMediaQuery("(max-width:767px)");
@@ -729,7 +1427,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (!user) return <LoginScreen onLogin={setUser} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} />;
-  if (patientView) return <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} user={user} />;
+  if (patientView) return <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} />;
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
 
@@ -786,6 +1484,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
             antec={antec} setAntec={setAntec}
             meds={meds} setMeds={setMeds}
             yellowFlagsState={yellowFlagsState} setYellowFlagsState={setYellowFlagsState}
+            selectedRedFlags={selectedRedFlags} setSelectedRedFlags={setSelectedRedFlags}
             evaMov={evaMov} setEvaMov={setEvaMov}
             evaRep={evaRep} setEvaRep={setEvaRep}
             avds={avds} setAvds={setAvds}
@@ -826,9 +1525,25 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
                 <div style={{ fontSize:12, color:C.textSub, lineHeight:1.7, marginBottom:10 }}>{kb2.goldStandard}</div>
                 <SubHeading>Escalas de desfecho recomendadas</SubHeading>
                 <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                  {kb2.escalas?.map(e=>(
-                    <span key={e} style={{ fontSize:11, color:C.amber, background:C.amberBg, border:`1px solid ${C.amber}30`, borderRadius:6, padding:"3px 10px" }}>{e}</span>
-                  ))}
+                  {kb2.escalas?.map(e=>{
+                    const findScale = (name) => {
+                      let s = SCALES[name];
+                      if (!s) s = Object.values(SCALES).find(sc => sc.aliases?.includes(name));
+                      return s;
+                    };
+                    const sc = findScale(e);
+                    return (
+                      <span key={e} onClick={() => sc && setScaleModal({open:true, scale:sc, key:e})}
+                        style={{ fontSize:11, color:sc?C.green:C.amber, background:sc?C.greenBg:C.amberBg, border:`1px solid ${sc?C.green:C.amber}50`, borderRadius:6, padding:"3px 10px", cursor:sc?"pointer":"default", transition:"all 0.15s" }}>
+                        {sc ? `📝 ${e}` : e}
+                      </span>
+                    );
+                  })}
+                  {df.escalaData?.scaleName && (
+                    <span style={{ fontSize:11, color:"var(--green)", background:"var(--greenBg)", border:"1px solid var(--green)", borderRadius:6, padding:"3px 10px", fontWeight:700 }}>
+                      {df.escalaData.shortName}: {df.escalaData.pct}% ({df.escalaData.date})
+                    </span>
+                  )}
                 </div>
                 <SubHeading>Yellow flags desta condição</SubHeading>
                 <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
@@ -859,6 +1574,16 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
             </div>
           )}
 
+          {selectedRedFlags?.length > 0 && (
+            <div style={{ background:"var(--redBg)", border:"1.5px solid var(--red)", borderRadius:10, padding:"10px 14px", marginBottom:14 }}>
+              <div style={{ fontSize:10, fontWeight:800, color:"var(--red)", letterSpacing:"0.08em", marginBottom:6, textTransform:"uppercase" }}>🚩 RED FLAGS ATIVAS NESTE PACIENTE</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+                {selectedRedFlags.map(f => (
+                  <span key={f} style={{ fontSize:10, color:"var(--red)", background:"var(--redBg)", border:"1px solid var(--red)", borderRadius:6, padding:"1px 8px", fontWeight:700 }}>{f}</span>
+                ))}
+              </div>
+            </div>
+          )}
           <Section title="Registrar Nova Sessão" icon="📅">
             <Row cols="1fr 120px 1fr" mobileCols="1fr">
               <Field l="Data"><input type="date" value={df.data} onChange={e=>setDf(f=>({...f,data:e.target.value}))} style={inp()}/></Field>
@@ -897,7 +1622,37 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
                   value={df.resposta} onChange={v=>setDf(f=>({...f,resposta:v}))} activeColor={C.green}/>
               </Field>
               <Field l="Escala aplicada nesta sessão">
-                <input value={df.escalas} onChange={e=>setDf(f=>({...f,escalas:e.target.value}))} style={inp()} placeholder="Ex: ODI=32%, KOOS=58, NDI=24%…"/>
+                {evidence?.escalas ? (
+                  <>
+                    <div style={{ display:"flex", gap:6 }}>
+                      <select value="" onChange={e => {
+                        const key = e.target.value;
+                        if (!key) return;
+                        let s = SCALES[key];
+                        if (!s) s = Object.values(SCALES).find(sc => sc.aliases?.includes(key));
+                        if (s) setScaleModal({open:true, scale:s, key});
+                      }} style={{...sel({}),flex:1,fontSize:11}}>
+                        <option value="">Selecionar escala…</option>
+                        {evidence.escalas.map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                      {df.escalas && !df.escalaData && (
+                        <button onClick={() => setDf(f => ({...f, escalas:"", escalaData:null }))} style={{background:"transparent",border:`1px solid ${C.border}`,borderRadius:8,width:36,cursor:"pointer",fontSize:16,color:C.textMuted,flexShrink:0}} title="Remover">×</button>
+                      )}
+                    </div>
+                    {df.escalaData && (
+                      <div style={{ fontSize:11, color:"var(--green)", marginTop:6, fontWeight:700, background:"var(--card)", borderRadius:6, padding:"6px 10px", border:"1px solid var(--border)" }}>
+                        📊 {df.escalaData.scaleName}: {df.escalaData.pct}% — {df.escalaData.interpretation}
+                      </div>
+                    )}
+                    {df.escalas && !df.escalaData && (
+                      <div style={{ fontSize:11, color:"var(--blue)", marginTop:4 }}>{df.escalas}</div>
+                    )}
+                  </>
+                ) : (
+                  <input value={df.escalas} onChange={e=>setDf(f=>({...f,escalas:e.target.value}))} style={inp()} placeholder="Ex: ODI=32%, KOOS=58…"/>
+                )}
               </Field>
             </Row>
             <Field l="Meta para próxima sessão">
@@ -907,6 +1662,53 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
               <AudioField value={df.evolucao} onChange={v=>setDf(f=>({...f,evolucao:typeof v==="function"?v(f.evolucao):v}))} rows={3}
                 placeholder="Paciente refere melhora de… Apresenta… Realizado… Tolerou bem…"/>
             </Field>
+
+            <div style={{ display:"flex", gap:14, marginTop:4, marginBottom:6 }}>
+              <span style={{ fontSize:10, fontWeight:700, color:C.textMuted, letterSpacing:"0.06em", textTransform:"uppercase", cursor:"pointer", userSelect:"none" }}
+                onClick={() => setDf(f => ({...f, _showAdm: !f._showAdm}))}>
+                📐 ADM {df._showAdm ? "▲" : "▼"}
+              </span>
+              <span style={{ fontSize:10, fontWeight:700, color:C.textMuted, letterSpacing:"0.06em", textTransform:"uppercase", cursor:"pointer", userSelect:"none" }}
+                onClick={() => setDf(f => ({...f, _showMrc: !f._showMrc}))}>
+                💪 MRC {df._showMrc ? "▲" : "▼"}
+              </span>
+            </div>
+
+            {df._showAdm && (
+              <div style={{ background:C.cardAlt, borderRadius:10, padding:"10px 12px", marginBottom:10 }}>
+                <div style={{ fontSize:10, fontWeight:700, color:C.textMuted, marginBottom:6 }}>Registrar ADM desta sessão</div>
+                {df.adms.map((row, i) => (
+                  <GonioRow key={row._id || i} row={row} onUpdate={(u) => setDf(f => {
+                    const next = [...f.adms]; next[i] = u; return {...f, adms:next};
+                  })} onRemove={() => setDf(f => ({...f, adms: f.adms.filter((_, j) => j !== i)}))} />
+                ))}
+                <button onClick={() => {
+                  const _id = Date.now() + Math.random();
+                  setDf(f => ({...f, adms: [...f.adms, {_id, joint:JOINTS[0], movement:Object.keys(MVMT)[0], value:""}]}));
+                }} style={{ background:"transparent", border:`1px dashed ${C.border}`, borderRadius:8, padding:"6px 12px", fontSize:11, color:C.textMuted, cursor:"pointer", width:"100%", fontFamily:F, marginTop:4 }}>
+                  + ADM
+                </button>
+              </div>
+            )}
+
+            {df._showMrc && (
+              <div style={{ background:C.cardAlt, borderRadius:10, padding:"10px 12px", marginBottom:10 }}>
+                <div style={{ fontSize:10, fontWeight:700, color:C.textMuted, marginBottom:6 }}>Registrar Força MRC desta sessão</div>
+                {df.mrcs.map((row, i) => (
+                  <MRCRow key={row._id || i} row={row} onUpdate={(u) => setDf(f => {
+                    const next = [...f.mrcs]; next[i] = u; return {...f, mrcs:next};
+                  })} onRemove={() => setDf(f => ({...f, mrcs: f.mrcs.filter((_, j) => j !== i)}))} />
+                ))}
+                <button onClick={() => {
+                  const _id = Date.now() + Math.random();
+                  const first = MUSCLES[0];
+                  setDf(f => ({...f, mrcs: [...f.mrcs, {_id, muscle:first.id || first, value:""}]}));
+                }} style={{ background:"transparent", border:`1px dashed ${C.border}`, borderRadius:8, padding:"6px 12px", fontSize:11, color:C.textMuted, cursor:"pointer", width:"100%", fontFamily:F, marginTop:4 }}>
+                  + MRC
+                </button>
+              </div>
+            )}
+
             <button onClick={addLog} style={primaryBtn()}>+ Salvar sessão</button>
           </Section>
 
@@ -931,6 +1733,139 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
             </Section>
           )}
 
+          {(() => {
+            const scaleLogs = currentLogs.filter(l => l.escalaData);
+            const scaleGroups = {};
+            scaleLogs.forEach(l => {
+              const k = l.escalaData.shortName || l.escalaData.scale;
+              if (!scaleGroups[k]) scaleGroups[k] = [];
+              scaleGroups[k].push({ sessao:l.sessaoNum, data:l.data, ...l.escalaData });
+            });
+            return Object.keys(scaleGroups).length > 0 && (
+              <>
+                {Object.entries(scaleGroups).map(([name, pts]) => {
+                  if (pts.length < 2) return null;
+                  const sorted = pts.sort((a,b) => a.sessao - b.sessao);
+                  return (
+                    <Section key={name} title={`Evolução — ${name}`} icon="📊">
+                      <div style={{ display:"flex", alignItems:"flex-end", gap:4, height:80, padding:"0 4px" }}>
+                        {sorted.map((pt,i) => {
+                          const h = (pt.pct / 100) * 72;
+                          const c = pt.pct <= 25 ? C.green : pt.pct <= 50 ? C.amber : pt.pct <= 75 ? C.red : "#7C3AED";
+                          return (
+                            <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
+                              <span style={{ fontSize:9, color:c, fontWeight:700, textAlign:"center", lineHeight:1.2 }}>{pt.pct}%</span>
+                              <div style={{ width:"100%", height:Math.max(h,4), background:c, borderRadius:"4px 4px 0 0", opacity:0.8, position:"relative", cursor:"pointer" }}
+                                title={`${pt.interpretation}`}>
+                              </div>
+                              <span style={{ fontSize:8, color:C.textDim }}>S{pt.sessao}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:C.textMuted, marginTop:12 }}>
+                        <span>{name} — S{sorted[0].sessao}: {sorted[0].pct}% ({sorted[0].interpretation})</span>
+                        <span>S{sorted[sorted.length-1].sessao}: {sorted[sorted.length-1].pct}% ({sorted[sorted.length-1].interpretation})</span>
+                      </div>
+                      {sorted.length >= 2 && (
+                        <div style={{ display:"flex", justifyContent:"center", gap:8, marginTop:8 }}>
+                          <span style={{ fontSize:10, fontWeight:700, color: (sorted[sorted.length-1].pct < sorted[0].pct) ? (sorted[sorted.length-1].pct <= 25 ? C.green : C.amber) : C.red }}>
+                            {(sorted[sorted.length-1].pct < sorted[0].pct) ? "↓ Melhora" : "↑ Piora"} 
+                            {' '}{Math.abs(sorted[sorted.length-1].pct - sorted[0].pct)} p.p.
+                          </span>
+                        </div>
+                      )}
+                    </Section>
+                  );
+                })}
+              </>
+            );
+          })()}
+
+          {(() => {
+            const admLogs = currentLogs.filter(l => l.adms?.length > 0);
+            if (admLogs.length < 2) return null;
+            const groups = {};
+            admLogs.forEach(l => {
+              (l.adms||[]).forEach(a => {
+                const k = `${a.joint} ${a.movement}`;
+                if (!groups[k]) groups[k] = [];
+                groups[k].push({ sessao:l.sessaoNum, value:Number(a.value) || 0, ref:getRef(a.movement, a.joint) });
+              });
+            });
+            return (
+              <>
+                {Object.entries(groups).map(([label, pts]) => {
+                  const sorted = pts.sort((a,b) => a.sessao - b.sessao);
+                  const refVal = sorted[0]?.ref ? Number(sorted[0].ref.split("-").pop()) : null;
+                  return (
+                    <Section key={label} title={`ADM — ${label}`} icon="📐">
+                      <div style={{ display:"flex", alignItems:"flex-end", gap:4, height:80, padding:"0 4px" }}>
+                        {sorted.map((pt,i) => {
+                          const maxVal = Math.max(refVal || pt.value, pt.value, 180);
+                          const h = (pt.value / maxVal) * 72;
+                          const pctOfRef = refVal ? Math.round((pt.value / refVal) * 100) : null;
+                          const c = pctOfRef ? (pctOfRef >= 80 ? C.green : pctOfRef >= 50 ? C.amber : C.red) : C.blue;
+                          return (
+                            <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+                              <span style={{ fontSize:9, color:c, fontWeight:700 }}>{pt.value}°</span>
+                              <div style={{ width:"100%", height:Math.max(h,4), background:c, borderRadius:"3px 3px 0 0", opacity:0.8 }} />
+                              {refVal && <span style={{ fontSize:7, color:C.textDim }}>{pctOfRef}%</span>}
+                              <span style={{ fontSize:8, color:C.textDim }}>S{pt.sessao}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{ fontSize:9, color:C.textMuted, marginTop:6 }}>
+                        Ref: {refVal ? `${sorted[0].ref}` : "—"} · {sorted[0].value}° → {sorted[sorted.length-1].value}° (Δ{sorted[sorted.length-1].value - sorted[0].value}°)
+                      </div>
+                    </Section>
+                  );
+                })}
+              </>
+            );
+          })()}
+
+          {(() => {
+            const mrcLogs = currentLogs.filter(l => l.mrcs?.length > 0);
+            if (mrcLogs.length < 2) return null;
+            const groups = {};
+            mrcLogs.forEach(l => {
+              (l.mrcs||[]).forEach(m => {
+                if (!groups[m.muscle]) groups[m.muscle] = [];
+                groups[m.muscle].push({ sessao:l.sessaoNum, value:Number(m.value) || 0 });
+              });
+            });
+            return (
+              <>
+                {Object.entries(groups).map(([muscle, pts]) => {
+                  const sorted = pts.sort((a,b) => a.sessao - b.sessao);
+                  if (sorted.length < 2) return null;
+                  return (
+                    <Section key={muscle} title={`Força — ${muscle}`} icon="💪">
+                      <div style={{ display:"flex", alignItems:"flex-end", gap:4, height:64, padding:"0 4px" }}>
+                        {sorted.map((pt,i) => {
+                          const h = (pt.value / 5) * 56;
+                          const c = pt.value >= 4 ? C.green : pt.value >= 3 ? C.amber : C.red;
+                          return (
+                            <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+                              <span style={{ fontSize:10, color:c, fontWeight:700 }}>{pt.value}/5</span>
+                              <div style={{ width:"100%", height:Math.max(h,4), background:c, borderRadius:"3px 3px 0 0", opacity:0.8 }} />
+                              <span style={{ fontSize:8, color:C.textDim }}>S{pt.sessao}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{ fontSize:9, color:C.textMuted, marginTop:6 }}>
+                        {sorted[0].value}/5 → {sorted[sorted.length-1].value}/5 (Δ{ sorted[sorted.length-1].value - sorted[0].value })
+                      </div>
+                    </Section>
+                  );
+                })}
+              </>
+            );
+          })()}
+
           {currentLogs.length > 0 && (
             <Section title={`Histórico — ${currentLogs.length} sessão(ões)`} icon="📋">
               {currentLogs.map(log=>{
@@ -953,7 +1888,21 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
                         {log.procedimentos.map(p=><span key={p} style={{ fontSize:10, color:C.textMuted, background:C.card, border:`1px solid ${C.border}`, borderRadius:6, padding:"2px 7px" }}>{p}</span>)}
                       </div>
                     )}
-                    {log.escalas && <div style={{ fontSize:11, color:C.blue, marginBottom:4 }}>📏 {log.escalas}</div>}
+                    {log.escalaData ? (
+                      <div style={{ fontSize:11, color:"var(--green)", fontWeight:700, marginBottom:4 }}>
+                        📊 {log.escalaData.scaleName}: {log.escalaData.pct}% — {log.escalaData.interpretation}
+                      </div>
+                    ) : log.escalas && <div style={{ fontSize:11, color:C.blue, marginBottom:4 }}>📏 {log.escalas}</div>}
+                    {log.adms?.length > 0 && (
+                      <div style={{ fontSize:10, color:C.textSub, marginBottom:3 }}>
+                        📐 {log.adms.map(a => `${a.joint} ${a.movement}: ${a.value}°`).join(" | ")}
+                      </div>
+                    )}
+                    {log.mrcs?.length > 0 && (
+                      <div style={{ fontSize:10, color:C.textSub, marginBottom:3 }}>
+                        💪 {log.mrcs.map(m => `${m.muscle}: ${m.value}/5`).join(" | ")}
+                      </div>
+                    )}
                     {log.evolucao && <p style={{ margin:"4px 0", fontSize:13, color:C.text, lineHeight:1.6 }}>{log.evolucao}</p>}
                     {log.metas && <p style={{ margin:"6px 0 0", fontSize:11, color:C.textMuted }}>→ Próxima: {log.metas}</p>}
                   </div>
@@ -1035,6 +1984,21 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
                       <p style={{ margin:0, fontSize:13, color:"#374151", lineHeight:1.7 }}>{hda}</p>
                     </div>
                   )}
+                </div>
+              )}
+              {selectedRedFlags?.length > 0 && (
+                <div style={{ marginBottom:18 }}>
+                  <div style={{ fontWeight:800, color:"#DC2626", fontSize:12, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8, borderBottom:"2px solid #DC2626", paddingBottom:6 }}>🚩 RED FLAGS IDENTIFICADAS</div>
+                  <div style={{ background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:8, padding:"10px 14px" }}>
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                      {selectedRedFlags.map(f => (
+                        <span key={f} style={{ fontSize:11, color:"#DC2626", background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:6, padding:"2px 10px", fontWeight:700 }}>⚠ {f}</span>
+                      ))}
+                    </div>
+                    <div style={{ fontSize:11, color:"#991B1B", marginTop:6, fontStyle:"italic" }}>
+                      Estas bandeiras vermelhas foram identificadas na avaliação e requerem atenção clínica. Investigar antes de prosseguir com o tratamento.
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -1233,7 +2197,13 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
                         <strong>Sessão {l.sessaoNum}</strong> · {l.data} · EVA {l.eva}/10{l.resposta?` · ${l.resposta}`:""}
                       </div>
                       {l.procedimentos?.length>0 && <div style={{ fontSize:11, color:"#374151", marginBottom:2 }}>Procedimentos: {l.procedimentos.join(", ")}</div>}
-                      {l.escalas && <div style={{ fontSize:11, color:"#6B46C1", marginBottom:2 }}>📏 {l.escalas}</div>}
+                      {l.escalaData ? (
+                        <div style={{ fontSize:11, color:"#6B46C1", marginBottom:2, fontWeight:700 }}>
+                          📊 {l.escalaData.scaleName}: {l.escalaData.pct}% — {l.escalaData.interpretation}
+                        </div>
+                      ) : l.escalas && <div style={{ fontSize:11, color:"#6B46C1", marginBottom:2 }}>📏 {l.escalas}</div>}
+                      {l.adms?.length > 0 && <div style={{ fontSize:10, color:"#2563EB", marginBottom:2 }}>📐 {l.adms.map(a => `${a.joint} ${a.movement}: ${a.value}°`).join(" | ")}</div>}
+                      {l.mrcs?.length > 0 && <div style={{ fontSize:10, color:"#7C3AED", marginBottom:2 }}>💪 {l.mrcs.map(m => `${m.muscle}: ${m.value}/5`).join(" | ")}</div>}
                       {l.evolucao && <div style={{ fontSize:12, color:"#374151", lineHeight:1.6 }}>{l.evolucao}</div>}
                       {l.metas && <div style={{ fontSize:11, color:"#7C8FA6", marginTop:2 }}>→ Meta: {l.metas}</div>}
                     </div>
@@ -1269,6 +2239,8 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
         )}
 
       </div>
+
+      <ScaleModal scale={scaleModal.scale} open={scaleModal.open} onClose={() => setScaleModal({open:false, scale:null})} onSave={handleScaleSave} initial={scaleModal.scale?.questions?.reduce((a,q)=>a,{})} />
     </div>
   );
 }
