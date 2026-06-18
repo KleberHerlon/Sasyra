@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useState, useRef, useEffect, useMemo } from "react";
+import YouTube from "react-youtube";
 
 export function useMediaQuery(query) {
   const [match, setMatch] = useState(() => window.matchMedia(query).matches);
@@ -259,7 +260,9 @@ export function GonioRow({ row, onUpdate, onRemove }) {
 
 export function TestCard({ test, result, onResult }) {
   const [open, setOpen] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
   const borderColor = result==="Positivo"?`${C.red}60`:result==="Negativo"?`${C.green}50`:C.border;
+  const videoId = test.video ? test.video.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/)?.[1] : null;
   return (
     <div style={{ background:C.surface, border:`1px solid ${borderColor}`, borderRadius:10, padding:"12px 14px", marginBottom:8 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
@@ -268,11 +271,16 @@ export function TestCard({ test, result, onResult }) {
           <div style={{ fontSize:12, color:C.textMuted, marginTop:2 }}>{test.desc}</div>
         </div>
         <div style={{ display:"flex", gap:6, flexShrink:0 }}>
-          {test.video && <a href={test.video} target="_blank" rel="noreferrer"
-            style={{ background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:6, padding:"4px 10px", fontSize:11, color:C.green, textDecoration:"none", fontWeight:700 }}>▶ Vídeo</a>}
+          {videoId && <button onClick={()=>setShowVideo(s=>!s)}
+            style={{ background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:6, padding:"4px 10px", fontSize:11, color:C.green, cursor:"pointer", fontWeight:700 }}>{showVideo?"▽ Fechar":"▶ Vídeo"}</button>}
           <button onClick={()=>setOpen(o=>!o)} style={{ background:"none", border:"none", color:C.textMuted, cursor:"pointer", fontSize:16, padding:"0 4px" }}>{open?"▲":"▼"}</button>
         </div>
       </div>
+      {showVideo && videoId && (
+        <div style={{ marginTop:10, aspectRatio:"16/9", maxWidth:320 }}>
+          <YouTube videoId={videoId} opts={{ height:"100%", width:"100%", playerVars:{ rel:0, modestbranding:1 } }} />
+        </div>
+      )}
       {open && (
         <div style={{ marginTop:10, background:C.card, borderRadius:8, padding:"10px 12px", fontSize:12, color:C.text, lineHeight:1.7 }}>
           <span style={{ color:C.green, fontWeight:700 }}>Como executar: </span>{test.how}
@@ -633,7 +641,9 @@ export function BodyMap({ value, onChange, sex }) {
         {(value||[]).map(id => {
           const pos = LABEL_POS[id];
           if (!pos) return null;
-          const [sx, sy] = pos[kv];
+          const xy = pos[kv];
+          if (!xy) return null;
+          const [sx, sy] = xy;
           const left = kv === "F" ? (sx / SVG_W) * 100 : ((sx - SVG_W) / SVG_W) * 100;
           const top = (sy / SVG_H) * 100;
           return (

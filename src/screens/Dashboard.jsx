@@ -157,11 +157,11 @@ const KB = {
     label:"Cervicalgia",
     tests:[
       {name:"Spurling (Foraminal Compression)",desc:"Radiculopatia cervical. Sens. ~50%, Esp. ~86%.",how:"Rotacionar + inclinar a cabeça para o lado sintomático + compressão axial suave. Positivo: irradiação para o MS ipsilateral. Alta especificidade, usar para confirmar.",video:"https://www.youtube.com/watch?v=GMzS3VbScfc"},
-      {name:"Distração Cervical",desc:"Alívio da compressão foraminal. Sens. ~44%, Esp. ~90%.",how:"Tracionar levemente a cabeça em posição neutra (aprox. 5–7 kg). Positivo: alívio da dor ou da irradiação. Complementar ao Spurling.",video:""},
+      {name:"Distração Cervical",desc:"Alívio da compressão foraminal. Sens. ~44%, Esp. ~90%.",how:"Tracionar levemente a cabeça em posição neutra (aprox. 5–7 kg). Positivo: alívio da dor ou da irradiação. Complementar ao Spurling.",video:"https://www.youtube.com/watch?v=uLdzgd5snmw"},
       {name:"Flexion-Rotation Test (FRT)",desc:"Disfunção C1-C2 / cefaleia cervicogênica. Sens. ~91%, Esp. ~90%.",how:"Paciente em DD, flexão cervical máxima + rotação passiva bilateral. Normal ≥ 44°. Diferença > 10° entre lados = hipomobilidade C1-C2.",video:"https://www.youtube.com/watch?v=RxLJHJG8KbQ"},
-      {name:"ULTT 1 – Mediano",desc:"Tensão neural do nervo mediano.",how:"Depressão escapular → abdução 90° → supinação → extensão cotovelo → extensão punho/dedos → inclinação cervical contralateral. Positivo: sintomas reproduzidos, aliviados com inclinação ipsilateral.",video:""},
-      {name:"ULTT 2a – Radial",desc:"Tensão neural do nervo radial.",how:"Depressão escapular → abdução 10° → RI ombro + pronação → flexão punho/dedos. Positivo: sintomas em território radial.",video:""},
-      {name:"Teste de Compressão Axial Cervical",desc:"Lesão discal ou foraminal.",how:"Aplicar pressão axial suave no vertex com a cabeça em posição neutra. Positivo: reprodução de dor cervical local ou irradiada.",video:""},
+      {name:"ULTT 1 – Mediano",desc:"Tensão neural do nervo mediano.",how:"Depressão escapular → abdução 90° → supinação → extensão cotovelo → extensão punho/dedos → inclinação cervical contralateral. Positivo: sintomas reproduzidos, aliviados com inclinação ipsilateral.",video:"https://www.youtube.com/watch?v=rir6x6Iiqc4"},
+      {name:"ULTT 2a – Radial",desc:"Tensão neural do nervo radial.",how:"Depressão escapular → abdução 10° → RI ombro + pronação → flexão punho/dedos. Positivo: sintomas em território radial.",video:"https://www.youtube.com/watch?v=rir6x6Iiqc4"},
+      {name:"Teste de Compressão Axial Cervical",desc:"Lesão discal ou foraminal.",how:"Aplicar pressão axial suave no vertex com a cabeça em posição neutra. Positivo: reprodução de dor cervical local ou irradiada.",video:"https://www.youtube.com/watch?v=3ZSNdv0o0yk"},
     ],
     redFlags:["Mielopatia (Babinski +, hiperreflexia, marcha atáxica)","Fratura instável / trauma de alta energia","Suspeita de dissecção de artéria vertebral (5D + 3N)","Tumor cervical / mieloma","Infecção (espondilodiscite)","Síndrome de Horner associada","Disfagia / disfonesia progressiva"],
     goldStandard:"Manipulação/mobilização C1-C2 para cefaleia cervicogênica (NNT=2, JOSPT 2023). Exercício de controle motor profundo (longo do pescoço + escalenos) para cervicalgia crônica. ULTT neurogliding para radiculopatia cervical. Combinação manual + exercício superior a cada um isolado (CPG JOSPT 2023 – Evidência A).",
@@ -172,12 +172,12 @@ const KB = {
     label:"Joelho",
     tests:[
       {name:"Lachman",desc:"Ruptura do LCA. Sens. 85%, Esp. 94% (melhor que gaveta anterior).",how:"Joelho 20–30° de flexão em DD. Mão proximal fixa o fêmur, mão distal translada tíbia anteriormente. Positivo: translação > 3 mm sem endpoint firme (graduação 1+/2+/3+).",video:"https://www.youtube.com/watch?v=CSP3QWhlBDo"},
-      {name:"Pivot Shift",desc:"LCA – Instabilidade rotacional. Esp. ~98% (confirmatório).",how:"Valgo + RI sobre o joelho estendido enquanto flexiona. Positivo: ressalto articular entre 20–40° (redução da subluxação). Mais específico que Lachman.",video:""},
+      {name:"Pivot Shift",desc:"LCA – Instabilidade rotacional. Esp. ~98% (confirmatório).",how:"Valgo + RI sobre o joelho estendido enquanto flexiona. Positivo: ressalto articular entre 20–40° (redução da subluxação). Mais específico que Lachman.",video:"https://www.youtube.com/watch?v=45uxqoSWC-s"},
       {name:"McMurray",desc:"Lesão meniscal medial e lateral.",how:"Flex/ext do joelho + RI (menisco lateral) e RE (menisco medial). Positivo: clunk palpável + dor na linha articular. Esp. ~98%; sens. ~53%.",video:"https://www.youtube.com/watch?v=PEdzdL3cniI"},
-      {name:"Thessaly 20°",desc:"Lesão meniscal – mais sensível. Sens. ~94%, Esp. ~96%.",how:"Paciente em monopé com 20° de flexão, mãos do examinador. Rotação do corpo 3x interna/externa. Positivo: dor ou desconforto na linha articular medial ou lateral.",video:""},
-      {name:"Valgus/Varus Stress",desc:"LCM (valgo) / LCL (varo).",how:"A 0° (integridade cápsula) e a 30° de flexão (LCM/LCL isolado). Abertura articular > 3 mm comparado ao contralateral = positivo. Grau I < 5 mm; Grau II 5–10 mm; Grau III > 10 mm.",video:""},
-      {name:"Clarke / Patelofemoral",desc:"Síndrome patelofemoral.",how:"Pressionar a patela superiormente/inferiormente enquanto o paciente contrai o quadríceps ativamente. Positivo: dor retropatelar. Baixa especificidade – usar em contexto clínico.",video:""},
-      {name:"Dial Test",desc:"Lesão do canto posterolateral (CPL).",how:"Decúbito ventral. RI comparativa a 30° e 90° de flexão. Diferença > 10° a 30° isolado = CPL; diferença > 10° a 30° e 90° = LCP + CPL.",video:""},
+      {name:"Thessaly 20°",desc:"Lesão meniscal – mais sensível. Sens. ~94%, Esp. ~96%.",how:"Paciente em monopé com 20° de flexão, mãos do examinador. Rotação do corpo 3x interna/externa. Positivo: dor ou desconforto na linha articular medial ou lateral.",video:"https://www.youtube.com/watch?v=ceBtpDXWErU"},
+      {name:"Valgus/Varus Stress",desc:"LCM (valgo) / LCL (varo).",how:"A 0° (integridade cápsula) e a 30° de flexão (LCM/LCL isolado). Abertura articular > 3 mm comparado ao contralateral = positivo. Grau I < 5 mm; Grau II 5–10 mm; Grau III > 10 mm.",video:"https://www.youtube.com/watch?v=GSFbttpxCuQ"},
+      {name:"Clarke / Patelofemoral",desc:"Síndrome patelofemoral.",how:"Pressionar a patela superiormente/inferiormente enquanto o paciente contrai o quadríceps ativamente. Positivo: dor retropatelar. Baixa especificidade – usar em contexto clínico.",video:"https://www.youtube.com/watch?v=zu2Vyvnp43c"},
+      {name:"Dial Test",desc:"Lesão do canto posterolateral (CPL).",how:"Decúbito ventral. RI comparativa a 30° e 90° de flexão. Diferença > 10° a 30° isolado = CPL; diferença > 10° a 30° e 90° = LCP + CPL.",video:"https://www.youtube.com/watch?v=Zyzg-5xUSNY"},
     ],
     redFlags:["Hemartrose aguda pós-trauma (suspeitar LCA/fratura)","Bloqueio mecânico do joelho (corpo livre/menisco deslocado)","Fratura de plateau tibial / fêmur distal","Luxação patelar irredutível","Suspeita de neoplasia óssea","Síndrome compartimental","Joelho séptico (dor + febre + derrame)"],
     goldStandard:"Menisco degenerativo: exercício = cirurgia (ESCAPE trial, NEJM 2018 – Evidência A). LCA: protocolo MOON neuromuscular, não operar sem reabilitação prévia. Patelofemoral: glúteo médio + VMO + controle de alinhamento (Evidência A). OA joelho: exercício aeróbio + fortalecimento (OARSI 2023). Evitar injeções repetidas de corticoide em OA (degeneração cartilagem).",
@@ -189,11 +189,11 @@ const KB = {
     tests:[
       {name:"Neer",desc:"Impacto subacromial. Sens. ~72%, Esp. ~66%.",how:"Estabilizar escápula com mão proximal, elevar passivamente em flexão com RI máxima ('encher lata'). Positivo: dor subacromial antes de 180°.",video:"https://www.youtube.com/watch?v=xFRpE6gS2V0"},
       {name:"Hawkins-Kennedy",desc:"Impacto subacromial – mais sensível. Sens. ~79%, Esp. ~59%.",how:"Flexão 90°, cotovelo 90°. Rotação interna passiva forçada. Positivo: dor subacromial. Mais sensível que Neer.",video:"https://www.youtube.com/watch?v=8jqvf9dP5f8"},
-      {name:"Empty Can / Jobe",desc:"Supraespinal. Sens. ~69%, Esp. ~66%.",how:"Abdução 90° no plano da escápula (espinha da escápula), RI máxima (polegar para baixo = 'lata vazia'). Resistência manual inferior. Positivo: fraqueza ou dor.",video:""},
-      {name:"Full Can",desc:"Supraespinal (menos doloroso que Empty Can). Esp. superior.",how:"Mesmo que Empty Can mas com RE (polegar para cima = 'lata cheia'). Melhor tolerado e mais específico para rotura.",video:""},
-      {name:"O'Brien (SLAP)",desc:"Labrum superior (SLAP). Sens. ~47%, Esp. ~55%.",how:"Flexão 90°, adução 15°, RI máxima (cotovelo estendido). Resistência axial. Repetir em supinação. Positivo: dor profunda ou clique que MELHORA na supinação.",video:""},
-      {name:"Apreensão Anterior + Relocação",desc:"Instabilidade glenoumeral anterior.",how:"Abdução 90° + RE progressiva. Positivo: apreensão (não necessariamente dor). Relocação (pressão posterior na cabeça umeral) = alívio da apreensão. Esp. ~99% para instabilidade.",video:""},
-      {name:"Gerber Lift-off",desc:"Subescapular.",how:"Mão nas costas (RI ombro). Levantar a mão das costas contra resistência. Positivo: incapacidade ou fraqueza.",video:""},
+      {name:"Empty Can / Jobe",desc:"Supraespinal. Sens. ~69%, Esp. ~66%.",how:"Abdução 90° no plano da escápula (espinha da escápula), RI máxima (polegar para baixo = 'lata vazia'). Resistência manual inferior. Positivo: fraqueza ou dor.",video:"https://www.youtube.com/watch?v=5BjDQ-jcBek"},
+      {name:"Full Can",desc:"Supraespinal (menos doloroso que Empty Can). Esp. superior.",how:"Mesmo que Empty Can mas com RE (polegar para cima = 'lata cheia'). Melhor tolerado e mais específico para rotura.",video:"https://www.youtube.com/watch?v=SGEIKmiP09s"},
+      {name:"O'Brien (SLAP)",desc:"Labrum superior (SLAP). Sens. ~47%, Esp. ~55%.",how:"Flexão 90°, adução 15°, RI máxima (cotovelo estendido). Resistência axial. Repetir em supinação. Positivo: dor profunda ou clique que MELHORA na supinação.",video:"https://www.youtube.com/watch?v=v_EL9XqTJQQ"},
+      {name:"Apreensão Anterior + Relocação",desc:"Instabilidade glenoumeral anterior.",how:"Abdução 90° + RE progressiva. Positivo: apreensão (não necessariamente dor). Relocação (pressão posterior na cabeça umeral) = alívio da apreensão. Esp. ~99% para instabilidade.",video:"https://www.youtube.com/watch?v=qKqJRrms4u8"},
+      {name:"Gerber Lift-off",desc:"Subescapular.",how:"Mão nas costas (RI ombro). Levantar a mão das costas contra resistência. Positivo: incapacidade ou fraqueza.",video:"https://www.youtube.com/watch?v=t9dSDVRbjn0"},
     ],
     redFlags:["Fratura de úmero / clavícula / escápula","Luxação glenoumeral irredutível","Ruptura completa do manguito em atleta jovem < 40 anos","Tumor de Pancoast (dor ombro + Síndrome de Horner)","Infecção glenoumeral","Paresia do nervo axilar / espinal"],
     goldStandard:"Impacto subacromial sem ruptura: fortalecimento manguito + escapular SUPERIOR à cirurgia (CSAW trial Lancet 2018 – Evidência A). Ruptura parcial: conservador inicialmente 3–6 meses. Ruptura completa sintomática em < 65 anos: discussão com ortopedia. Ombro congelado: mobilização passiva progressiva + corticoide intra-articular de curto prazo (CPG JOSPT 2022).",
@@ -203,11 +203,11 @@ const KB = {
   tornozelo:{
     label:"Tornozelo / Pé",
     tests:[
-      {name:"Anterior Drawer",desc:"LTFA (ligamento talofibular anterior) – mais lesado. Sens. ~71%, Esp. ~33%.",how:"Segurar o calcanhar, tornozelo em 10–20° de plantarflexão. Transladar o pé anteriormente com mão plana. Comparar bilateralmente. Translação > 5 mm ou > 3 mm assimétrica = positivo.",video:""},
-      {name:"Talar Tilt",desc:"Ligamento calcaneofibular (LCF). Sens. ~50%, Esp. ~88%.",how:"Inversão forçada passiva do pé com tornozelo em posição neutra. Comparar lado a lado. Assimetria > 5–10° = positivo. Alta especificidade.",video:""},
+      {name:"Anterior Drawer",desc:"LTFA (ligamento talofibular anterior) – mais lesado. Sens. ~71%, Esp. ~33%.",how:"Segurar o calcanhar, tornozelo em 10–20° de plantarflexão. Transladar o pé anteriormente com mão plana. Comparar bilateralmente. Translação > 5 mm ou > 3 mm assimétrica = positivo.",video:"https://www.youtube.com/watch?v=vAcBEYZKcto"},
+      {name:"Talar Tilt",desc:"Ligamento calcaneofibular (LCF). Sens. ~50%, Esp. ~88%.",how:"Inversão forçada passiva do pé com tornozelo em posição neutra. Comparar lado a lado. Assimetria > 5–10° = positivo. Alta especificidade.",video:"https://www.youtube.com/watch?v=UHNbm6Z3XK4"},
       {name:"Ottawa Ankle Rules",desc:"Indicação de radiografia. Sens. ~96–100%.",how:"RX indicado se: (1) dor na zona da ponta do maléolo lateral OU medial, OU (2) incapacidade de apoiar peso e dar 4 passos. Regras do pé: dor em base do 5º metatarso ou navicular.",video:"https://www.youtube.com/watch?v=rBL1r0C4a9g"},
-      {name:"Windlass Test",desc:"Fasciíte plantar. Sens. ~32%, Esp. ~100%.",how:"Dorsiflexão passiva dos dedos (especialmente hálux) com paciente em pé e apoio. Positivo: reprodução de dor na inserção da fáscia plantar no calcâneo. Alta especificidade.",video:""},
-      {name:"Thompson (Simmonds)",desc:"Ruptura do tendão de Aquiles. Sens. ~96%, Esp. ~93%.",how:"Paciente em DV com pé fora da maca ou ajoelhado. Apertar a panturrilha no terço médio. Normal: plantarflexão passiva do pé. Positivo: ausência de movimento (gap palpável).",video:""},
+      {name:"Windlass Test",desc:"Fasciíte plantar. Sens. ~32%, Esp. ~100%.",how:"Dorsiflexão passiva dos dedos (especialmente hálux) com paciente em pé e apoio. Positivo: reprodução de dor na inserção da fáscia plantar no calcâneo. Alta especificidade.",video:"https://www.youtube.com/watch?v=fg0PtnoAzSs"},
+      {name:"Thompson (Simmonds)",desc:"Ruptura do tendão de Aquiles. Sens. ~96%, Esp. ~93%.",how:"Paciente em DV com pé fora da maca ou ajoelhado. Apertar a panturrilha no terço médio. Normal: plantarflexão passiva do pé. Positivo: ausência de movimento (gap palpável).",video:"https://www.youtube.com/watch?v=z-7cJ7LpCqY"},
       {name:"CAIT – Cumberland Ankle Instability Tool",desc:"Instabilidade crônica do tornozelo (ICT). Pontuação ≤ 27 = ICT.",how:"Questionário de 9 itens que avalia sensação de instabilidade, torções e confiança em atividades. Preencher com o paciente. Score máximo = 30.",video:""},
     ],
     redFlags:["Fratura (Ottawa Rules positivo → RX imediato)","Ruptura do tendão de Aquiles (Thompson positivo)","Síndrome compartimental (dor desproporcional + parestesia)","Luxação talar ou peritalar","Fratura de stress do navicular / base 5º MT","Neoplasia óssea / osteomielite"],
@@ -220,12 +220,12 @@ const KB = {
     tests:[
       {name:"Teste de Mills",desc:"Tendinopatia lateral dos extensores (epicondilite). Sens. ~53%.",how:"Cotovelo estendido, pronação do antebraço + flexão passiva máxima de punho. Positivo: dor no epicôndilo lateral.",video:"https://www.youtube.com/watch?v=kJmQKO7YDLA"},
       {name:"Teste de Cozen",desc:"Tendinopatia lateral – alta sensibilidade. Sens. ~84%.",how:"Palpação no epicôndilo lateral + extensão ativa de punho contra resistência manual com cotovelo fixo. Positivo: dor aguda no epicôndilo lateral.",video:"https://www.youtube.com/watch?v=kJmQKO7YDLA"},
-      {name:"Teste de Golfer (Medial)",desc:"Tendinopatia medial dos flexores.",how:"Cotovelo estendido, supinação de antebraço + extensão passiva de punho. Positivo: dor no epicôndilo medial.",video:""},
-      {name:"Valgus Stress Test",desc:"Ligamento colateral ulnar (LCU). Sens. ~65%, Esp. ~60%.",how:"Cotovelo em 20–30° de flexão. Aplicar força em valgo. Positivo: dor medial ou sensação de abertura/frouxidão.",video:""},
-      {name:"Moving Valgus Stress",desc:"LCU – atletas arremessadores. Sens. ~100%, Esp. ~75%.",how:"Ombro abduzido 90°, cotovelo em flexão máxima. Valgo constante enquanto estende o cotovelo rapidamente. Positivo: dor medial entre 70–120° ('shear angle').",video:""},
-      {name:"Milking Maneuver",desc:"Instabilidade posteromedial / LCU.",how:"Paciente traciona o próprio polegar com cotovelo flexionado > 90° e ombro abduzido (simula arremesso). Positivo: instabilidade ou dor medial.",video:""},
+      {name:"Teste de Golfer (Medial)",desc:"Tendinopatia medial dos flexores.",how:"Cotovelo estendido, supinação de antebraço + extensão passiva de punho. Positivo: dor no epicôndilo medial.",video:"https://www.youtube.com/watch?v=uGabYJyKsBw"},
+      {name:"Valgus Stress Test",desc:"Ligamento colateral ulnar (LCU). Sens. ~65%, Esp. ~60%.",how:"Cotovelo em 20–30° de flexão. Aplicar força em valgo. Positivo: dor medial ou sensação de abertura/frouxidão.",video:"https://www.youtube.com/watch?v=3xF9_5fbJ8A"},
+      {name:"Moving Valgus Stress",desc:"LCU – atletas arremessadores. Sens. ~100%, Esp. ~75%.",how:"Ombro abduzido 90°, cotovelo em flexão máxima. Valgo constante enquanto estende o cotovelo rapidamente. Positivo: dor medial entre 70–120° ('shear angle').",video:"https://www.youtube.com/watch?v=JIU_kv5VoQk"},
+      {name:"Milking Maneuver",desc:"Instabilidade posteromedial / LCU.",how:"Paciente traciona o próprio polegar com cotovelo flexionado > 90° e ombro abduzido (simula arremesso). Positivo: instabilidade ou dor medial.",video:"https://www.youtube.com/watch?v=SwigwaZxBXE"},
       {name:"Lateral Pivot Shift (Cotovelo)",desc:"Instabilidade rotatória lateral (IRL).",how:"Paciente em DD, MS elevado. Supinação + valgo + compressão axial enquanto flexiona o cotovelo. Positivo: subluxação/ressalto da cabeça do rádio.",video:""},
-      {name:"Elbow Flexion Test (Nervo Ulnar)",desc:"Síndrome do canal cubital. Sens. ~75%, Esp. ~99%.",how:"Flexão máxima do cotovelo + extensão do punho mantidos por 1–3 minutos. Positivo: parestesia nos dedos 4º e 5º e/ou face ulnar da mão.",video:""},
+      {name:"Elbow Flexion Test (Nervo Ulnar)",desc:"Síndrome do canal cubital. Sens. ~75%, Esp. ~99%.",how:"Flexão máxima do cotovelo + extensão do punho mantidos por 1–3 minutos. Positivo: parestesia nos dedos 4º e 5º e/ou face ulnar da mão.",video:"https://www.youtube.com/watch?v=mF3bUpeQfzs"},
     ],
     redFlags:["Fratura de olécrano / cabeça do rádio (Ottawa Elbow Rules)","Luxação de cotovelo","Lesão vascular / síndrome compartimental do antebraço","Paralisia nervosa completa (radial / ulnar / mediano)","Tumor ósseo / exostose","Artrite séptica"],
     goldStandard:"Tendinopatia lateral: exercício isométrico (analgesia imediata) → excêntrico → carga progressiva. Isométrico SUPERIOR a AINE e placebo a curto prazo (BJSM 2021 – Evidência A). Evitar corticoide a longo prazo: recidiva > 72% em 52 semanas (MINT trial, Lancet 2013). Ondas de choque radiais como adjuvante quando exercício falha (Cochrane 2019). Instabilidade LCU: cirurgia em atletas de alta performance; conservador em sedentários com fortalecimento de flexores de punho.",
@@ -468,7 +468,9 @@ function GonioRow({ row, onUpdate, onRemove }) {
 // ── TestCard ──────────────────────────────────────────────────────────────────
 function TestCard({ test, result, onResult }) {
   const [open, setOpen] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
   const borderColor = result==="Positivo"?`${C.red}60`:result==="Negativo"?`${C.green}50`:C.border;
+  const videoId = test.video ? test.video.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/)?.[1] : null;
   return (
     <div style={{ background:C.surface, border:`1px solid ${borderColor}`, borderRadius:10, padding:"12px 14px", marginBottom:8 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
@@ -477,11 +479,16 @@ function TestCard({ test, result, onResult }) {
           <div style={{ fontSize:12, color:C.textMuted, marginTop:2 }}>{test.desc}</div>
         </div>
         <div style={{ display:"flex", gap:6, flexShrink:0 }}>
-          {test.video && <a href={test.video} target="_blank" rel="noreferrer"
-            style={{ background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:6, padding:"4px 10px", fontSize:11, color:C.green, textDecoration:"none", fontWeight:700 }}>▶ Vídeo</a>}
+          {videoId && <button onClick={()=>setShowVideo(s=>!s)}
+            style={{ background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:6, padding:"4px 10px", fontSize:11, color:C.green, cursor:"pointer", fontWeight:700 }}>{showVideo?"▽ Fechar":"▶ Vídeo"}</button>}
           <button onClick={()=>setOpen(o=>!o)} style={{ background:"none", border:"none", color:C.textMuted, cursor:"pointer", fontSize:16, padding:"0 4px" }}>{open?"▲":"▼"}</button>
         </div>
       </div>
+      {showVideo && videoId && (
+        <div style={{ marginTop:10 }}>
+          <iframe src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`} title={test.name} allow="autoplay; encrypted-media" allowFullScreen style={{ width:"100%", maxWidth:320, aspectRatio:"16/9", border:"none", borderRadius:8 }} />
+        </div>
+      )}
       {open && (
         <div style={{ marginTop:10, background:C.card, borderRadius:8, padding:"10px 12px", fontSize:12, color:C.text, lineHeight:1.7 }}>
           <span style={{ color:C.green, fontWeight:700 }}>Como executar: </span>{test.how}

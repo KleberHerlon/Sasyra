@@ -34,25 +34,61 @@ const DOR_KEYWORDS = [
   { parts: ["Glúteos"],     pat: /glúte|gluteo/i },
   { parts: ["Peitoral"],    pat: /peitoral|peito|esterno|costela|intercostal/i },
   { parts: ["Abdômen"],     pat: /abdômen|abdomen|abdominal|barriga|ventre|reto\s*abdominal|obl[ií]quo/i },
-  { parts: ["Ombro D", "Ombro E"], pat: /ombro|ombralgia|deltoide|supraespinhal|manguito|subacromial|impacto.*ombro|capsulite|bursite(?!.*olecran)/i },
-  { parts: ["Braço D", "Braço E"], pat: /braço|braco|b[ií]ceps\s*braquial|tr[ií]ceps\s*braquial|umero|úmero|braquial/i },
-  { parts: ["Antebraço D", "Antebraço E"], pat: /antebraço|antebraco|cotovelo|epicondil|olecran|cotov/i },
-  { parts: ["Mão D", "Mão E"], pat: /mão|mao|mãos|maos|dedo|quervain|carpo|metacarpo|punho|túnel\s*carpo|tunel\s*carpo|compressão\s*mediano|rizoartrose|tenossinovite/i },
-  { parts: ["Quadril D", "Quadril E"], pat: /quadril|coxartrose|trocanter|femoroacetabular|anca|psoas|iliopsoas|artrose\s*quadril|sindrome\s*dolorosa\s*trocanter/i },
-  { parts: ["Adutores D", "Adutores E"], pat: /adutor|virilha|pubalgia|inguinal|pub[ií]s/i },
-  { parts: ["Joelho D", "Joelho E"], pat: /joelho|gon[áa]lgia|gonalgia|patel[ao]|menisco|femoro|f[eê]mur|t[ií]bia|popl[ií]teo|artrose\s*joelho|gonartrose|tendinopatia\s*patelar|joelho\s*saltador|condromalacia|bursite.*patelar|síndrome\s*patelofemoral|sindrome\s*patelofemoral|LCA|cruzado\s*anterior|cruzado\s*posterior|joelho/i },
-  { parts: ["Perna D", "Perna E"], pat: /perna|t[ií]bia|canelite|panturrilha|gastrocn[eê]mio|g[eê]meos|s[oó]leo|isquiotibiais|fibular|tibial\s*anterior|soleo|popliteo|quadrado\s*plantar|tensor\s*da\s*f[áa]scia\s*lata|tfl|trato\s*iliotibial|banda\s*iliotibial/i },
-  { parts: ["Tornozelo D", "Tornozelo E"], pat: /tornozelo|tornoz|entorse|ltfa|aquiles|aquileu|calc[âa]neo|talo|retrop[eé]|mediop[eé]|s[íi]ndrome\s*do\s*trato\s*iliotibial|fibular|fibulares/i },
-  { parts: ["Pé D", "Pé E"], pat: /p[ée]\b|fascite|fascia|fasceite|metatarso|morton|espor[ãa]o|calc[âa]neo|dedo.*gatilho|h[áa]lux|hallux|podod[aá]ctilo|metatarsalgia|neuroma|artrite\s*reumatoide/i },
+
+  { parts: ["Ombro D"],      base: "Ombro", pat: /ombro\s*(d[íi]reito|d\b)/i },
+  { parts: ["Ombro E"],      base: "Ombro", pat: /ombro\s*esquerdo/i },
+  { parts: ["Braço D"],      base: "Braço", pat: /bra[çc]o\s*(d[íi]reito|d\b)/i },
+  { parts: ["Braço E"],      base: "Braço", pat: /bra[çc]o\s*esquerdo/i },
+  { parts: ["Antebraço D"],  base: "Antebraço", pat: /antebra[çc]o\s*(d[íi]reito|d\b)|cotovelo\s*(d[íi]reito|d\b)/i },
+  { parts: ["Antebraço E"],  base: "Antebraço", pat: /antebra[çc]o\s*esquerdo|cotovelo\s*esquerdo/i },
+  { parts: ["Mão D"],        base: "Mão",   pat: /m[ãa]o\s*(d[íi]reit[ao]|d\b)|dedo\s*(d[íi]reito|d\b)|punho\s*(d[íi]reito|d\b)/i },
+  { parts: ["Mão E"],        base: "Mão",   pat: /m[ãa]o\s*esquerda|dedo\s*esquerdo|punho\s*esquerdo/i },
+  { parts: ["Quadril D"],    base: "Quadril", pat: /quadril\s*(d[íi]reito|d\b)/i },
+  { parts: ["Quadril E"],    base: "Quadril", pat: /quadril\s*esquerdo/i },
+  { parts: ["Adutores D"],   base: "Adutores", pat: /adutor\s*(d[íi]reito|d\b)/i },
+  { parts: ["Adutores E"],   base: "Adutores", pat: /adutor\s*esquerdo/i },
+  { parts: ["Joelho D"],     base: "Joelho", pat: /joelho\s*(d[íi]reito|d\b)|patel[ao]\s*(d[íi]reito|d\b)|menisco\s*(d[íi]reito|d\b)/i },
+  { parts: ["Joelho E"],     base: "Joelho", pat: /joelho\s*esquerdo|patel[ao]\s*esquerdo|menisco\s*esquerdo/i },
+  { parts: ["Perna D"],      base: "Perna",  pat: /perna\s*(d[íi]reit[ao]|d\b)|t[ií]bia\s*(d[íi]reit[ao]|d\b)/i },
+  { parts: ["Perna E"],      base: "Perna",  pat: /perna\s*esquerda|t[ií]bia\s*esquerda/i },
+  { parts: ["Tornozelo D"],  base: "Tornozelo", pat: /tornozelo\s*(d[íi]reito|d\b)|aquiles\s*(d[íi]reito|d\b)/i },
+  { parts: ["Tornozelo E"],  base: "Tornozelo", pat: /tornozelo\s*esquerdo|aquiles\s*esquerdo/i },
+  { parts: ["Pé D"],         base: "Pé",    pat: /p[ée]\s*(d[íi]reito|d\b)/i },
+  { parts: ["Pé E"],         base: "Pé",    pat: /p[ée]\s*esquerdo/i },
+
+  { parts: ["Ombro D", "Ombro E"],      base: "Ombro", pat: /ombro|ombralgia|deltoide|supraespinhal|manguito|subacromial|impacto.*ombro|capsulite|bursite(?!.*olecran)/i },
+  { parts: ["Braço D", "Braço E"],      base: "Braço", pat: /braço|braco|b[ií]ceps\s*braquial|tr[ií]ceps\s*braquial|umero|úmero|braquial/i },
+  { parts: ["Antebraço D", "Antebraço E"], base: "Antebraço", pat: /antebraço|antebraco|cotovelo|epicondil|olecran|cotov/i },
+  { parts: ["Mão D", "Mão E"],          base: "Mão",   pat: /mão|mao|mãos|maos|dedo|quervain|carpo|metacarpo|punho|túnel\s*carpo|tunel\s*carpo|compressão\s*mediano|rizoartrose|tenossinovite/i },
+  { parts: ["Quadril D", "Quadril E"],   base: "Quadril", pat: /quadril|coxartrose|trocanter|femoroacetabular|anca|psoas|iliopsoas|artrose\s*quadril|sindrome\s*dolorosa\s*trocanter/i },
+  { parts: ["Adutores D", "Adutores E"], base: "Adutores", pat: /adutor|virilha|pubalgia|inguinal|pub[ií]s/i },
+  { parts: ["Joelho D", "Joelho E"],    base: "Joelho", pat: /joelho|gon[áa]lgia|gonalgia|patel[ao]|menisco|femoro|f[eê]mur|t[ií]bia|popl[ií]teo|artrose\s*joelho|gonartrose|tendinopatia\s*patelar|joelho\s*saltador|condromalacia|bursite.*patelar|síndrome\s*patelofemoral|sindrome\s*patelofemoral|LCA|cruzado\s*anterior|cruzado\s*posterior|joelho/i },
+  { parts: ["Perna D", "Perna E"],      base: "Perna",  pat: /perna|t[ií]bia|canelite|panturrilha|gastrocn[eê]mio|g[eê]meos|s[oó]leo|isquiotibiais|fibular|tibial\s*anterior|soleo|popliteo|quadrado\s*plantar|tensor\s*da\s*f[áa]scia\s*lata|tfl|trato\s*iliotibial|banda\s*iliotibial/i },
+  { parts: ["Tornozelo D", "Tornozelo E"], base: "Tornozelo", pat: /tornozelo|tornoz|entorse|ltfa|aquiles|aquileu|calc[âa]neo|talo|retrop[eé]|mediop[eé]|s[íi]ndrome\s*do\s*trato\s*iliotibial|fibular|fibulares/i },
+  { parts: ["Pé D", "Pé E"],            base: "Pé",    pat: /p[ée]\b|fascite|fascia|fasceite|metatarso|morton|espor[ãa]o|calc[âa]neo|dedo.*gatilho|h[áa]lux|hallux|podod[aá]ctilo|metatarsalgia|neuroma|artrite\s*reumatoide/i },
 ];
 
 const detectLocalDor = (txt) => {
   if (!txt) return [];
   const t = txt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const found = new Set();
-  DOR_KEYWORDS.forEach(({ parts, pat }) => {
-    if (pat.test(t)) parts.forEach(p => found.add(p));
+  const resolvedBases = new Set();
+
+  DOR_KEYWORDS.forEach(({ parts, pat, base }) => {
+    if (base && parts.length === 1 && pat.test(t)) {
+      parts.forEach(p => found.add(p));
+      resolvedBases.add(base);
+    }
   });
+
+  DOR_KEYWORDS.forEach(({ parts, pat, base }) => {
+    if (!base) {
+      if (pat.test(t)) parts.forEach(p => found.add(p));
+    } else if (!resolvedBases.has(base)) {
+      if (pat.test(t)) parts.forEach(p => found.add(p));
+    }
+  });
+
   return [...found];
 };
 
