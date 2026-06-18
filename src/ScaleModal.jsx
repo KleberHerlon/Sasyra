@@ -35,7 +35,7 @@ export default function ScaleModal({ scale, open, onClose, onSave, initial }) {
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
             <div>
               <div style={{ fontSize:13, fontWeight:800, color:"var(--green)", letterSpacing:"0.05em" }}>ESCALA FUNCIONAL</div>
-              <div style={{ fontSize:20, fontWeight:800, color:"var(--text)", marginTop:2 }}>{scale.name}</div>
+              <div style={{ fontSize:20, fontWeight:800, color:"var(--text)", marginTop:2 }}>{scale.name || scale.shortName}</div>
               {saved && <div style={{ fontSize:12, color:"var(--green)", marginTop:4 }}>✓ Resultado salvo</div>}
             </div>
             <button onClick={onClose} style={{ background:"var(--card)", border:"1px solid var(--border)", borderRadius:8, color:"var(--textMuted)", width:32, height:32, fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
@@ -85,7 +85,7 @@ export default function ScaleModal({ scale, open, onClose, onSave, initial }) {
               onSave({
                 scale: scale.id,
                 shortName: scale.shortName,
-                scaleName: scale.name,
+                scaleName: scale.name || scale.shortName,
                 raw,
                 pct: displayScore,
                 interpretation: interpretation?.level || "",
@@ -108,7 +108,7 @@ export default function ScaleModal({ scale, open, onClose, onSave, initial }) {
   const allAnswered = scale.questions.every(q => answers[q.id] !== undefined);
   const result = calcScale(scale, answers);
   const pct = result.pct;
-  const interpretation = scale.interpret(result.raw ?? pct);
+  const interpretation = scale.interpret(pct);
 
   const handleAnswer = (qId, val) => {
     setAnswers(p => ({ ...p, [qId]: val }));
@@ -119,7 +119,7 @@ export default function ScaleModal({ scale, open, onClose, onSave, initial }) {
     onSave({
       scale: scale.id,
       shortName: scale.shortName,
-      scaleName: scale.name,
+      scaleName: scale.name || scale.shortName,
       raw: result.raw,
       pct,
       interpretation: interpretation.level,
@@ -139,7 +139,7 @@ export default function ScaleModal({ scale, open, onClose, onSave, initial }) {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
           <div>
             <div style={{ fontSize:13, fontWeight:800, color:"var(--green)", letterSpacing:"0.05em" }}>ESCALA FUNCIONAL</div>
-            <div style={{ fontSize:20, fontWeight:800, color:"var(--text)", marginTop:2 }}>{scale.name}</div>
+            <div style={{ fontSize:20, fontWeight:800, color:"var(--text)", marginTop:2 }}>{scale.name || scale.shortName}</div>
             {saved && <div style={{ fontSize:12, color:"var(--green)", marginTop:4 }}>✓ Resultado salvo</div>}
           </div>
           <button onClick={onClose} style={{ background:"var(--card)", border:"1px solid var(--border)", borderRadius:8, color:"var(--textMuted)", width:32, height:32, fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
