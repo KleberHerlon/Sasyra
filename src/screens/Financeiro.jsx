@@ -23,28 +23,57 @@ const CREFITO_REGIOES = {
   "Norte":                  { consulta: 140, sessao: 130, avaliacao: 210, relatorio: 95  },
 };
 
+const DESPESA_CATEGORIAS = ["Aluguel", "Materiais", "Marketing", "Contas", "Equipamentos", "Transporte", "Assinaturas", "Impostos", "Salários", "Outros"];
+
 const inp = (extra = {}) => ({ width: "100%", boxSizing: "border-box", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 13, padding: "9px 12px", outline: "none", fontFamily: F, ...extra });
 const sel = (extra = {}) => ({ ...inp(), cursor: "pointer", ...extra });
 const lbl = (extra = {}) => ({ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: C.textMuted, marginBottom: 5, ...extra });
 const primaryBtn = (extra = {}) => ({ background: C.green, color: "#061A0C", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: F, display: "inline-flex", alignItems: "center", gap: 6, ...extra });
 const ghostBtn = (extra = {}) => ({ background: "transparent", color: C.green, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: F, display: "inline-flex", alignItems: "center", gap: 6, ...extra });
 
-function ValorCell({ label, value, color }) {
+function StatCard({ icon, label, value, color, bg }) {
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "16px 18px", textAlign: "center" }}>
-      <div style={{ fontSize: 9, color: C.textMuted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 24, fontWeight: 900, color: color || C.text, lineHeight: 1.1 }}>R$ {value.toFixed(2)}</div>
+    <div style={{ background: bg || C.card, border: `1px solid ${color || C.border}40`, borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ fontSize: 24 }}>{icon}</div>
+      <div>
+        <div style={{ fontSize: 9, color: C.textMuted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>{label}</div>
+        <div style={{ fontSize: 20, fontWeight: 900, color: color || C.text, lineHeight: 1.1 }}>R$ {value.toFixed(2)}</div>
+      </div>
     </div>
   );
 }
 
-export default function Financeiro({ onNavigateToPatient, onNavigate }) {
-  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
-  const [pagamentos, setPagamentos] = useState(() => {
-    try { const d = localStorage.getItem("sasyra_pagamentos"); return d ? JSON.parse(d) : {}; } catch { return {}; }
-  });
-  const [showModal, setShowModal] = useState(null);
+function smallBtn(active, activeColor, extra = {}) {
+  return {
+    background: active ? `${activeColor}18` : "transparent",
+    border: active ? `1px solid ${activeColor}50` : `1px solid ${C.border}`,
+    color: active ? activeColor : C.textMuted, borderRadius: 6, padding: "4px 12px",
+    fontSize: 11, fontWeight: active ? 700 : 400, cursor: "pointer", fontFamily: F, ...extra,
+  };
+}
 
+function useLocalStorage(key, initial) {
+  const [val, setVal] = useState(() => {
+    try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : initial; } catch { return initial; }
+  });
+  const save = (next) => {
+    setVal(next);
+    try { localStorage.setItem(key, JSON.stringify(next)); } catch { }
+  };
+  return [val, save];
+}
+
+export default function Financeiro({ onNavigateToPatient, onNavigate }) {
+  const [tab, setTab] = useState("resumo");
+  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [showYear, setShowYear] = useState(false);
+  const [pagamentos, setPagamentos] = useLocalStorage("sasyra_pagamentos", {});
+  const [valoresPaciente, setValoresPaciente] = useLocalStorage("sasyra_valores_paciente", {});
+  const [despesas, setDespesas] = useLocalStorage("sasyra_despesas", []);
+  const [showModal, setShowModal] = useState(null);
+  const [editDespesa, setEditDespesa] = useState(null);
+
+  const period = showYear ? month.slice(0, 4) : month;
   const patients = useMemo(() => {
     try { const d = localStorage.getItem("sasyra_patients"); return d ? JSON.parse(d) : []; } catch { return []; }
   }, []);
@@ -53,83 +82,88 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
     try { const d = localStorage.getItem("sasyra_logs"); return d ? JSON.parse(d) : []; } catch { return []; }
   }, []);
 
-  const logsInMonth = useMemo(() => {
-    return allLogs.filter(l => l.data && l.data.startsWith(month));
-  }, [allLogs, month]);
+  const logsInPeriod = useMemo(() => {
+    return allLogs.filter(l => l.data && l.data.startsWith(period));
+  }, [allLogs, period]);
 
-  const totalSessoes = logsInMonth.length;
+  const despesasNoPeriodo = useMemo(() => {
+    return despesas.filter(d => d.data && d.data.startsWith(period));
+  }, [despesas, period]);
+
+  const calcSessionValue = (convenio, patientId) => {
+    if (valoresPaciente[patientId] != null) return Number(valoresPaciente[patientId]);
+    if (convenio === "Particular") return CREFITO_REGIOES["Centro-Oeste"].sessao;
+    return 80;
+  };
 
   const patientSummary = useMemo(() => {
     const map = {};
-    logsInMonth.forEach(log => {
+    logsInPeriod.forEach(log => {
       const pid = log.patientId;
       if (!map[pid]) map[pid] = { patientId: pid, nome: "", convenio: "", sessions: 0, logIds: [] };
-      const patient = patients.find(p => p.id === pid || p.nome === pid);
-      if (patient) {
-        map[pid].nome = patient.nome;
-        map[pid].convenio = patient.convenio || "";
-      } else {
-        map[pid].nome = typeof pid === "string" ? pid : `ID ${pid}`;
-      }
+      const p = patients.find(pt => pt.id === pid || pt.nome === pid);
+      if (p) { map[pid].nome = p.nome; map[pid].convenio = p.convenio || ""; }
+      else map[pid].nome = typeof pid === "string" ? pid : `ID ${pid}`;
       map[pid].sessions++;
       map[pid].logIds.push(log.id);
     });
     return Object.values(map).sort((a, b) => b.sessions - a.sessions);
-  }, [logsInMonth, patients]);
+  }, [logsInPeriod, patients]);
 
-  const calcSessionValue = (convenio) => {
-    if (convenio === "Particular") {
-      const tabela = CREFITO_REGIOES["Centro-Oeste"];
-      return tabela.sessao;
-    }
-    return 80;
-  };
-
-  const totalFaturado = useMemo(() => {
-    return patientSummary.reduce((acc, p) => acc + p.sessions * calcSessionValue(p.convenio), 0);
-  }, [patientSummary]);
-
-  const totalRecebido = useMemo(() => {
-    return Object.entries(pagamentos).reduce((acc, [id, pago]) => {
-      if (pago) {
-        const log = allLogs.find(l => l.id === Number(id));
-        if (log && log.data && log.data.startsWith(month)) {
-          const patient = patients.find(pt => pt.id === log.patientId || pt.nome === log.patientId);
-          return acc + calcSessionValue(patient?.convenio);
-        }
+  const totalSessoes = logsInPeriod.length;
+  const totalFaturado = useMemo(() =>
+    patientSummary.reduce((acc, p) => acc + p.sessions * calcSessionValue(p.convenio, p.patientId), 0),
+    [patientSummary, valoresPaciente]
+  );
+  const totalRecebido = useMemo(() =>
+    Object.entries(pagamentos).reduce((acc, [id, pago]) => {
+      if (!pago) return acc;
+      const log = allLogs.find(l => l.id === Number(id));
+      if (log && log.data && log.data.startsWith(period)) {
+        const p = patients.find(pt => pt.id === log.patientId || pt.nome === log.patientId);
+        return acc + calcSessionValue(p?.convenio, log.patientId);
       }
       return acc;
-    }, 0);
-  }, [pagamentos, allLogs, month, patients]);
-
+    }, 0),
+    [pagamentos, allLogs, period, patients, valoresPaciente]
+  );
   const totalAReceber = totalFaturado - totalRecebido;
+  const totalDespesas = despesasNoPeriodo.reduce((acc, d) => acc + Number(d.valor || 0), 0);
+  const saldoLiquido = totalRecebido - totalDespesas;
 
-  const togglePagamento = (logId) => {
-    setPagamentos(prev => {
-      const next = { ...prev, [String(logId)]: !prev[String(logId)] };
-      try { localStorage.setItem("sasyra_pagamentos", JSON.stringify(next)); } catch { }
-      return next;
-    });
-  };
-
-  const marcarTodas = (pagos) => {
+  const togglePagamento = (logId) => setPagamentos({ ...pagamentos, [String(logId)]: !pagamentos[String(logId)] });
+  const marcarTodas = (pago) => {
     const next = { ...pagamentos };
-    logsInMonth.forEach(l => { next[String(l.id)] = pagos; });
+    logsInPeriod.forEach(l => { next[String(l.id)] = pago; });
     setPagamentos(next);
-    try { localStorage.setItem("sasyra_pagamentos", JSON.stringify(next)); } catch { }
   };
 
-  const patientLogs = useMemo(() => {
-    if (!showModal) return [];
-    return logsInMonth.filter(l => l.patientId === showModal.patientId);
-  }, [showModal, logsInMonth]);
+  const handleAddDespesa = () => {
+    if (!editDespesa?.descricao?.trim() || !editDespesa?.valor) return;
+    if (editDespesa.id) {
+      setDespesas(despesas.map(d => d.id === editDespesa.id ? editDespesa : d));
+    } else {
+      setDespesas([...despesas, { ...editDespesa, id: Date.now() }]);
+    }
+    setEditDespesa(null);
+  };
+
+  const handleDelDespesa = (id) => setDespesas(despesas.filter(d => d.id !== id));
+
+  const monthNav = (delta) => {
+    const d = new Date(month + "-01");
+    if (showYear) d.setFullYear(d.getFullYear() + delta);
+    else d.setMonth(d.getMonth() + delta);
+    setMonth(d.toISOString().slice(0, 7));
+  };
+
+  const monthLabel = showYear
+    ? new Date(month + "-01").toLocaleDateString("pt-BR", { year: "numeric" })
+    : `${new Date(month + "-01").toLocaleDateString("pt-BR", { month: "long" }).replace(/^[a-z]/, m => m.toUpperCase())} de ${new Date(month + "-01").getFullYear()}`;
 
   return (
     <div style={{ fontFamily: F, color: C.text, minHeight: "100vh", background: C.bg, padding: "0 0 40px" }}>
-      <div style={{
-        background: C.surface, borderBottom: `1px solid ${C.border}`,
-        padding: "10px 16px",
-      }}>
+      <div style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "10px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <button onClick={() => onNavigate?.("patients")} style={{ ...ghostBtn({ padding: "5px 10px", fontSize: 11 }), color: C.textSub }}>← Pacientes</button>
@@ -138,104 +172,230 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
           <span style={{ fontWeight: 800, fontSize: 16, color: C.text }}>💰 Financeiro</span>
           <div />
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <input type="month" value={month} onChange={e => setMonth(e.target.value)}
-            style={{ ...inp({ width: 180, fontSize: 12 }) }} />
-          <button onClick={() => marcarTodas(true)} style={ghostBtn({ fontSize: 11, padding: "5px 12px" })}>Pagar Todas</button>
-          <button onClick={() => marcarTodas(false)} style={{ ...ghostBtn({ fontSize: 11, padding: "5px 12px" }), color: C.textMuted }}>Desmarcar</button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button onClick={() => monthNav(-1)} style={ghostBtn({ padding: "4px 8px", fontSize: 13 })}>◀</button>
+            <span style={{ fontWeight: 700, fontSize: 14, minWidth: 160, textAlign: "center" }}>{monthLabel}</span>
+            <button onClick={() => monthNav(1)} style={ghostBtn({ padding: "4px 8px", fontSize: 13 })}>▶</button>
+            <input type="month" value={month} onChange={e => setMonth(e.target.value)}
+              style={{ ...inp({ width: 140, fontSize: 11, padding: "5px 8px" }) }} />
+          </div>
+          <button onClick={() => setShowYear(s => !s)} style={smallBtn(showYear, C.blue)}>
+            {showYear ? "📆 Anual" : "📅 Mensal"}
+          </button>
         </div>
       </div>
 
-      <div style={{ maxWidth: 800, margin: "0 auto", padding: "16px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
-          <ValorCell label="Sessões Realizadas" value={totalSessoes} color={C.blue} />
-          <ValorCell label="Total Faturado" value={totalFaturado} color={C.purple} />
-          <ValorCell label="Valor por Sessão" value={80} color={C.textMuted} />
+      <div style={{ maxWidth: 800, margin: "0 auto", padding: "12px 16px" }}>
+        <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
+          {[
+            { k: "resumo", l: "📊 Resumo" },
+            { k: "pacientes", l: "👥 Pacientes" },
+            { k: "despesas", l: "💸 Despesas" },
+          ].map(({ k, l }) => (
+            <button key={k} onClick={() => setTab(k)} style={{
+              ...smallBtn(tab === k, C.green), flex: 1, textAlign: "center", padding: "7px 8px", fontSize: 12,
+            }}>{l}</button>
+          ))}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
-          <div style={{
-            background: C.greenBg, border: `1px solid ${C.green}40`, borderRadius: 12,
-            padding: "16px 18px", textAlign: "center",
-          }}>
-            <div style={{ fontSize: 9, color: C.green, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Recebido</div>
-            <div style={{ fontSize: 24, fontWeight: 900, color: C.green, lineHeight: 1.1 }}>R$ {totalRecebido.toFixed(2)}</div>
-          </div>
-          <div style={{
-            background: C.amberBg, border: `1px solid ${C.amber}40`, borderRadius: 12,
-            padding: "16px 18px", textAlign: "center",
-          }}>
-            <div style={{ fontSize: 9, color: C.amber, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>A Receber</div>
-            <div style={{ fontSize: 24, fontWeight: 900, color: C.amber, lineHeight: 1.1 }}>R$ {totalAReceber.toFixed(2)}</div>
-          </div>
-          <div style={{
-            background: C.redBg, border: `1px solid ${C.red}40`, borderRadius: 12,
-            padding: "16px 18px", textAlign: "center",
-          }}>
-            <div style={{ fontSize: 9, color: C.red, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Inadimplência</div>
-            <div style={{ fontSize: 24, fontWeight: 900, color: C.red, lineHeight: 1.1 }}>
-              {totalFaturado > 0 ? `${((totalAReceber / totalFaturado) * 100).toFixed(0)}%` : "0%"}
+        {tab === "resumo" && (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+              <StatCard icon="💰" label="Faturamento Bruto" value={totalFaturado} color={C.purple} bg={C.purpleBg} />
+              <StatCard icon="📥" label="Total Recebido" value={totalRecebido} color={C.green} bg={C.greenBg} />
             </div>
-          </div>
-        </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
+              <StatCard icon="⏳" label="A Receber" value={totalAReceber} color={C.amber} bg={C.amberBg} />
+              <StatCard icon="💸" label="Despesas" value={totalDespesas} color={C.red} bg={C.redBg} />
+              <StatCard icon="🏦" label="Saldo Líquido" value={saldoLiquido} color={saldoLiquido >= 0 ? C.green : C.red} bg={saldoLiquido >= 0 ? C.greenBg : C.redBg} />
+            </div>
 
-        {patientSummary.length === 0 && (
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: "40px 24px", textAlign: "center" }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>📊</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 4 }}>Nenhuma sessão registrada</div>
-            <div style={{ fontSize: 12, color: C.textMuted }}>As sessões do diário aparecerão aqui automaticamente.</div>
-          </div>
+            <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>📋 Resumo do período</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, fontSize: 12 }}>
+                {[
+                  ["Sessões realizadas", `${totalSessoes}`, C.blue],
+                  ["Valor médio por sessão", `R$ ${totalSessoes > 0 ? (totalFaturado / totalSessoes).toFixed(2) : "0,00"}`, C.text],
+                  ["Recebido", `${totalFaturado > 0 ? ((totalRecebido / totalFaturado) * 100).toFixed(0) : 0}%`, C.green],
+                  ["Pacientes ativos", `${patientSummary.length}`, C.purple],
+                ].map(([l, v, c]) => (
+                  <div key={l} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${C.borderLight}` }}>
+                    <span style={{ color: C.textMuted }}>{l}</span>
+                    <span style={{ fontWeight: 700, color: c }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
         )}
 
-        {patientSummary.map(p => {
-          const totalP = p.sessions * calcSessionValue(p.convenio);
-          const recebidoP = p.logIds.reduce((acc, id) => acc + (pagamentos[String(id)] ? calcSessionValue(p.convenio) : 0), 0);
-          const aReceberP = totalP - recebidoP;
-          const pctP = totalP > 0 ? (recebidoP / totalP) * 100 : 0;
+        {tab === "pacientes" && (
+          <>
+            <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+              <button onClick={() => marcarTodas(true)} style={primaryBtn({ padding: "5px 14px", fontSize: 11 })}>✓ Pagar Todas</button>
+              <button onClick={() => marcarTodas(false)} style={{ ...ghostBtn({ padding: "5px 14px", fontSize: 11 }), color: C.textMuted }}>Desmarcar Todas</button>
+            </div>
 
-          return (
-            <div key={p.patientId} style={{
-              background: C.card, border: `1px solid ${C.border}`, borderRadius: 12,
-              padding: "14px 16px", marginBottom: 10,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{
-                    width: 32, height: 32, background: C.greenBg, border: `1px solid ${C.green}40`,
-                    borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 13, fontWeight: 800, color: C.green,
-                  }}>{p.nome[0]?.toUpperCase()}</div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 13, color: C.text }}>{p.nome}</div>
-                    <div style={{ fontSize: 10, color: C.textMuted }}>{p.convenio || "—"} · {p.sessions} sessão(ões)</div>
+            {patientSummary.length === 0 && (
+              <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: "48px 24px", textAlign: "center" }}>
+                <div style={{ fontSize: 40, marginBottom: 10 }}>📊</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 4 }}>Nenhuma sessão no período</div>
+                <div style={{ fontSize: 12, color: C.textMuted }}>Registre sessões no diário do paciente para vê-las aqui.</div>
+              </div>
+            )}
+
+            {patientSummary.map(p => {
+              const valorSessao = calcSessionValue(p.convenio, p.patientId);
+              const totalP = p.sessions * valorSessao;
+              const recebidoP = p.logIds.reduce((acc, id) => acc + (pagamentos[String(id)] ? valorSessao : 0), 0);
+              const aReceberP = totalP - recebidoP;
+              const pctP = totalP > 0 ? (recebidoP / totalP) * 100 : 0;
+
+              return (
+                <div key={p.patientId} style={{
+                  background: C.card, border: `1px solid ${C.border}`, borderRadius: 12,
+                  padding: "12px 14px", marginBottom: 8,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        width: 30, height: 30, background: C.greenBg, border: `1px solid ${C.green}40`,
+                        borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 12, fontWeight: 800, color: C.green, flexShrink: 0,
+                      }}>{p.nome[0]?.toUpperCase()}</div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.nome}</div>
+                        <div style={{ fontSize: 10, color: C.textMuted }}>{p.convenio || "—"} · {p.sessions} sessões</div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                      <button onClick={() => {
+                        const v = prompt(`Valor por sessão para ${p.nome}:`, String(valorSessao));
+                        if (v && !isNaN(Number(v))) setValoresPaciente({ ...valoresPaciente, [p.patientId]: Number(v) });
+                      }} style={{ ...ghostBtn({ fontSize: 9, padding: "3px 8px" }), color: C.purple }}>
+                        R$ {valorSessao}
+                      </button>
+                      <button onClick={() => setShowModal(p)} style={ghostBtn({ fontSize: 9, padding: "3px 8px" })}>
+                        Detalhes
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <button onClick={() => setShowModal(p)} style={ghostBtn({ fontSize: 10, padding: "4px 10px" })}>
-                  Detalhes →
-                </button>
-              </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 8 }}>
-                <div style={{ background: C.surface, borderRadius: 8, padding: "8px", textAlign: "center" }}>
-                  <div style={{ fontSize: 9, color: C.textMuted }}>Total</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: C.purple }}>R$ {totalP.toFixed(2)}</div>
-                </div>
-                <div style={{ background: C.greenBg, borderRadius: 8, padding: "8px", textAlign: "center" }}>
-                  <div style={{ fontSize: 9, color: C.green }}>Recebido</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: C.green }}>R$ {recebidoP.toFixed(2)}</div>
-                </div>
-                <div style={{ background: aReceberP > 0 ? C.amberBg : C.surface, borderRadius: 8, padding: "8px", textAlign: "center" }}>
-                  <div style={{ fontSize: 9, color: aReceberP > 0 ? C.amber : C.textMuted }}>A Receber</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: aReceberP > 0 ? C.amber : C.textMuted }}>R$ {aReceberP.toFixed(2)}</div>
-                </div>
-              </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 6 }}>
+                    <div style={{ background: C.surface, borderRadius: 6, padding: "6px 8px", textAlign: "center" }}>
+                      <div style={{ fontSize: 8, color: C.textMuted }}>Total</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: C.purple }}>R$ {totalP.toFixed(2)}</div>
+                    </div>
+                    <div style={{ background: recebidoP > 0 ? C.greenBg : C.surface, borderRadius: 6, padding: "6px 8px", textAlign: "center" }}>
+                      <div style={{ fontSize: 8, color: recebidoP > 0 ? C.green : C.textMuted }}>Recebido</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: recebidoP > 0 ? C.green : C.textMuted }}>R$ {recebidoP.toFixed(2)}</div>
+                    </div>
+                  </div>
 
-              <div style={{ height: 4, background: C.surface, borderRadius: 99, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${pctP}%`, background: `linear-gradient(90deg, ${C.green}, ${C.greenDim})`, borderRadius: 99, transition: "width 0.3s" }} />
+                  <div style={{ height: 3, background: C.surface, borderRadius: 99, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pctP}%`, background: `linear-gradient(90deg, ${C.green}, ${C.greenDim})`, borderRadius: 99, transition: "width 0.3s" }} />
+                  </div>
+                  {aReceberP > 0 && (
+                    <div style={{ fontSize: 10, color: C.amber, marginTop: 4, fontWeight: 600 }}>
+                      ⏳ R$ {aReceberP.toFixed(2)} a receber
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </>
+        )}
+
+        {tab === "despesas" && (
+          <>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              <button onClick={() => setEditDespesa({ data: new Date().toISOString().slice(0, 10), descricao: "", categoria: "Outros", valor: "" })}
+                style={primaryBtn({ padding: "6px 16px", fontSize: 12 })}>
+                + Nova Despesa
+              </button>
+              <div style={{ fontSize: 11, color: C.textMuted, alignSelf: "center" }}>
+                Total despesas: <strong style={{ color: C.red }}>R$ {totalDespesas.toFixed(2)}</strong>
               </div>
             </div>
-          );
-        })}
+
+            {editDespesa && (
+              <div style={{ background: C.cardAlt, border: `1px solid ${C.amber}40`, borderRadius: 10, padding: "12px 14px", marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.amber, marginBottom: 8 }}>
+                  {editDespesa.id ? "Editar Despesa" : "Nova Despesa"}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                  <div>
+                    <span style={lbl()}>Descrição</span>
+                    <input value={editDespesa.descricao} onChange={e => setEditDespesa({ ...editDespesa, descricao: e.target.value })}
+                      style={inp({ fontSize: 12 })} placeholder="Ex: Compra de faixas elásticas" />
+                  </div>
+                  <div>
+                    <span style={lbl()}>Valor (R$)</span>
+                    <input type="number" step="0.01" min="0" value={editDespesa.valor} onChange={e => setEditDespesa({ ...editDespesa, valor: e.target.value })}
+                      style={inp({ fontSize: 12 })} placeholder="0,00" />
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                  <div>
+                    <span style={lbl()}>Data</span>
+                    <input type="date" value={editDespesa.data} onChange={e => setEditDespesa({ ...editDespesa, data: e.target.value })} style={inp({ fontSize: 12 })} />
+                  </div>
+                  <div>
+                    <span style={lbl()}>Categoria</span>
+                    <select value={editDespesa.categoria} onChange={e => setEditDespesa({ ...editDespesa, categoria: e.target.value })} style={sel({ fontSize: 12 })}>
+                      {DESPESA_CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                  <button onClick={handleAddDespesa} disabled={!editDespesa.descricao?.trim() || !editDespesa.valor}
+                    style={{ ...primaryBtn({ padding: "6px 16px", fontSize: 11 }), opacity: (!editDespesa.descricao?.trim() || !editDespesa.valor) ? 0.5 : 1 }}>
+                    {editDespesa.id ? "Salvar" : "Adicionar"}
+                  </button>
+                  <button onClick={() => setEditDespesa(null)} style={ghostBtn({ padding: "6px 16px", fontSize: 11 })}>Cancelar</button>
+                </div>
+              </div>
+            )}
+
+            {despesasNoPeriodo.length === 0 && !editDespesa && (
+              <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: "40px 24px", textAlign: "center" }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>💸</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 4 }}>Nenhuma despesa registrada</div>
+                <div style={{ fontSize: 12, color: C.textMuted }}>Clique em "+ Nova Despesa" para adicionar.</div>
+              </div>
+            )}
+
+            {despesasNoPeriodo.map(d => (
+              <div key={d.id} style={{
+                display: "flex", alignItems: "center", gap: 10,
+                background: C.card, border: `1px solid ${C.border}`, borderRadius: 10,
+                padding: "10px 12px", marginBottom: 6,
+              }}>
+                <div style={{
+                  width: 4, height: 32, borderRadius: 2,
+                  background: d.categoria === "Aluguel" ? C.red : d.categoria === "Materiais" ? C.blue : d.categoria === "Marketing" ? C.purple : C.amber,
+                  flexShrink: 0,
+                }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{d.descricao}</div>
+                  <div style={{ fontSize: 10, color: C.textMuted, display: "flex", gap: 8 }}>
+                    <span>{d.data}</span>
+                    <span>{d.categoria}</span>
+                  </div>
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 900, color: C.red }}>R$ {Number(d.valor).toFixed(2)}</div>
+                <button onClick={() => setEditDespesa(d)} style={{ background: "none", border: "none", color: C.textMuted, fontSize: 14, cursor: "pointer", padding: 4 }}>✏️</button>
+                <button onClick={() => handleDelDespesa(d.id)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 14, cursor: "pointer", padding: 4 }}>×</button>
+              </div>
+            ))}
+          </>
+        )}
+
+        <div style={{ marginTop: 16, fontSize: 10, color: C.textDim, textAlign: "center", lineHeight: 1.6 }}>
+          Dados salvos automaticamente no navegador.
+          {tab === "pacientes" && <><br />Clique no valor em <strong style={{ color: C.purple }}>roxo</strong> para personalizar o valor por sessão do paciente.</>}
+        </div>
       </div>
 
       {showModal && (
@@ -245,49 +405,51 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
         }} onClick={() => setShowModal(null)}>
           <div style={{
             background: C.card, border: `1px solid ${C.border}`, borderRadius: 16,
-            padding: 22, maxWidth: 480, width: "100%", fontFamily: F, maxHeight: "80vh", overflow: "auto",
+            padding: 20, maxWidth: 460, width: "100%", fontFamily: F, maxHeight: "80vh", overflow: "auto",
           }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: C.text }}>{showModal.nome}</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>{showModal.nome}</div>
                 <div style={{ fontSize: 11, color: C.textMuted }}>{showModal.convenio || "—"} · {showModal.sessions} sessões</div>
               </div>
               <button onClick={() => setShowModal(null)} style={{ background: "none", border: "none", color: C.textMuted, fontSize: 20, cursor: "pointer" }}>×</button>
             </div>
 
-            <div style={{ marginBottom: 12, fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            <div style={{ marginBottom: 10, fontSize: 10, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.06em" }}>
               Sessões — marque como recebido
             </div>
 
-            {patientLogs.map(log => {
-              const pago = pagamentos[String(log.id)];
-              const valor = calcSessionValue(showModal.convenio);
-              return (
-                <div key={log.id} style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  padding: "8px 10px", borderRadius: 8, marginBottom: 4,
-                  background: pago ? C.greenBg : C.surface,
-                  border: `1px solid ${pago ? C.green + "40" : C.border}`,
-                }}>
-                  <button onClick={() => togglePagamento(log.id)} style={{
-                    width: 22, height: 22, borderRadius: 6, border: `2px solid ${pago ? C.green : C.textMuted}`,
-                    background: pago ? C.green : "transparent", cursor: "pointer", display: "flex",
-                    alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, fontWeight: 700, flexShrink: 0,
-                  }}>
-                    {pago && "✓"}
-                  </button>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: C.text }}>
-                      {log.data} {log.data && `· Sessão #${log.sessaoNum || ""}`}
+            {(() => {
+              const logs = logsInPeriod.filter(l => l.patientId === showModal.patientId);
+              const valor = calcSessionValue(showModal.convenio, showModal.patientId);
+              return logs.map(log => {
+                const pago = pagamentos[String(log.id)];
+                return (
+                  <div key={log.id} style={{
+                    display: "flex", alignItems: "center", gap: 8,
+                    padding: "7px 10px", borderRadius: 8, marginBottom: 4,
+                    background: pago ? C.greenBg : C.surface,
+                    border: `1px solid ${pago ? C.green + "40" : C.border}`,
+                    cursor: "pointer",
+                  }} onClick={() => togglePagamento(log.id)}>
+                    <div style={{
+                      width: 20, height: 20, borderRadius: 5, border: `2px solid ${pago ? C.green : C.textMuted}`,
+                      background: pago ? C.green : "transparent", display: "flex", alignItems: "center",
+                      justifyContent: "center", color: "#fff", fontSize: 10, fontWeight: 700, flexShrink: 0,
+                    }}>{pago && "✓"}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: C.text }}>
+                        {log.data} · Sessão {log.sessaoNum || ""}
+                      </div>
+                      {log.evolucao && <div style={{ fontSize: 10, color: C.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{log.evolucao}</div>}
                     </div>
-                    {log.evolucao && <div style={{ fontSize: 10, color: C.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{log.evolucao}</div>}
+                    <div style={{ fontSize: 13, fontWeight: 800, color: pago ? C.green : C.amber, flexShrink: 0 }}>
+                      R$ {valor.toFixed(2)}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: pago ? C.green : C.amber }}>
-                    R$ {valor.toFixed(2)}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
         </div>
       )}

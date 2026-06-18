@@ -1,11 +1,15 @@
-# TODO — Correção das abas Diário e Relatório
+# ✅ Correção das abas Diário e Relatório
 
-- [ ] Implementar estados do Diário no `src/App.jsx` (`logs`, `df`, `setLogs`, `setDf`) e ajustar `addLog`/render
+- [x] Estados do Diário (`logs`, `df`, `setLogs`, `setDf`) já implementados e funcionais
+- [x] `addLog` salva corretamente e reseta o formulário
+- [x] Gráfico EVA corrigido (remoção do `.reverse()` que invertia a ordem)
+- [x] Relatório já utiliza `logs` para exibir evolução das sessões
+- [x] Build verificado (`npm run build`)
+
+# Pendências antigas (não relacionadas ao Diário/Relatório)
+
 - [ ] Corrigir erro do componente `Logo` (mover para fora do render/e escopo estável)
-- [ ] Resolver erros/avisos de lint visíveis no `npm run lint` (variáveis não usadas, regex/escape, etc.)
-- [ ] Garantir que `Relatório` use dados do Diário (`logs`, `df`) e atualize ao salvar sessão
-- [ ] Rodar `npm run lint` e `npm run build` para validar
-- [ ] Testar manualmente no navegador: alternar abas, salvar sessão no Diário, imprimir/gerar PDF no Relatório
+- [ ] Resolver erros/avisos de lint (`MoneyCell` em render, `setState` em `useEffect`, etc.)
 
 ---
 
