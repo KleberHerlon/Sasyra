@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AudioField, NumericDrum, EvaSlider, TagSelect, SingleSelect, GonioRow, MRCRow, TestCard, SessionCounter, HonorariosCard, Section, Row, Field, BodyMap, useMediaQuery } from "./components";
 
 const C = {
@@ -22,6 +22,38 @@ const CREFITO_REGIOES = {
   "Centro-Oeste": { consulta: 170, sessao: 150, avaliacao: 240, relatorio: 110 },
   "Nordeste": { consulta: 150, sessao: 140, avaliacao: 220, relatorio: 100 },
   "Norte": { consulta: 140, sessao: 130, avaliacao: 210, relatorio: 95 },
+};
+
+const DOR_KEYWORDS = [
+  { parts: ["Cabeça"],      pat: /cabeça|cefal[eé]ia|cefaleia|cranio|crânio|atm|mandibular|temporal|occipital|parietal|cefaleia/i },
+  { parts: ["Cervical"],    pat: /cervical|pescoço|pescoco|nuca|cervicalgia|radiculopatia\s*cervical/i },
+  { parts: ["Trapézio"],    pat: /trapézio|trapezio/i },
+  { parts: ["Torácica"],    pat: /torácica|toracica|dorsal|coluna\s*tor[aá]cica|torácica\s*alta|dorsalgia|desfiladeiro/i },
+  { parts: ["Lombar"],      pat: /lombar|lombalgia|lomb|costa|ciatica|ciatalgia|isquialgia/i },
+  { parts: ["Sacroilíaca"], pat: /sacroil[ií]aca|sacro|il[ií]aca|sacroiliaca|sacroilíaca/i },
+  { parts: ["Glúteos"],     pat: /glúte|gluteo/i },
+  { parts: ["Peitoral"],    pat: /peitoral|peito|esterno|costela|intercostal/i },
+  { parts: ["Abdômen"],     pat: /abdômen|abdomen|abdominal|barriga|ventre|reto\s*abdominal|obl[ií]quo/i },
+  { parts: ["Ombro D", "Ombro E"], pat: /ombro|ombralgia|deltoide|supraespinhal|manguito|subacromial|impacto.*ombro|capsulite|bursite(?!.*olecran)/i },
+  { parts: ["Braço D", "Braço E"], pat: /braço|braco|b[ií]ceps\s*braquial|tr[ií]ceps\s*braquial|umero|úmero|braquial/i },
+  { parts: ["Antebraço D", "Antebraço E"], pat: /antebraço|antebraco|cotovelo|epicondil|olecran|cotov/i },
+  { parts: ["Mão D", "Mão E"], pat: /mão|mao|mãos|maos|dedo|quervain|carpo|metacarpo|punho|túnel\s*carpo|tunel\s*carpo|compressão\s*mediano|rizoartrose|tenossinovite/i },
+  { parts: ["Quadril D", "Quadril E"], pat: /quadril|coxartrose|trocanter|femoroacetabular|anca|psoas|iliopsoas|artrose\s*quadril|sindrome\s*dolorosa\s*trocanter/i },
+  { parts: ["Adutores D", "Adutores E"], pat: /adutor|virilha|pubalgia|inguinal|pub[ií]s/i },
+  { parts: ["Joelho D", "Joelho E"], pat: /joelho|gon[áa]lgia|gonalgia|patel[ao]|menisco|femoro|f[eê]mur|t[ií]bia|popl[ií]teo|artrose\s*joelho|gonartrose|tendinopatia\s*patelar|joelho\s*saltador|condromalacia|bursite.*patelar|síndrome\s*patelofemoral|sindrome\s*patelofemoral|LCA|cruzado\s*anterior|cruzado\s*posterior|joelho/i },
+  { parts: ["Perna D", "Perna E"], pat: /perna|t[ií]bia|canelite|panturrilha|gastrocn[eê]mio|g[eê]meos|s[oó]leo|isquiotibiais|fibular|tibial\s*anterior|soleo|popliteo|quadrado\s*plantar|tensor\s*da\s*f[áa]scia\s*lata|tfl|trato\s*iliotibial|banda\s*iliotibial/i },
+  { parts: ["Tornozelo D", "Tornozelo E"], pat: /tornozelo|tornoz|entorse|ltfa|aquiles|aquileu|calc[âa]neo|talo|retrop[eé]|mediop[eé]|s[íi]ndrome\s*do\s*trato\s*iliotibial|fibular|fibulares/i },
+  { parts: ["Pé D", "Pé E"], pat: /p[ée]\b|fascite|fascia|fasceite|metatarso|morton|espor[ãa]o|calc[âa]neo|dedo.*gatilho|h[áa]lux|hallux|podod[aá]ctilo|metatarsalgia|neuroma|artrite\s*reumatoide/i },
+];
+
+const detectLocalDor = (txt) => {
+  if (!txt) return [];
+  const t = txt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const found = new Set();
+  DOR_KEYWORDS.forEach(({ parts, pat }) => {
+    if (pat.test(t)) parts.forEach(p => found.add(p));
+  });
+  return [...found];
 };
 
 const CIF = {
@@ -99,6 +131,10 @@ export default function Assessment({
   const [expandedSections, setExpandedSections] = useState([]);
   const toggleSection = (key) => setExpandedSections(p => p.includes(key) ? p.filter(x => x !== key) : [...p, key]);
   const isMobile = useMediaQuery("(max-width:767px)");
+
+  useEffect(() => {
+    if (kb) setExpandedSections(p => p.includes("testes") ? p : [...p, "testes"]);
+  }, [kb]);
   return (
     <>
       {/* Histórico de Avaliações */}
@@ -191,7 +227,7 @@ export default function Assessment({
             <span style={{ fontSize:11, fontWeight:800, color:"var(--red)", letterSpacing:"0.1em", textTransform:"uppercase" }}>Queixa principal</span>
             <span style={{ fontSize:11, color:"var(--textSub)", fontWeight:400 }}>— digite ou use o microfone</span>
           </div>
-          <AudioField value={queixa} onChange={v => { const t = typeof v === "function" ? v(queixa) : v; setQueixa(t); setQueixaKey(detectKB(t)); }} placeholder="Ex: Lombalgia com irradiação para MMII há 3 semanas após queda…" rows={2} />
+          <AudioField value={queixa} onChange={v => { const t = typeof v === "function" ? v(queixa) : v; setQueixa(t); setQueixaKey(detectKB(t)); setLocalDor(detectLocalDor(t)); }} placeholder="Ex: Lombalgia com irradiação para MMII há 3 semanas após queda…" rows={2} />
         </div>
 
         {kb && (
@@ -266,6 +302,12 @@ export default function Assessment({
         <CollapsibleSub title="Caracterização da dor">
           <Row cols="1fr 1fr">
             <Field l="Localização da dor — clique nas áreas do corpo">
+              {localDor.length > 0 && (
+                <div style={{ fontSize: 10, color: C.green, marginBottom: 6, fontWeight: 600, display: "flex", gap: 4, flexWrap: "wrap" }}>
+                  <span>✓ Detectado:</span>
+                  {localDor.map(p => <span key={p} style={{ background: C.greenBg, border: `1px solid ${C.green}30`, borderRadius: 4, padding: "1px 7px", fontWeight: 700 }}>{p}</span>)}
+                </div>
+              )}
               <BodyMap value={localDor} onChange={setLocalDor} sex={pt.sexo} />
             </Field>
             <Field l="Caráter da dor">
