@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { EvaSlider, TagSelect, SingleSelect, AudioField, useProgress, Section, Row, Field, SubHeading, useMediaQuery, GonioRow, MRCRow, MUSCLES, JOINTS, MVMT, getRef, isOutOfRange } from "./components";
 import Assessment from "./Assessment";
 import ScaleModal from "./ScaleModal";
 import SCALES from "./scales";
+import Agenda from "./screens/Agenda";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -767,7 +768,9 @@ const detectKB = txt => {
     ["ombralgia",            /bursite(?!.*olecran)/],
     ["fibromialgia",         /cansaco\s*cronico|fadiga\s*cronica|dor\s*generalizada/],
     ["tendinopatia-patelar", /joelho\s*(de\s*)?saltador/],
-    ["tendinopatia-biceps",  /tendao\s*(da\s*)?cabeca\s*longa/],
+    // ── Nomes de articulações (batida pura, após padrões específicos) ──
+    ["gonalgia",             /\bjoelho\b/],
+    ["coxartrose",           /\bquadril\b/],
     // ── Top 50 patologias ortopédicas ─────────────────────────────────
     ["fascite-plantar",      /fascite\s*plantar|fasceite|windlass/],
     ["tendinopatia-aquiles", /tendinopatia\s*(de\s*)?aquiles|tendao\s*aquiles|aquileu/],
@@ -1029,7 +1032,7 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
 const PROF_LABELS = { fisio:"Fisioterapeuta", to:"Terapeuta Ocupacional", educFisico:"Educador Físico", outro:"Profissional da Saúde" };
 
 // ── Patient List ──────────────────────────────────────────────────────────────
-function PatientList({ patients, onSelect, onAdd, onLogout, user, assessmentHistory, onDelete }) {
+function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, user, assessmentHistory, onDelete }) {
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -1066,7 +1069,10 @@ function PatientList({ patients, onSelect, onAdd, onLogout, user, assessmentHist
       <div style={{ maxWidth:680, margin:"0 auto" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
           <LogoSVG/>
-          <button onClick={onLogout} style={ghostBtn({ fontSize:12 })}>Sair</button>
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={onAgenda} style={ghostBtn({ fontSize:12 })}>📅 Agenda</button>
+            <button onClick={onLogout} style={ghostBtn({ fontSize:12 })}>Sair</button>
+          </div>
         </div>
 
         <div style={{ marginBottom:28 }}>
@@ -1205,6 +1211,7 @@ export default function Sasyra() {
   const [tab, setTab] = useState("avaliacao");
   const [regiao, setRegiao] = useState("Centro-Oeste");
   const [assessmentHistory, setAssessmentHistory] = useState(() => { try { const d = localStorage.getItem("sasyra_assessments"); return d ? JSON.parse(d) : []; } catch { return []; } });
+  const [appView, setAppView] = useState("patients");
 
   // Patient
   const [pt, setPt] = useState({ nome:"", dataNasc:"", sexo:"", lateralidade:"", estadoCivil:"", profissao:"", convenio:"", sessoesAuth:"", telefone:"", peso:"", altura:"", data:new Date().toISOString().slice(0,10) });
@@ -1233,7 +1240,14 @@ export default function Sasyra() {
     setLogs(l => l.filter(x => x.patientId !== pid));
   };
 
-  const handleLogout = () => { setUser(null); setPatientView(true); setPatients([]); setAssessmentHistory([]); };
+  const handleLogout = () => { setUser(null); setPatientView(true); setPatients([]); setAssessmentHistory([]); setAppView("patients"); };
+
+  const navigateToPatientFromAgenda = useCallback((patient, targetTab) => {
+    setPt(prev => ({ ...prev, ...patient }));
+    setPatientView(false);
+    setTab(targetTab || "avaliacao");
+    setAppView("patients");
+  }, []);
 
   // Anamnese
   const [queixa, setQueixa] = useState("");
@@ -1427,7 +1441,10 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (!user) return <LoginScreen onLogin={setUser} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} />;
-  if (patientView) return <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} />;
+  if (appView === "agenda") return (
+    <Agenda patients={patients} onNavigateToPatient={navigateToPatientFromAgenda} />
+  );
+  if (patientView) return <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} onAgenda={() => setAppView("agenda")} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} />;
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
 
@@ -1436,6 +1453,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <LogoSVG/>
           <button onClick={()=>{if(pt.id||pt.nome)saveAssessment();setPatientView(true);}} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+          <button onClick={()=>setAppView("agenda")} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Agenda">📅 Agenda</button>
         </div>
         <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
           {[["avaliacao","📋","Avaliação"],["diario","📈","Evolução"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb])=>(
@@ -1643,7 +1661,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
                     </div>
                     {df.escalaData && (
                       <div style={{ fontSize:11, color:"var(--green)", marginTop:6, fontWeight:700, background:"var(--card)", borderRadius:6, padding:"6px 10px", border:"1px solid var(--border)" }}>
-                        📊 {df.escalaData.scaleName}: {df.escalaData.pct}% — {df.escalaData.interpretation}
+                        📊 {df.escalaData.shortName || df.escalaData.scaleName}: {df.escalaData.pct}% — {df.escalaData.interpretation}
                       </div>
                     )}
                     {df.escalas && !df.escalaData && (
@@ -1890,7 +1908,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
                     )}
                     {log.escalaData ? (
                       <div style={{ fontSize:11, color:"var(--green)", fontWeight:700, marginBottom:4 }}>
-                        📊 {log.escalaData.scaleName}: {log.escalaData.pct}% — {log.escalaData.interpretation}
+                        📊 {log.escalaData.shortName || log.escalaData.scaleName}: {log.escalaData.pct}% — {log.escalaData.interpretation}
                       </div>
                     ) : log.escalas && <div style={{ fontSize:11, color:C.blue, marginBottom:4 }}>📏 {log.escalas}</div>}
                     {log.adms?.length > 0 && (
@@ -2199,7 +2217,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
                       {l.procedimentos?.length>0 && <div style={{ fontSize:11, color:"#374151", marginBottom:2 }}>Procedimentos: {l.procedimentos.join(", ")}</div>}
                       {l.escalaData ? (
                         <div style={{ fontSize:11, color:"#6B46C1", marginBottom:2, fontWeight:700 }}>
-                          📊 {l.escalaData.scaleName}: {l.escalaData.pct}% — {l.escalaData.interpretation}
+                          📊 {l.escalaData.shortName || l.escalaData.scaleName}: {l.escalaData.pct}% — {l.escalaData.interpretation}
                         </div>
                       ) : l.escalas && <div style={{ fontSize:11, color:"#6B46C1", marginBottom:2 }}>📏 {l.escalas}</div>}
                       {l.adms?.length > 0 && <div style={{ fontSize:10, color:"#2563EB", marginBottom:2 }}>📐 {l.adms.map(a => `${a.joint} ${a.movement}: ${a.value}°`).join(" | ")}</div>}
@@ -2240,7 +2258,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
 
       </div>
 
-      <ScaleModal scale={scaleModal.scale} open={scaleModal.open} onClose={() => setScaleModal({open:false, scale:null})} onSave={handleScaleSave} initial={scaleModal.scale?.questions?.reduce((a,q)=>a,{})} />
+      <ScaleModal scale={scaleModal.scale} open={scaleModal.open} onClose={() => setScaleModal({open:false, scale:null})} onSave={handleScaleSave} initial={undefined} />
     </div>
   );
 }

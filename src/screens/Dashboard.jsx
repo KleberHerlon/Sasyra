@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import Agenda from "./Agenda";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -795,7 +796,7 @@ function LoginScreen({ onLogin }) {
 const PROF_LABELS = { fisio:"Fisioterapeuta", to:"Terapeuta Ocupacional", educFisico:"Educador Físico", outro:"Profissional da Saúde" };
 
 // ── Patient List ──────────────────────────────────────────────────────────────
-function PatientList({ patients, onSelect, onAdd, onLogout, user }) {
+function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, user }) {
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
 
@@ -811,7 +812,10 @@ function PatientList({ patients, onSelect, onAdd, onLogout, user }) {
       <div style={{ maxWidth:680, margin:"0 auto" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
           <LogoSVG/>
-          <button onClick={onLogout} style={ghostBtn({ fontSize:12 })}>Sair</button>
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={onAgenda} style={ghostBtn({ fontSize:12 })}>📅 Agenda</button>
+            <button onClick={onLogout} style={ghostBtn({ fontSize:12 })}>Sair</button>
+          </div>
         </div>
 
         <div style={{ marginBottom:28 }}>
@@ -896,6 +900,7 @@ export default function Dashboard() {
   const [patientView, setPatientView] = useState(true);
   const [tab, setTab] = useState("avaliacao");
   const [regiao, setRegiao] = useState("Centro-Oeste");
+  const [appView, setAppView] = useState("patients"); // "patients" | "agenda"
 
   // Patient
   const [pt, setPt] = useState({ nome:"", dataNasc:"", sexo:"", lateralidade:"", estadoCivil:"", profissao:"", convenio:"", sessoesAuth:"", telefone:"", peso:"", altura:"", data:new Date().toISOString().slice(0,10) });
@@ -1029,9 +1034,28 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
     setDf({ data:new Date().toISOString().slice(0,10), eva:5, procedimentos:[], resposta:"", evolucao:"", metas:"", escalas:"" });
   };
 
+  const navigateToPatientFromAgenda = useCallback((patient, targetTab) => {
+    setPt(prev => ({ ...prev, ...patient }));
+    setPatientView(false);
+    setTab(targetTab || "avaliacao");
+    setAppView("patients");
+  }, []);
+
+  const handleLogoutAgenda = () => {
+    setUser(null);
+    setPatientView(true);
+    setPatients([]);
+    setAppView("patients");
+  };
+
   // ── Render ────────────────────────────────────────────────────────────────
   if (!user) return <LoginScreen onLogin={setUser} />;
-  if (patientView) return <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} user={user} />;
+  if (appView === "agenda") return (
+    <Agenda patients={patients} onNavigateToPatient={navigateToPatientFromAgenda} />
+  );
+  if (patientView) return (
+    <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogoutAgenda} onAgenda={() => setAppView("agenda")} user={user} />
+  );
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
 
@@ -1040,6 +1064,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <LogoSVG/>
           <button onClick={()=>setPatientView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+          <button onClick={()=>setAppView("agenda")} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Agenda">📅 Agenda</button>
         </div>
         <div style={{ display:"flex", gap:4 }}>
           {[["avaliacao","📋","Avaliação"],["diario","📅","Diário"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb])=>(
