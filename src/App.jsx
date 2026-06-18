@@ -2264,7 +2264,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
 
       </div>
 
-      <ScaleModal scale={scaleModal.scale} open={scaleModal.open} onClose={() => setScaleModal({open:false, scale:null})} onSave={handleScaleSave} initial={undefined} />
+      <ScaleModal scale={scaleModal.scale} open={scaleModal.open} onClose={() => setScaleModal({open:false, scale:null})} onSave={handleScaleSave} initial={scaleModal.scale?.questions?.reduce((a,q)=>a,{})} />
     </div>
   );
 }
