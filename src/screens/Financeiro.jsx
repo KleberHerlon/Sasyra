@@ -38,7 +38,7 @@ function ValorCell({ label, value, color }) {
   );
 }
 
-export default function Financeiro({ onNavigateToPatient }) {
+export default function Financeiro({ onNavigateToPatient, onNavigate }) {
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [pagamentos, setPagamentos] = useState(() => {
     try { const d = localStorage.getItem("sasyra_pagamentos"); return d ? JSON.parse(d) : {}; } catch { return {}; }
@@ -128,17 +128,21 @@ export default function Financeiro({ onNavigateToPatient }) {
     <div style={{ fontFamily: F, color: C.text, minHeight: "100vh", background: C.bg, padding: "0 0 40px" }}>
       <div style={{
         background: C.surface, borderBottom: `1px solid ${C.border}`,
-        padding: "12px 16px", display: "flex", alignItems: "center",
-        justifyContent: "space-between", gap: 8, flexWrap: "wrap",
+        padding: "10px 16px",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button onClick={() => onNavigate?.("patients")} style={{ ...ghostBtn({ padding: "5px 10px", fontSize: 11 }), color: C.textSub }}>← Pacientes</button>
+            <button onClick={() => onNavigate?.("agenda")} style={ghostBtn({ padding: "5px 10px", fontSize: 11 })}>📅 Agenda</button>
+          </div>
           <span style={{ fontWeight: 800, fontSize: 16, color: C.text }}>💰 Financeiro</span>
+          <div />
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <input type="month" value={month} onChange={e => setMonth(e.target.value)}
             style={{ ...inp({ width: 180, fontSize: 12 }) }} />
-          <button onClick={() => marcarTodas(true)} style={ghostBtn({ fontSize: 11, padding: "6px 12px" })}>Pagar Todas</button>
-          <button onClick={() => marcarTodas(false)} style={{ ...ghostBtn({ fontSize: 11, padding: "6px 12px" }), color: C.textMuted }}>Desmarcar</button>
+          <button onClick={() => marcarTodas(true)} style={ghostBtn({ fontSize: 11, padding: "5px 12px" })}>Pagar Todas</button>
+          <button onClick={() => marcarTodas(false)} style={{ ...ghostBtn({ fontSize: 11, padding: "5px 12px" }), color: C.textMuted }}>Desmarcar</button>
         </div>
       </div>
 

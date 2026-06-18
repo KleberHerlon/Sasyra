@@ -1444,10 +1444,10 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
   // ── Render ────────────────────────────────────────────────────────────────
   if (!user) return <LoginScreen onLogin={setUser} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} />;
   if (appView === "agenda") return (
-    <Agenda patients={patients} onNavigateToPatient={navigateToPatientFromAgenda} />
+    <Agenda patients={patients} onNavigateToPatient={navigateToPatientFromAgenda} onNavigate={(v) => setAppView(v)} />
   );
   if (appView === "financeiro") return (
-    <Financeiro onNavigateToPatient={navigateToPatientFromAgenda} />
+    <Financeiro onNavigateToPatient={navigateToPatientFromAgenda} onNavigate={(v) => setAppView(v)} />
   );
   if (patientView) return <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} onAgenda={() => setAppView("agenda")} onViewChange={(v) => setAppView(v)} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} />;
   return (
@@ -1459,6 +1459,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
           <LogoSVG/>
           <button onClick={()=>{if(pt.id||pt.nome)saveAssessment();setPatientView(true);}} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
           <button onClick={()=>setAppView("agenda")} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Agenda">📅 Agenda</button>
+          <button onClick={()=>setAppView("financeiro")} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>
         </div>
         <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
           {[["avaliacao","📋","Avaliação"],["diario","📈","Evolução"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb])=>(

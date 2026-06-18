@@ -597,7 +597,7 @@ function MonthCell({ date, appointments, onApptClick, onDrop }) {
   );
 }
 
-export default function Agenda({ patients, onNavigateToPatient }) {
+export default function Agenda({ patients, onNavigateToPatient, onNavigate }) {
   const [view, setView] = useState("week");
   const [refDate, setRefDate] = useState(new Date());
   const [appointments, setAppointments] = useState([]);
@@ -718,39 +718,43 @@ export default function Agenda({ patients, onNavigateToPatient }) {
     <div style={{ fontFamily: F, color: C.text, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <div style={{
         background: C.surface, borderBottom: `1px solid ${C.border}`,
-        padding: "12px 16px", display: "flex", alignItems: "center",
-        justifyContent: "space-between", gap: 8, flexWrap: "wrap",
+        padding: "10px 16px", display: "flex", flexDirection: "column", gap: 8,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button onClick={handleToday} style={primaryBtn({ padding: "6px 14px", fontSize: 12 })}>Hoje</button>
-          <button onClick={handlePrev} style={ghostBtn({ padding: "6px 10px", fontSize: 14 })}>◀</button>
-          <button onClick={handleNext} style={ghostBtn({ padding: "6px 10px", fontSize: 14 })}>▶</button>
-          <span style={{ fontWeight: 700, fontSize: 15, color: C.text, minWidth: 200 }}>
-            {navTitle}
-          </span>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button onClick={() => onNavigate?.("patients")} style={{ ...ghostBtn({ padding: "5px 10px", fontSize: 11 }), color: C.textSub }}>← Pacientes</button>
+            <button onClick={() => onNavigate?.("financeiro")} style={ghostBtn({ padding: "5px 10px", fontSize: 11 })}>💰 Financeiro</button>
+          </div>
+          <span style={{ fontWeight: 800, fontSize: 16, color: C.text }}>📅 Agenda</span>
+          <button onClick={() => { setMiniFormData(null); setShowMiniForm(true); }}
+            style={primaryBtn({ padding: "5px 14px", fontSize: 12 })}>
+            + Novo
+          </button>
         </div>
-
-        <div style={{ display: "flex", gap: 4 }}>
-          {[
-            { k: "day", l: "Dia" },
-            { k: "week", l: "Semana" },
-            { k: "month", l: "Mês" },
-          ].map(({ k, l }) => (
-            <button key={k} onClick={() => setView(k)} style={{
-              background: view === k ? C.greenBg : "transparent",
-              border: view === k ? `1px solid ${C.green}50` : `1px solid transparent`,
-              borderRadius: 8, padding: "6px 14px", fontSize: 12,
-              fontWeight: view === k ? 700 : 400,
-              color: view === k ? C.green : C.textMuted,
-              cursor: "pointer", fontFamily: F,
-            }}>{l}</button>
-          ))}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button onClick={handleToday} style={primaryBtn({ padding: "4px 12px", fontSize: 11 })}>Hoje</button>
+            <button onClick={handlePrev} style={ghostBtn({ padding: "4px 8px", fontSize: 13 })}>◀</button>
+            <button onClick={handleNext} style={ghostBtn({ padding: "4px 8px", fontSize: 13 })}>▶</button>
+            <span style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{navTitle}</span>
+          </div>
+          <div style={{ display: "flex", gap: 3 }}>
+            {[
+              { k: "day", l: "Dia" },
+              { k: "week", l: "Semana" },
+              { k: "month", l: "Mês" },
+            ].map(({ k, l }) => (
+              <button key={k} onClick={() => setView(k)} style={{
+                background: view === k ? C.greenBg : "transparent",
+                border: view === k ? `1px solid ${C.green}50` : `1px solid transparent`,
+                borderRadius: 6, padding: "4px 12px", fontSize: 11,
+                fontWeight: view === k ? 700 : 400,
+                color: view === k ? C.green : C.textMuted,
+                cursor: "pointer", fontFamily: F,
+              }}>{l}</button>
+            ))}
+          </div>
         </div>
-
-        <button onClick={() => { setMiniFormData(null); setShowMiniForm(true); }}
-          style={primaryBtn({ padding: "6px 14px", fontSize: 12 })}>
-          + Novo
-        </button>
       </div>
 
       <StatusLegend />
