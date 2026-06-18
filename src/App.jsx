@@ -4,6 +4,7 @@ import Assessment from "./Assessment";
 import ScaleModal from "./ScaleModal";
 import SCALES from "./scales";
 import Agenda from "./screens/Agenda";
+import Financeiro from "./screens/Financeiro";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -1032,7 +1033,7 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
 const PROF_LABELS = { fisio:"Fisioterapeuta", to:"Terapeuta Ocupacional", educFisico:"Educador Físico", outro:"Profissional da Saúde" };
 
 // ── Patient List ──────────────────────────────────────────────────────────────
-function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, user, assessmentHistory, onDelete }) {
+function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChange, user, assessmentHistory, onDelete }) {
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -1071,6 +1072,7 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, user, asse
           <LogoSVG/>
           <div style={{ display:"flex", gap:8 }}>
             <button onClick={onAgenda} style={ghostBtn({ fontSize:12 })}>📅 Agenda</button>
+            <button onClick={() => onViewChange?.("financeiro")} style={ghostBtn({ fontSize:12 })}>💰 Financeiro</button>
             <button onClick={onLogout} style={ghostBtn({ fontSize:12 })}>Sair</button>
           </div>
         </div>
@@ -1444,7 +1446,10 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
   if (appView === "agenda") return (
     <Agenda patients={patients} onNavigateToPatient={navigateToPatientFromAgenda} />
   );
-  if (patientView) return <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} onAgenda={() => setAppView("agenda")} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} />;
+  if (appView === "financeiro") return (
+    <Financeiro onNavigateToPatient={navigateToPatientFromAgenda} />
+  );
+  if (patientView) return <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} onAgenda={() => setAppView("agenda")} onViewChange={(v) => setAppView(v)} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} />;
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
 
