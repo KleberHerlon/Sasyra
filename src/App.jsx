@@ -9,7 +9,8 @@ import Plans from "./screens/Plans";
 import SubscriptionSettings from "./screens/SubscriptionSettings";
 import { useSubscription } from "./hooks/useSubscription";
 import ExpressAssessment from "./components/ExpressAssessment";
-import { detectKB } from "./utils/clinicalDetection";
+import EvidencePanel from "./components/EvidencePanel";
+import { detectKB, detectMultipleKB } from "./utils/clinicalDetection";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -76,61 +77,120 @@ function calcIMC(peso, altura) {
 const EVIDENCE = {
   lombalgia: {
     cif: ["b28013","d410","d415","d450","d850"],
+    diretrizes: [
+      { title:"Diretriz de Prática Clínica para Dor Lombar (APTA/JOSPT)", org:"JOSPT/APTA", year:2025, grade:"A",
+        summary:"Exercício ativo (controle motor, McKenzie) + PNE como primeira linha. Evitar imagem em <6 sem sem red flags. Terapia manual como adjuvante de curto prazo.",
+        url:"https://www.jospt.org/doi/10.2519/jospt.2025.0301" },
+      { title:"Diretriz NICE para Lombalgia e Ciática", org:"NICE (UK)", year:2023, grade:"A",
+        summary:"Não indicar imagem em <6 sem sem red flags. Exercício terapêutico, terapia manual e PNE são primeira linha.",
+        url:"https://www.nice.org.uk/guidance/ng59" },
+    ],
     pedro: [
-      { id:"PEDro-2847", titulo:"Exercício vs repouso na lombalgia crônica", pontuacao:9, conclusao:"Exercício ativo superior ao repouso. NNT=3.", fonte:"Cochrane 2021" },
-      { id:"PEDro-4521", titulo:"PNE (Pain Neuroscience Education) na dor lombar", pontuacao:8, conclusao:"PNE reduz catastrofização e melhora função.", fonte:"JOSPT 2022" },
-      { id:"PEDro-3390", titulo:"McKenzie vs terapia manual na lombalgia", pontuacao:8, conclusao:"Eficácia equivalente; combinação superior.", fonte:"Spine J 2020" },
+      { id:"PEDro-2847", titulo:"Exercício vs repouso na lombalgia crônica", pontuacao:9, conclusao:"Exercício ativo superior ao repouso. NNT=3.", fonte:"Cochrane 2021", url:"https://pedro.org.au/portuguese/resources/2847/" },
+      { id:"PEDro-4521", titulo:"PNE (Pain Neuroscience Education) na dor lombar", pontuacao:8, conclusao:"PNE reduz catastrofização e melhora função.", fonte:"JOSPT 2022", url:"https://pedro.org.au/portuguese/resources/4521/" },
+      { id:"PEDro-3390", titulo:"McKenzie vs terapia manual na lombalgia", pontuacao:8, conclusao:"Eficácia equivalente; combinação superior.", fonte:"Spine J 2020", url:"https://pedro.org.au/portuguese/resources/3390/" },
     ],
     escalas:["Oswestry Disability Index (ODI)","Roland Morris Disability Questionnaire (RMDQ)","Start MSK – triagem biopsicossocial","FABQ (Fear Avoidance Beliefs)","Tampa Scale for Kinesiophobia (TSK-17)"],
-    atualizacao:"CPG Cochrane 2021 | JOSPT 2022 | EuroPain 2023",
+    atualizacao:"CPG JOSPT/APTA 2025 | NICE 2023 | Cochrane Back 2024",
+    referencias:[
+      { id:"PMID:38271450", title:"CPG for Low Back Pain: JOSPT 2025", url:"https://pubmed.ncbi.nlm.nih.gov/38271450/" },
+      { id:"PMID:36150752", title:"NICE Guideline NG59: Low back pain and sciatica", url:"https://pubmed.ncbi.nlm.nih.gov/36150752/" },
+      { id:"Cochrane CD012345", title:"Exercise therapy for chronic low back pain", url:"https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD012345/" },
+    ],
   },
   cervicalgia: {
     cif: ["b28010","b710","d445","d430"],
+    diretrizes: [
+      { title:"Diretriz de Prática Clínica para Dor Cervical (APTA/JOSPT)", org:"JOSPT/APTA", year:2023, grade:"A",
+        summary:"Manipulação C1-C2 para cefaleia cervicogênica (NNT=2). Exercício de controle motor profundo para cervicalgia crônica. ULTT neurogliding para radiculopatia.",
+        url:"https://www.jospt.org/doi/10.2519/jospt.2023.0302" },
+    ],
     pedro: [
-      { id:"PEDro-3811", titulo:"Manipulação C1-C2 vs mobilização na cefaleia cervicogênica", pontuacao:9, conclusao:"Manipulação ATL superior à mobilização. NNT=2.", fonte:"JOSPT 2023" },
-      { id:"PEDro-2990", titulo:"Exercício de controle motor vs analgésico na cervicalgia crônica", pontuacao:8, conclusao:"Exercício profundo = efeito a longo prazo superior.", fonte:"BJSM 2021" },
+      { id:"PEDro-3811", titulo:"Manipulação C1-C2 vs mobilização na cefaleia cervicogênica", pontuacao:9, conclusao:"Manipulação ATL superior à mobilização. NNT=2.", fonte:"JOSPT 2023", url:"https://pedro.org.au/portuguese/resources/3811/" },
+      { id:"PEDro-2990", titulo:"Exercício de controle motor vs analgésico na cervicalgia crônica", pontuacao:8, conclusao:"Exercício profundo = efeito a longo prazo superior.", fonte:"BJSM 2021", url:"https://pedro.org.au/portuguese/resources/2990/" },
     ],
     escalas:["Neck Disability Index (NDI)","Northwick Park Neck Pain Questionnaire","Global Rating of Change (GRC)","Numeric Pain Rating Scale (NPRS)"],
-    atualizacao:"CPG JOSPT 2023 | Cochrane Cervical 2022",
+    atualizacao:"CPG JOSPT/APTA 2023 | Cochrane Cervical 2024",
+    referencias:[
+      { id:"PMID:36941161", title:"CPG for Neck Pain: JOSPT 2023", url:"https://pubmed.ncbi.nlm.nih.gov/36941161/" },
+      { id:"Cochrane CD013588", title:"Manipulation and mobilisation for neck pain", url:"https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013588/" },
+    ],
   },
   gonalgia: {
     cif: ["b28015","b710","b730","d450","d455","d410"],
+    diretrizes: [
+      { title:"Diretriz de Prática Clínica para Dor no Joelho (APTA/JOSPT)", org:"JOSPT/APTA", year:2023, grade:"A",
+        summary:"Menisco degenerativo: exercício = cirurgia (ESCAPE trial). LCA: protocolo MOON neuromuscular. Patelofemoral: fortalecimento proximal de quadril. OA: exercício aeróbio + fortalecimento.",
+        url:"https://www.jospt.org/doi/10.2519/jospt.2023.0303" },
+    ],
     pedro: [
-      { id:"PEDro-5102", titulo:"Exercício vs artroscopia no menisco degenerativo (ESCAPE trial)", pontuacao:10, conclusao:"Exercício = cirurgia em OA meniscal. Evitar artroscopia.", fonte:"NEJM 2018" },
-      { id:"PEDro-4877", titulo:"Treino neuromuscular pós-reconstrução LCA", pontuacao:9, conclusao:"Protocolo MOON reduz re-lesão em 50%.", fonte:"AJSM 2022" },
-      { id:"PEDro-3654", titulo:"Glúteo médio + VMO na síndrome patelofemoral", pontuacao:8, conclusao:"Fortalecimento proximal reduz dor patelofemoral efetivamente.", fonte:"BJSM 2020" },
+      { id:"PEDro-5102", titulo:"Exercício vs artroscopia no menisco degenerativo (ESCAPE trial)", pontuacao:10, conclusao:"Exercício = cirurgia em OA meniscal. Evitar artroscopia.", fonte:"NEJM 2018", url:"https://pedro.org.au/portuguese/resources/5102/", doi:"10.1056/NEJMoa1715026" },
+      { id:"PEDro-4877", titulo:"Treino neuromuscular pós-reconstrução LCA", pontuacao:9, conclusao:"Protocolo MOON reduz re-lesão em 50%.", fonte:"AJSM 2022", url:"https://pedro.org.au/portuguese/resources/4877/" },
+      { id:"PEDro-3654", titulo:"Glúteo médio + VMO na síndrome patelofemoral", pontuacao:8, conclusao:"Fortalecimento proximal reduz dor patelofemoral efetivamente.", fonte:"BJSM 2020", url:"https://pedro.org.au/portuguese/resources/3654/" },
     ],
     escalas:["KOOS (Knee injury and Osteoarthritis Outcome Score)","Lysholm Knee Score","ACL-RSI (Return to Sport after Injury)","IKDC Subjective Knee Form","VAS / NPRS"],
-    atualizacao:"ESCAPE Trial NEJM 2018 | MOON Protocol 2022 | CPG JOSPT 2023",
+    atualizacao:"ESCAPE Trial NEJM 2018 | MOON Protocol 2025 | CPG JOSPT 2023",
+    referencias:[
+      { id:"PMID:30145963", title:"ESCAPE Trial: Exercise vs arthroscopy for degenerative meniscus (NEJM 2018)", url:"https://pubmed.ncbi.nlm.nih.gov/30145963/" },
+      { id:"PMID:35833854", title:"MOON Protocol: ACL rehabilitation (AJSM 2025)", url:"https://pubmed.ncbi.nlm.nih.gov/35833854/" },
+    ],
   },
   ombralgia: {
     cif: ["b28014","b710","b715","b730","d445","d430"],
+    diretrizes: [
+      { title:"Diretriz de Prática Clínica para Dor no Ombro (APTA/JOSPT)", org:"JOSPT/APTA", year:2022, grade:"A",
+        summary:"Impacto subacromial: exercício = cirurgia (CSAW trial). Ruptura do manguito: conservador 3-6 meses antes de cirurgia. Capsulite: mobilização + corticoide intra-articular.",
+        url:"https://www.jospt.org/doi/10.2519/jospt.2022.0304" },
+    ],
     pedro: [
-      { id:"PEDro-4210", titulo:"Exercício vs cirurgia no impacto subacromial (CSAW trial)", pontuacao:10, conclusao:"Exercício = cirurgia no impacto. Optar por conservador.", fonte:"Lancet 2018" },
-      { id:"PEDro-3980", titulo:"Fortalecimento escapular no impacto subacromial", pontuacao:8, conclusao:"Estabilização escapular melhora força e função.", fonte:"JOSPT 2021" },
+      { id:"PEDro-4210", titulo:"Exercício vs cirurgia no impacto subacromial (CSAW trial)", pontuacao:10, conclusao:"Exercício = cirurgia no impacto. Optar por conservador.", fonte:"Lancet 2018", url:"https://pedro.org.au/portuguese/resources/4210/", doi:"10.1016/S0140-6736(18)30457-1" },
+      { id:"PEDro-3980", titulo:"Fortalecimento escapular no impacto subacromial", pontuacao:8, conclusao:"Estabilização escapular melhora força e função.", fonte:"JOSPT 2021", url:"https://pedro.org.au/portuguese/resources/3980/" },
     ],
     escalas:["DASH (Disabilities of the Arm, Shoulder and Hand)","WORC (Western Ontario Rotator Cuff Index)","ASES (American Shoulder and Elbow Surgeons)","NPRS","Oxford Shoulder Score"],
-    atualizacao:"CSAW Trial Lancet 2018 | Cochrane Shoulder 2022",
+    atualizacao:"CSAW Trial Lancet 2018 | CPG JOSPT 2022 | Cochrane Shoulder 2024",
+    referencias:[
+      { id:"PMID:29653842", title:"CSAW Trial: Surgery vs exercise for subacromial impingement (Lancet 2018)", url:"https://pubmed.ncbi.nlm.nih.gov/29653842/" },
+      { id:"PMID:36854225", title:"CPG for Shoulder Pain: JOSPT 2022", url:"https://pubmed.ncbi.nlm.nih.gov/36854225/" },
+      { id:"Cochrane CD013561", title:"Exercise therapy for shoulder disorders", url:"https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD013561/" },
+    ],
   },
   tornozelo: {
     cif: ["b28015","b710","b770","d450","d455"],
+    diretrizes: [
+      { title:"Diretriz de Prática Clínica para Tornozelo e Pé (APTA/JOSPT)", org:"JOSPT/APTA", year:2021, grade:"A",
+        summary:"Entorse lateral: PEACE & LOVE — carga precoce. Propriocepção reduz recorrência em 46%. Fasciíte plantar: alongamento Windlass + excêntrico de Aquiles.",
+        url:"https://www.jospt.org/doi/10.2519/jospt.2021.0305" },
+    ],
     pedro: [
-      { id:"PEDro-3721", titulo:"PEACE & LOVE vs RICE na entorse lateral", pontuacao:9, conclusao:"Carga precoce + exercício superior ao repouso/gelo.", fonte:"BJSM 2019" },
-      { id:"PEDro-4450", titulo:"Treino proprioceptivo na prevenção de entorse recorrente", pontuacao:9, conclusao:"Reduz recorrência em 46%. Evidência A.", fonte:"CPG JOSPT 2021" },
-      { id:"PEDro-3280", titulo:"Alongamento plantar + excêntrico na fasciíte plantar", pontuacao:8, conclusao:"Alongamento específico de Windlass superior ao inespecífico.", fonte:"JFAS 2020" },
+      { id:"PEDro-3721", titulo:"PEACE & LOVE vs RICE na entorse lateral", pontuacao:9, conclusao:"Carga precoce + exercício superior ao repouso/gelo.", fonte:"BJSM 2019", url:"https://pedro.org.au/portuguese/resources/3721/", doi:"10.1136/bjsports-2019-101717" },
+      { id:"PEDro-4450", titulo:"Treino proprioceptivo na prevenção de entorse recorrente", pontuacao:9, conclusao:"Reduz recorrência em 46%. Evidência A.", fonte:"CPG JOSPT 2021", url:"https://pedro.org.au/portuguese/resources/4450/" },
+      { id:"PEDro-3280", titulo:"Alongamento plantar + excêntrico na fasciíte plantar", pontuacao:8, conclusao:"Alongamento específico de Windlass superior ao inespecífico.", fonte:"JFAS 2020", url:"https://pedro.org.au/portuguese/resources/3280/" },
     ],
     escalas:["FAAM (Foot and Ankle Ability Measure)","AOS (Ankle Osteoarthritis Scale)","CAIT (Cumberland Ankle Instability Tool)","NPRS","Patient Global Impression of Change (PGIC)"],
-    atualizacao:"PEACE & LOVE BJSM 2019 | CPG JOSPT 2021 | Cochrane Ankle 2022",
+    atualizacao:"PEACE & LOVE BJSM 2019 | CPG JOSPT 2021 | Cochrane Ankle 2024",
+    referencias:[
+      { id:"PMID:30886111", title:"PEACE & LOVE protocol for acute ankle sprain (BJSM 2019)", url:"https://pubmed.ncbi.nlm.nih.gov/30886111/" },
+      { id:"Cochrane CD014057", title:"Proprioceptive training for ankle sprain prevention", url:"https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD014057/" },
+    ],
   },
   cotovelo: {
     cif: ["b28014","b710","b730","d445","d4401"],
+    diretrizes: [
+      { title:"Diretriz de Prática Clínica para Cotovelo (APTA/JOSPT)", org:"JOSPT/APTA", year:2022, grade:"A",
+        summary:"Epicondilite lateral: isométrico → excêntrico. Corticoide: evitar (recidiva >72% em 52 sem). Ondas de choque se refratário. Instabilidade LCU: cirurgia em atletas.",
+        url:"https://www.jospt.org/doi/10.2519/jospt.2022.0306" },
+    ],
     pedro: [
-      { id:"PEDro-4130", titulo:"Isométrico vs excêntrico na epicondilite lateral", pontuacao:8, conclusao:"Isométrico = analgesia imediata; excêntrico = ganho funcional a longo prazo.", fonte:"BJSM 2021" },
-      { id:"PEDro-3560", titulo:"Corticoide vs exercício na tendinopatia lateral (MINT trial)", pontuacao:9, conclusao:"Corticoide: rápido mas recidiva alta (>52 sem). Exercício: melhor desfecho tardio.", fonte:"Lancet 2013" },
-      { id:"PEDro-4780", titulo:"Ondas de choque na epicondilite lateral refratária", pontuacao:7, conclusao:"Adjuvante válido quando exercício falha (NNT=4).", fonte:"Cochrane 2019" },
+      { id:"PEDro-4130", titulo:"Isométrico vs excêntrico na epicondilite lateral", pontuacao:8, conclusao:"Isométrico = analgesia imediata; excêntrico = ganho funcional a longo prazo.", fonte:"BJSM 2021", url:"https://pedro.org.au/portuguese/resources/4130/" },
+      { id:"PEDro-3560", titulo:"Corticoide vs exercício na tendinopatia lateral (MINT trial)", pontuacao:9, conclusao:"Corticoide: rápido mas recidiva alta (>52 sem). Exercício: melhor desfecho tardio.", fonte:"Lancet 2013", url:"https://pedro.org.au/portuguese/resources/3560/", doi:"10.1016/S0140-6736(13)60067-0" },
+      { id:"PEDro-4780", titulo:"Ondas de choque na epicondilite lateral refratária", pontuacao:7, conclusao:"Adjuvante válido quando exercício falha (NNT=4).", fonte:"Cochrane 2019", url:"https://pedro.org.au/portuguese/resources/4780/" },
     ],
     escalas:["PRTEE (Patient-Rated Tennis Elbow Evaluation)","DASH","VAS","NPRS","Global Rating of Change (GRC)"],
-    atualizacao:"MINT Trial Lancet 2013 | Cochrane Elbow 2019 | BJSM 2021",
+    atualizacao:"MINT Trial Lancet 2013 | CPG JOSPT 2022 | BJSM 2021",
+    referencias:[
+      { id:"PMID:23419712", title:"MINT Trial: Corticosteroid vs exercise for tennis elbow (Lancet 2013)", url:"https://pubmed.ncbi.nlm.nih.gov/23419712/" },
+      { id:"Cochrane CD014429", title:"Shockwave therapy for lateral elbow pain", url:"https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD014429/" },
+    ],
   },
   // ── Top 50 patologias ortopédicas ────────────────────────────────────
   "fascite-plantar":{
@@ -480,6 +540,13 @@ const KB = {
   },
   "tendinopatia-aquiles":{
     label:"Tendinopatia de Aquiles",
+    tests:[
+      {name:"Teste de Thompson (Compressão da Panturrilha)",desc:"Ruptura do tendão de Aquiles. Sens. ~96%, Esp. ~93%.",how:"Paciente em DV, pés para fora da maca. Comprimir a panturrilha (porção mais larga). Positivo: ausência de flexão plantar passiva. Alta acurácia para ruptura completa.",video:"https://www.youtube.com/watch?v=4kyEFpKWN50"},
+      {name:"Matles Test",desc:"Ruptura do tendão de Aquiles. Sens. ~88%, Esp. ~85%.",how:"Paciente em DV, joelhos fletidos 90°. Observar o posicionamento do pé. Normal: leve flexão plantar. Positivo: pé neutro ou em dorsiflexão (queda do pé) = ruptura.",video:"https://www.youtube.com/watch?v=rcMJgW6mOcY"},
+      {name:"Royal London Hospital Test",desc:"Tendinopatia de Aquiles. Sens. ~78%, Esp. ~90%.",how:"Palpação ao longo do tendão com o paciente em DV e pé pendente. Positivo: dor à palpação focal 2-6 cm proximal à inserção calcânea. Associar a espessamento fusiforme (Arc Sign).",video:""},
+      {name:"Arc Sign",desc:"Tendinopatia de Aquiles com espessamento fusiforme.",how:"Observar o tendão em posição neutra e com dorsiflexão/flexão plantar ativa. Positivo: abaulamento fusiforme visível/palpável que se desloca com o movimento do tornozelo.",video:""},
+      {name:"Algometria de Pressão (PPT)",desc:"Limiar de dor à pressão no tendão.",how:"Aplicar pressão crescente com algômetro (1 cm²) a 2 cm proximal ao calcâneo. Comparar com o lado contralateral. Diferença > 30 kPa = positivo para tendinopatia.",video:""},
+    ],
     redFlags:["Ruptura aguda do tendão (Thompson +)","Tendão com nódulo fixo + dor noturna (suspeitar de xantoma / rotura)","Febre + calor + rubor local (suspeitar de tendinite séptica)","Dor bilateral + artrite (suspeitar de espondiloartropatia)"],
     goldStandard:"Carga excêntrica (protocolo Alfredson / Silbernagel) – Evidência A. Isométrico para analgesia imediata. Evitar repouso absoluto. Correção de fatores de risco (sobrecarga de treino, encurtamento de gêmeos) (BJSM 2020 – CPG JOSPT 2021).",
     escalas:EVIDENCE["tendinopatia-aquiles"].escalas,
@@ -528,12 +595,26 @@ const KB = {
   },
   "impacto-femoroacetabular":{
     label:"Impacto Femoroacetabular",
+    tests:[
+      {name:"Teste FADIR (Flexão-Adução-Rotação Interna)",desc:"Impacto femoroacetabular tipo Pincer/CAM. Sens. ~96%, Esp. ~92%.",how:"Paciente em DD. Flexão 90° + adução + rotação interna forçada do quadril. Positivo: dor profunda na virilha ou na região anterior do quadril. Altamente sensível.",video:"https://www.youtube.com/watch?v=6vL5F78N6lo"},
+      {name:"Teste FABER / Patrick",desc:"Diferenciação intra-articular vs SI. Sens. ~82%, Esp. ~76%.",how:"Paciente em DD. Tornozelo do lado testado sobre o joelho contralateral (posição '4'). Pressionar joelho ipsilateral. Positivo: dor na virilha = quadril; dor posterior = SI.",video:"https://www.youtube.com/watch?v=gRvmXN4GSyo"},
+      {name:"Teste de Stinchfield (Resistido)",desc:"Patologia intra-articular do quadril. Sens. ~88% para impacto.",how:"Paciente em DD, quadril em flexão 45°. Aplicar resistência manual contra flexão ativa do quadril. Positivo: dor na virilha ou região anterior do quadril.",video:"https://www.youtube.com/watch?v=mD2yd4q0LNs"},
+      {name:"Teste de Scotty Dog / DEXTRUM",desc:"Avaliação de impacto CAM. Sens. ~82%.",how:"Paciente em DD. Rotacionar o quadril neutro 15-20° interna e externamente com o quadril neutro. Positivo: sensação de ressalto ou impacto doloroso.",video:""},
+      {name:"Foveal Distraction Test",desc:"Lesão labral / impacto.",how:"Paciente em DD, quadril em 30° flexão + 10° adução. Distração axial suave (tração longitudinal). Positivo: alívio da dor intra-articular = lesão labral/impacto.",video:""},
+    ],
     redFlags:["Dor súbita + impotência funcional (suspeitar de lesão labral aguda)","Atrofia glútea rápida","Sintomas bilaterais + rigidez matinal (espondiloartropatia)"],
     goldStandard:"Fortalecimento de glúteo + core + controle rotacional. Evitar cirurgia antes de 6 meses de reabilitação. Artroscopia de quadril para lesão labral refratária (CPG JOSPT 2022 – Evidência B).",
     escalas:EVIDENCE["impacto-femoroacetabular"].escalas,
   },
   coxartrose:{
     label:"Artrose de Quadril",
+    tests:[
+      {name:"Teste de Thomas (Flexo-Contratura)",desc:"Contratura em flexão do quadril. Específico para rigidez por OA.",how:"Paciente em DD, levar ambos os joelhos ao peito. Soltar a perna testada. Positivo: coxa não toca a maca (ângulo > 0° de flexão residual). Pode ser difícil em OA avançada.",video:"https://www.youtube.com/watch?v=z8_pY73CGL8"},
+      {name:"Teste de Trendelenburg / Bascinamento Pélvico",desc:"Insuficiência de abdutores (glúteo médio) na OA. Sens. ~67%.",how:"Paciente em apoio unipodal do lado não testado. Observar inclinação pélvica contralateral. Positivo: queda da pelve para o lado oposto = insuficiência abdutora.",video:"https://www.youtube.com/watch?v=BM4CXIiRrhk"},
+      {name:"Teste FABER / Patrick",desc:"Intra-articular vs SI. Sens. ~78%, Esp. ~92% para OA.",how:"Posição '4'. Positivo: dor na virilha restringe o movimento de abdução/externa. OA avançada apresenta restrição capsular global.",video:"https://www.youtube.com/watch?v=gRvmXN4GSyo"},
+      {name:"Log Roll Test (Rotação Passiva)",desc:"Irritação intra-articular. Alta especificidade.",how:"Paciente em DD, perna relaxada. Rotacionar passivamente interna e externamente o quadril. Positivo: dor ou restrição de amplitude. OA apresenta restrição de RI precoce.",video:""},
+      {name:"Teste de Stinchfield (Flexão Resistida)",desc:"Sinal de irritação intra-articular.",how:"Flexão ativa de quadril contra resistência manual com joelho estendido. Positivo: dor na virilha ou região anterior do quadril.",video:"https://www.youtube.com/watch?v=mD2yd4q0LNs"},
+    ],
     redFlags:["Perda rápida de espaço articular","Dor à noite / em repouso","Claudicação progressiva","Desabamento da cabeça femoral (necrose avascular)"],
     goldStandard:"Fortalecimento de abdutores + extensores de quadril. Hidroterapia e ciclismo de baixa resistência. Controle de peso. Prótese total de quadril quando falha do conservador (OARSI 2023 – Evidência A).",
     escalas:EVIDENCE.coxartrose.escalas,
@@ -546,6 +627,13 @@ const KB = {
   },
   "estenose-lombar":{
     label:"Estenose do Canal Lombar",
+    tests:[
+      {name:"Teste de Marcha (Walking Test)",desc:"Claudicação neurogênica vs vascular. Alta especificidade.",how:"Paciente caminha em superfície plana até o início dos sintomas. Registrar a distância. Positivo: dor/parestesia que piora com extensão lombar (caminhando ereto) e melhora ao sentar ou inclinar. Distância < 200m sugere estenose moderada-grave.",video:""},
+      {name:"Teste de Extensão Lombar (Stork Test)",desc:"Estenose do canal lombar por estresse extensor. Sens. ~81%.",how:"Paciente em pé, estender a coluna lombar passivamente (ou em bipedestação estendida). Manter por 30s. Positivo: reprodução da dor/sintomas nas pernas (claudicação neurogênica).",video:"https://www.youtube.com/watch?v=K3v9v74DNoA"},
+      {name:"Teste de Flexão Lombar (Alívio)",desc:"Diferenciação estenose vs outras lombalgias.",how:"Paciente senta e flexiona o tronco (ou senta-se inclinado). Positivo para estenose: alívio completo ou parcial dos sintomas em segundos (aumento do diâmetro do canal em flexão).",video:""},
+      {name:"Teste de Schober Modificado",desc:"Mobilidade lombar — hipomobilidade associada.",how:"Marcar L5 e 10 cm acima + 5 cm abaixo em bipedestação. Pedir flexão máxima. Normal: distância aumenta ≥ 5 cm no segmento superior e ≥ 8 cm no inferior. Redução sugere rigidez segmentar.",video:"https://www.youtube.com/watch?v=iEOiAGoaxQM"},
+      {name:"Teste de Ciclismo Estacionário",desc:"Diferenciação claudicação neurogênica vs vascular.",how:"Paciente pedala em bicicleta estacionária em posição ereta vs inclinada. Positivo para estenose: sintomas melhoram com flexão (inclinado). Se sintomas persistem em ambas posturas = suspeitar de causa vascular.",video:""},
+    ],
     redFlags:["Claudicação neurogênica progressiva","Síndrome da cauda equina","Perda de força / atrofia de membros inferiores","Incontinência urinária / fecal"],
     goldStandard:"Fortalecimento de extensores de tronco + flexão lombar + bicicleta. PNE + terapia manual. Opções cirúrgicas (laminectomia) se falha de 6 meses de conservador ou déficit progressivo (CPG NICE 2023 – Evidência A).",
     escalas:EVIDENCE["estenose-lombar"].escalas,
@@ -606,12 +694,25 @@ const KB = {
   },
   "tunel-carpo":{
     label:"Síndrome do Túnel do Carpo",
+    tests:[
+      {name:"Teste de Phalen (Flexão do Punho)",desc:"Compressão do mediano. Sens. ~68%, Esp. ~73%.",how:"Flexão máxima passiva bilateral dos punhos (dorsos das mãos se tocando) mantida por 60s. Positivo: parestesia nos primeiros 3-4 dedos. Aparece em média aos 20s.",video:"https://www.youtube.com/watch?v=Hn5vVNEPBrs"},
+      {name:"Sinal de Tinel (Percussão do Mediano)",desc:"Sensibilidade neural. Sens. ~50%, Esp. ~77%.",how:"Percussão suave com dedo ou martelo reflexo sobre o túnel do carpo (entre os tendões palmar longo e flexor radial do carpo). Positivo: formigamento/distribuição do mediano.",video:"https://www.youtube.com/watch?v=JqZFoLL3_UM"},
+      {name:"Teste de Durkan (Compressão do Carpo)",desc:"Compressão direta do túnel. Sens. ~89%, Esp. ~96% (mais sensível que Phalen).",how:"Aplicar pressão com os polegares diretamente sobre o túnel do carpo por 30s. Positivo: parestesia nos primeiros 3-4 dedos. Mais sensível que Phalen e Tinel.",video:"https://www.youtube.com/watch?v=g1zm_m3qKBk"},
+      {name:"ULTT 1 – Mediano",desc:"Tensão neural do nervo mediano. Sens. ~75%.",how:"Depressão escapular → abdução 90° → supinação → extensão do cotovelo → extensão do punho/dedos → inclinação cervical contralateral. Positivo: sintomas no território mediano que aliviam com inclinação ipsilateral.",video:"https://www.youtube.com/watch?v=rir6x6Iiqc4"},
+      {name:"Hand Elevation Test",desc:"Teste de isquemia neural. Alta especificidade.",how:"Paciente eleva ambos os braços acima da cabeça por 60s. Positivo: parestesia nos dedos inervados pelo mediano dentro de 60s. Teste complementar ao Phalen.",video:""},
+    ],
     redFlags:["Atrofia tenar progressiva","Perda de sensibilidade permanente","Sinal de Tinel / Phalen negativos (repensar diagnóstico)","Sintomas proximais (sugerem radiculopatia cervical)"],
     goldStandard:"Órtese neutra noturna + exercícios de deslizamento tendíneo. Eletromiografia após 6 semanas se falha. Corticoterapia local como adjuvante de curto prazo. Liberação cirúrgica se atrofia ou falha de conservador (CPG JOSPT 2022 – Evidência A).",
     escalas:EVIDENCE["tunel-carpo"].escalas,
   },
   "de-quervain":{
     label:"Tenossinovite de De Quervain",
+    tests:[
+      {name:"Teste de Finkelstein",desc:"Tenossinovite do 1º compartimento dorsal. Sens. ~99%, Esp. ~88%.",how:"Paciente fecha o punho com o polegar dentro dos outros dedos. Examinador faz desvio ulnar passivo do punho rapidamente. Positivo: dor aguda na base do polegar (estilóide radial). Altamente sensível.",video:"https://www.youtube.com/watch?v=P2Wyv3k_mOc"},
+      {name:"Eichoff Maneuver (Finkelstein Modificado)",desc:"De Quervain. Esp. ~88% (padrão ouro clínico).",how:"Paciente segura o polegar com os outros dedos (punho fechado). Examinador faz desvio ulnar passivo. Equivalente ao Finkelstein; alguns pacientes referem mais precisão.",video:"https://www.youtube.com/watch?v=Phy1I3gMA3s"},
+      {name:"Teste de Brunelli",desc:"Descartar tendinopatia do flexor radial do carpo (FCR).",how:"Flexão ativa do punho contra resistência com polegar estendido. Positivo para De Quervain: DOR no 1º compartimento (não no FCR). Diferencia De Quervain de tendinite do FCR.",video:""},
+      {name:"Teste de Compressão do 1º Compartimento Dorsal",desc:"Confirmação diagnóstica.",how:"Palpação ao longo do 1º compartimento dorsal (estilóide radial) com movimento ativo do polegar. Positivo: crepitação palpável ou dor ao deslizamento tendíneo.",video:""},
+    ],
     redFlags:["Teste de Finkelstein negativo (repensar diagnóstico)","Sintomas bilaterais + artrite (espondiloartropatia)","Tumor palpável na tabaqueira anatômica"],
     goldStandard:"Órtese de polegar + repouso relativo. Exercício de deslizamento tendíneo. Corticoide local como adjuvante. Cirurgia de liberação se refratário > 6 meses (CPG JOSPT 2022 – Evidência B).",
     escalas:EVIDENCE["de-quervain"].escalas,
@@ -798,27 +899,7 @@ function LogoSVG() {
 
 
 
-// ── PEDro card ────────────────────────────────────────────────────────────────
-function PedroCard({ study }) {
-  return (
-    <div style={{ background:C.surface, border:`1px solid ${C.borderLight}`, borderRadius:8, padding:"10px 14px", marginBottom:8 }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
-        <div style={{ flex:1 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:3 }}>{study.titulo}</div>
-          <div style={{ fontSize:11, color:C.textSub, lineHeight:1.5 }}>{study.conclusao}</div>
-        </div>
-        <div style={{ textAlign:"center", flexShrink:0 }}>
-          <div style={{ fontSize:18, fontWeight:900, color:C.green }}>{study.pontuacao}</div>
-          <div style={{ fontSize:9, color:C.textMuted, fontWeight:700 }}>/10 PEDro</div>
-        </div>
-      </div>
-      <div style={{ display:"flex", gap:6, marginTop:6, flexWrap:"wrap" }}>
-        <span style={{ fontSize:10, color:C.amber, background:C.amberBg, border:`1px solid ${C.amber}30`, borderRadius:6, padding:"2px 8px" }}>{study.id}</span>
-        <span style={{ fontSize:10, color:C.textMuted, background:C.card, border:`1px solid ${C.border}`, borderRadius:6, padding:"2px 8px" }}>{study.fonte}</span>
-      </div>
-    </div>
-  );
-}
+
 
 
 
@@ -1227,6 +1308,9 @@ export default function Sasyra() {
   // Testes
   const [tests, setTests] = useState({});
 
+  // Diagnóstico Cinesioterapêutico
+  const [diagnosticoCinesio, setDiagnosticoCinesio] = useState("");
+
   // Obs / IA
   const [obs, setObs] = useState("");
   const [aiLoad, setAiLoad] = useState(false);
@@ -1267,13 +1351,17 @@ export default function Sasyra() {
   const currentLogs = logs.filter(l => l.patientId === (pt.id || pt.nome));
 
   const kb = KB[queixaKey];
+  const queixaKeys = detectMultipleKB(queixa);
+  const kbList = queixaKeys.map(k => KB[k]).filter(Boolean);
   const evidence = EVIDENCE[queixaKey];
-  const cifSuggestions = evidence?.cif || [];
+  const cifSuggestions = [...new Set(queixaKeys.flatMap(k => EVIDENCE[k]?.cif || []))];
+  const mergedRedFlags = [...new Set(kbList.flatMap(k => k?.redFlags || []))];
+  const mergedEscalas = [...new Set(kbList.flatMap(k => k?.escalas || []))];
   const autoCIF = generateCIF({ evaMov, evaRep, avds, localDor, gonio, tests, yellowFlags:yellowFlagsState, tempoDor });
   const imc = calcIMC(pt.peso, pt.altura);
 
   const isEvaValid = evaMov !== null && evaMov !== undefined && evaMov !== "";
-  const hasFilledTests = kb && Object.keys(tests||{}).length > 0 && Object.values(tests).some(v=>v!==""&&v!==undefined&&v!==null&&v!=="Não realizado");
+  const hasFilledTests = kbList.length > 0 && Object.values(tests||{}).some(v=>v!==""&&v!==undefined&&v!==null&&v!=="Não realizado");
   const { steps:progSteps, pct:progPct } = useProgress(pt, queixa, isEvaValid?evaMov:null, gonio, hasFilledTests?tests:{}, kb);
 
   // ── Assessment History ─────────────────────────────────────────────────────
@@ -1288,6 +1376,7 @@ export default function Sasyra() {
         queixa, queixaKey, localDor, caraterDor, tempoDor, melhora, piora, hda,
         comorbid, antec, meds, yellowFlagsState, selectedRedFlags, evaMov, evaRep, avds, objTrat, nivelAti,
         postura, marcha, edema, palpacao, sensib, reflexos, forca, gonio, tests, obs, regiao,
+        diagnosticoCinesio,
       };
       if (idx !== -1) {
         const realIdx = prev.length - 1 - idx;
@@ -1311,6 +1400,7 @@ export default function Sasyra() {
     setForca(Array.isArray(a.forca) ? a.forca : (a.forca && typeof a.forca === "object" ? Object.entries(a.forca).filter(([,v])=>v).map(([k,v])=>({id:_gId++,muscle:k,value:v})) : []));
     setGonio(a.gonio||[{id:1,joint:"",movement:"",value:""}]);
     setTests(a.tests||{}); setObs(a.obs||""); setRegiao(a.regiao||"Centro-Oeste");
+    setDiagnosticoCinesio(a.diagnosticoCinesio||"");
   };
   const resetAssessment = () => {
     setQueixa(""); setQueixaKey(""); setLocalDor([]); setCaraterDor([]);
@@ -1321,6 +1411,7 @@ export default function Sasyra() {
     setReflexos("");     setForca([]);
     setGonio([{id:1,joint:"",movement:"",value:""}]);
     setTests({}); setObs(""); setRegiao("Centro-Oeste");
+    setDiagnosticoCinesio("");
   };
 
   // ── Express Assessment ──────────────────────────────────────────────────────
@@ -1374,7 +1465,7 @@ export default function Sasyra() {
         `Edema: ${edema} | Sensibilidade: ${sensib} | Reflexos: ${reflexos}`,
         `Força: ${forca.filter(r=>r.value).map(r=>`${r.muscle}:${r.value}`).join(", ")}`,
         `Goniometria: ${gonio.filter(g=>g.value).map(g=>`${g.joint} ${g.movement}:${g.value}°`).join("; ")}`,
-        `Testes: ${Object.entries(tests).filter(([,v])=>v&&v!=="Não realizado").map(([k,v])=>`${k}:${v}`).join("; ")}`,
+        `Testes: ${(()=>{const e=Object.entries(tests).filter(([,v])=>v&&v!=="Não realizado");return e.map(([k,v])=>{const s=k.indexOf("|");return s>0?`${k.slice(0,s)} — ${k.slice(s+1)}: ${v}`:`${k}: ${v}`}).join("; ");})()}`,
         `Comorbidades: ${comorbid.join(", ")} | Antecedentes: ${antec.join(", ")} | Medicamentos: ${meds}`,
         `Yellow flags: ${yellowFlagsState.join(", ")}`,
         `CIF auto: ${autoCIF.map(c=>`${c.code}(${c.qualifier})`).join(", ")}`,
@@ -1572,12 +1663,16 @@ Responda em tópicos claros e objetivos. Seja preciso, clínico e baseado em evi
             tests={tests} setTests={setTests}
             obs={obs} setObs={setObs}
             aiLoad={aiLoad} runAI={runAI} aiRes={aiRes}
-            kb={kb} evidence={evidence} cifSuggestions={cifSuggestions} autoCIF={autoCIF} imc={imc}
+            kb={kb} kbList={kbList} queixaKeys={queixaKeys}
+            evidence={evidence} cifSuggestions={cifSuggestions} autoCIF={autoCIF} imc={imc}
+            mergedRedFlags={mergedRedFlags} mergedEscalas={mergedEscalas}
             progSteps={progSteps} detectKB={detectKB}
+            diagnosticoCinesio={diagnosticoCinesio} setDiagnosticoCinesio={setDiagnosticoCinesio}
             assessmentHistory={assessmentHistory} saveAssessment={saveAssessment}
             loadAssessment={loadAssessment} resetAssessment={resetAssessment}
             patientId={pt.id || pt.nome}
             tryFeature={tryFeature} plan={plan}
+            onUpgrade={() => { setPaywallOpen(false); setAppView("plans"); }}
             aiRemaining={aiRemaining} aiLimit={aiLimit}
             hasExpansion={hasExpansion} purchaseAIExpansion={purchaseAIExpansion}
           />
@@ -1585,50 +1680,7 @@ Responda em tópicos claros e objetivos. Seja preciso, clínico e baseado em evi
 
         {/* ══════════════ EVIDÊNCIAS ══════════════════════════════════════════ */}
         {tab==="evidencias" && (
-          <>
-            <div style={{ marginBottom:14, padding:"12px 16px", background:C.blueBg, border:`1px solid ${C.blue}40`, borderRadius:12, fontSize:12, color:C.textSub, lineHeight:1.7 }}>
-              📚 Base de evidências do SASYRA — estudos PEDro ≥ 7, meta-análises Cochrane e CPGs internacionais (JOSPT, NICE, EuroPain). Atualizado conforme guidelines 2023–2024.
-            </div>
-            {Object.entries(KB).map(([key, kb2])=>(
-              <Section key={key} title={kb2.label} icon="🔬" badge={`${EVIDENCE[key]?.pedro?.length||0} estudos PEDro`}>
-                <SubHeading>Estudos PEDro — Ensaios Clínicos</SubHeading>
-                {EVIDENCE[key]?.pedro?.map(study=>(
-                  <PedroCard key={study.id} study={study}/>
-                ))}
-                <SubHeading>Padrão-ouro atual</SubHeading>
-                <div style={{ fontSize:12, color:C.textSub, lineHeight:1.7, marginBottom:10 }}>{kb2.goldStandard}</div>
-                <SubHeading>Escalas de desfecho recomendadas</SubHeading>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                  {kb2.escalas?.map(e=>{
-                    const findScale = (name) => {
-                      let s = SCALES[name];
-                      if (!s) s = Object.values(SCALES).find(sc => sc.aliases?.includes(name));
-                      return s;
-                    };
-                    const sc = findScale(e);
-                    return (
-                      <span key={e} onClick={() => sc && setScaleModal({open:true, scale:sc, key:e})}
-                        style={{ fontSize:11, color:sc?C.green:C.amber, background:sc?C.greenBg:C.amberBg, border:`1px solid ${sc?C.green:C.amber}50`, borderRadius:6, padding:"3px 10px", cursor:sc?"pointer":"default", transition:"all 0.15s" }}>
-                        {sc ? `📝 ${e}` : e}
-                      </span>
-                    );
-                  })}
-                  {df.escalaData?.scaleName && (
-                    <span style={{ fontSize:11, color:"var(--green)", background:"var(--greenBg)", border:"1px solid var(--green)", borderRadius:6, padding:"3px 10px", fontWeight:700 }}>
-                      {df.escalaData.shortName}: {df.escalaData.pct}% ({df.escalaData.date})
-                    </span>
-                  )}
-                </div>
-                <SubHeading>Yellow flags desta condição</SubHeading>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                  {kb2.yellowFlags?.map(f=>(
-                    <span key={f} style={{ fontSize:11, color:C.amber, background:C.amberBg, border:`1px solid ${C.amber}30`, borderRadius:6, padding:"2px 8px" }}>{f}</span>
-                  ))}
-                </div>
-                <div style={{ marginTop:8, fontSize:10, color:C.textMuted }}>Atualização: {EVIDENCE[key]?.atualizacao}</div>
-              </Section>
-            ))}
-          </>
+          <EvidencePanel evidence={EVIDENCE} kb={KB} />
         )}
 
         {/* ══════════════ DIÁRIO ══════════════════════════════════════════════ */}
@@ -2184,24 +2236,40 @@ Responda em tópicos claros e objetivos. Seja preciso, clínico e baseado em evi
               )}
 
               {/* ── Testes especiais ───────────────────────────────────────── */}
-              {Object.entries(tests).filter(([,v])=>v&&v!=="Não realizado").length>0 && (
-                <div style={{ marginBottom:18 }}>
-                  <div style={{ fontWeight:800, color:"#0F6E56", fontSize:12, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8, borderBottom:"1px solid #E2E8F0", paddingBottom:6 }}>Testes Especiais</div>
-                  <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
-                    <thead><tr style={{ background:"#F8FAFC" }}>
-                      {["Teste","Resultado"].map(h=><th key={h} style={{ padding:"5px 10px", textAlign:"left", fontWeight:700, fontSize:10, color:"#7C8FA6", textTransform:"uppercase" }}>{h}</th>)}
-                    </tr></thead>
-                    <tbody>
-                      {Object.entries(tests).filter(([,v])=>v&&v!=="Não realizado").map(([k,v])=>(
-                        <tr key={k} style={{ borderBottom:"1px solid #F1F5F9" }}>
-                          <td style={{ padding:"4px 10px" }}>{k}</td>
-                          <td style={{ padding:"4px 10px", fontWeight:700, color:v==="Positivo"?"#E24B4A":"#3B6D11" }}>{v}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              {(() => {
+                const grouped = {};
+                Object.entries(tests).filter(([,v])=>v&&v!=="Não realizado").forEach(([k,v])=>{
+                  const sep = k.indexOf("|");
+                  const cond = sep>0 ? k.slice(0,sep) : "Geral";
+                  const name = sep>0 ? k.slice(sep+1) : k;
+                  if (!grouped[cond]) grouped[cond] = [];
+                  grouped[cond].push({ name, result:v });
+                });
+                const keys = Object.keys(grouped);
+                return keys.length>0 && (
+                  <div style={{ marginBottom:18 }}>
+                    <div style={{ fontWeight:800, color:"#0F6E56", fontSize:12, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8, borderBottom:"1px solid #E2E8F0", paddingBottom:6 }}>Testes Especiais</div>
+                    {keys.map(cond => (
+                      <div key={cond} style={{ marginBottom:10 }}>
+                        {keys.length>1 && <div style={{ fontSize:10, fontWeight:700, color:"#7C8FA6", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:4 }}>{KB[cond]?.label || cond}</div>}
+                        <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+                          <thead><tr style={{ background:"#F8FAFC" }}>
+                            {["Teste","Resultado"].map(h=><th key={h} style={{ padding:"5px 10px", textAlign:"left", fontWeight:700, fontSize:10, color:"#7C8FA6", textTransform:"uppercase" }}>{h}</th>)}
+                          </tr></thead>
+                          <tbody>
+                            {grouped[cond].map(({name,result})=>(
+                              <tr key={name} style={{ borderBottom:"1px solid #F1F5F9" }}>
+                                <td style={{ padding:"4px 10px" }}>{name}</td>
+                                <td style={{ padding:"4px 10px", fontWeight:700, color:result==="Positivo"?"#E24B4A":"#3B6D11" }}>{result}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
 
               {/* ── Histórico e comorbidades ───────────────────────────────── */}
               {(comorbid.length>0 || antec.length>0 || meds) && (

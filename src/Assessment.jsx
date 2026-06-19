@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { AudioField, NumericDrum, EvaSlider, TagSelect, SingleSelect, GonioRow, MRCRow, TestCard, SessionCounter, HonorariosCard, Section, Row, Field, BodyMap, useMediaQuery } from "./components";
-import { detectLocalDor } from "./utils/clinicalDetection";
+import { useClinicalScan } from "./hooks/useClinicalScan";
+import { useSemanticScanner } from "./hooks/useSemanticScanner";
+import { detectLocalDor, extractClinicalEntities } from "./utils/clinicalDetection";
 
 const C = {
   bg: "var(--bg)", surface: "var(--surface)", card: "var(--card)", cardAlt: "var(--cardAlt)",
@@ -90,11 +92,15 @@ export default function Assessment({
   tests, setTests,
   obs, setObs,
   aiLoad, runAI, aiRes,
-  kb, cifSuggestions, autoCIF, imc,
+  kb, kbList, queixaKeys, cifSuggestions, autoCIF, imc,
+  mergedRedFlags, mergedEscalas,
   progSteps, detectKB,
   assessmentHistory, saveAssessment, loadAssessment, resetAssessment, patientId,
-  tryFeature, plan, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion,
+  tryFeature, plan, onUpgrade, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion,
+  diagnosticoCinesio, setDiagnosticoCinesio,
 }) {
+  const { entities, dcSuggestion } = useClinicalScan(queixa);
+  const { handleComorbidChange, handleAntecChange, detected: medicalDetected } = useSemanticScanner(queixa, { setComorbid, setAntec });
   const patientAssessments = assessmentHistory
     .filter(a => a.patientId === patientId)
     .sort((a, b) => (b.id || 0) - (a.id || 0));
@@ -103,8 +109,11 @@ export default function Assessment({
   const isMobile = useMediaQuery("(max-width:767px)");
 
   useEffect(() => {
-    if (kb) setExpandedSections(p => p.includes("testes") ? p : [...p, "testes"]);
-  }, [kb]);
+    if (kbList.length > 0) {
+      const firstKey = "testes-" + (queixaKeys[0] || "0");
+      setExpandedSections(p => p.includes(firstKey) ? p : [...p, firstKey]);
+    }
+  }, [kbList, queixaKeys]);
   return (
     <>
       {/* Histórico de Avaliações */}
@@ -197,13 +206,30 @@ export default function Assessment({
             <span style={{ fontSize:11, fontWeight:800, color:"var(--red)", letterSpacing:"0.1em", textTransform:"uppercase" }}>Queixa principal</span>
             <span style={{ fontSize:11, color:"var(--textSub)", fontWeight:400 }}>— digite ou use o microfone</span>
           </div>
-          <AudioField value={queixa} onChange={v => { const t = typeof v === "function" ? v(queixa) : v; setQueixa(t); setQueixaKey(detectKB(t)); setLocalDor(detectLocalDor(t)); }} placeholder="Ex: Lombalgia com irradiação para MMII há 3 semanas após queda…" rows={2} />
+          <AudioField value={queixa} onChange={v => { const t = typeof v === "function" ? v(queixa) : v; setQueixa(t); setQueixaKey(detectKB(t)); const regions = detectLocalDor(t); if (regions.length > 0) setLocalDor(regions); const { painChars } = extractClinicalEntities(t); if (painChars.length > 0) setCaraterDor(prev => { const toAdd = painChars.filter(c => !prev.includes(c)); return toAdd.length > 0 ? [...prev, ...toAdd] : prev; }); }} placeholder="Ex: Lombalgia com irradiação para MMII há 3 semanas após queda…" rows={2} />
         </div>
+
+        {queixa && (entities.muscles.length > 0 || entities.laterality || entities.painChars.length > 0) && (
+          <div style={{ background: C.blueBg, border: `1px solid ${C.blue}40`, borderRadius: 10, padding: "10px 14px", margin: "12px 0" }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: C.blue, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>🔍 Varredura Semântica</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, fontSize: 12 }}>
+              {entities.muscles.length > 0 && (
+                <span style={{ color: C.textSub }}>Músculos: <strong style={{ color: C.text }}>{entities.muscles.join(", ")}</strong></span>
+              )}
+              {entities.laterality && (
+                <span style={{ color: C.textSub }}>Lateralidade: <strong style={{ color: C.text }}>{entities.laterality}</strong></span>
+              )}
+              {entities.painChars.length > 0 && (
+                <span style={{ color: C.textSub }}>Caráter: <strong style={{ color: C.text }}>{entities.painChars.join(", ")}</strong></span>
+              )}
+            </div>
+          </div>
+        )}
 
         {kb && (
           <div style={{ background: C.greenBg, border: `1px solid ${C.green}40`, borderRadius: 10, padding: "12px 14px", margin: "12px 0" }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: C.green, marginBottom: 10 }}>
-              ✓ Condição identificada: <strong>{kb.label}</strong> — protocolos carregados automaticamente
+              ✓ Condição{queixaKeys.length > 1 ? "ões" : ""} identificada{queixaKeys.length > 1 ? "s" : ""}: {kbList.slice(0,2).map((k,i) => <strong key={i}>{k.label}{i < kbList.slice(0,2).length-1 ? " + " : ""}</strong>)}{kbList.length > 2 && <span style={{fontSize:10,color:C.textMuted}}> e +{kbList.length-2}</span>} — protocolos carregados automaticamente
             </div>
 
             {plan !== "ia" ? (
@@ -211,8 +237,7 @@ export default function Assessment({
                 <div style={{ fontSize: 10, fontWeight: 800, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>CIF sugeridos pela condição</div>
                 <div style={{ fontSize: 12, color: C.textMuted, display:"flex", alignItems:"center", gap:8 }}>
                   🔒 Sugestão CIF disponível no <strong style={{color:C.green}}>Plano IA Premium</strong>.
-                  <button onClick={() => tryFeature("cif", "CIF Automatizada",
-                    "A classificação CIF automatizada com qualificadores está disponível apenas no Plano IA Premium. Faça upgrade e tenha relatórios CIF completos automaticamente.")}
+                  <button onClick={() => onUpgrade?.()}
                     style={{ background:"transparent", border:"none", color:C.green, fontWeight:700, cursor:"pointer", fontSize:12, fontFamily:F, textDecoration:"underline" }}>
                     Desbloquear
                   </button>
@@ -236,8 +261,7 @@ export default function Assessment({
                 <div style={{ fontSize: 10, fontWeight: 800, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>CIF identificados automaticamente (baseados nos dados preenchidos)</div>
                 <div style={{ fontSize: 12, color: C.textMuted, display:"flex", alignItems:"center", gap:8 }}>
                   🔒 CIF automática com qualificadores disponível no <strong style={{color:C.green}}>Plano IA Premium</strong>.
-                  <button onClick={() => tryFeature("cif", "CIF Automatizada com Qualificadores",
-                    "Os qualificadores CIF são gerados automaticamente pela engine SASYRA com base nos seus dados de avaliação. Disponível apenas no Plano IA Premium.")}
+                  <button onClick={() => onUpgrade?.()}
                     style={{ background:"transparent", border:"none", color:C.green, fontWeight:700, cursor:"pointer", fontSize:12, fontFamily:F, textDecoration:"underline" }}>
                     Desbloquear
                   </button>
@@ -259,7 +283,7 @@ export default function Assessment({
             <div style={{ background: C.redBg, border: `1px solid ${C.red}40`, borderRadius: 8, padding: "8px 12px", marginBottom: 10 }}>
               <div style={{ fontSize: 10, fontWeight: 800, color: C.red, letterSpacing: "0.1em", marginBottom: 6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                {kb.redFlags.map(f => {
+                {mergedRedFlags.map(f => {
                   const active = selectedRedFlags?.includes(f);
                   return (
                     <button key={f} onClick={() => setSelectedRedFlags(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f])}
@@ -280,11 +304,11 @@ export default function Assessment({
               <strong style={{ color: C.greenDim }}>Padrão-ouro: </strong>{kb.goldStandard}
             </div>
 
-            {kb.escalas?.length > 0 && (
+            {mergedEscalas?.length > 0 && (
               <div style={{ marginTop: 10, background: C.card, borderRadius: 8, padding: "8px 12px" }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>📏 Escalas recomendadas para esta condição</div>
+                <div style={{ fontSize: 10, fontWeight: 800, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>📏 Escalas recomendadas para esta(s) condição(ões)</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                  {kb.escalas.map(e => (
+                  {mergedEscalas.map(e => (
                     <span key={e} style={{ fontSize: 11, color: C.amber, background: C.amberBg, border: `1px solid ${C.amber}30`, borderRadius: 6, padding: "2px 8px" }}>{e}</span>
                   ))}
                 </div>
@@ -329,15 +353,46 @@ export default function Assessment({
           <AudioField value={hda} onChange={v => setHda(typeof v === "function" ? v(hda) : v)} placeholder="Início, mecanismo de lesão, evolução, tratamentos anteriores, exames realizados…" rows={3} />
         </Field>
 
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: C.textMuted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Diagnóstico Cinesioterapêutico (DCT)</div>
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+            <input value={diagnosticoCinesio} onChange={e => setDiagnosticoCinesio(e.target.value)}
+              style={{ ...inp(), flex: 1 }} placeholder="Ex: Lombalgia mecânica com disfunção de controle motor e fraqueza de glúteo médio D" />
+            {dcSuggestion && !diagnosticoCinesio && (
+              <button onClick={() => setDiagnosticoCinesio(dcSuggestion)}
+                style={{ background: C.blueBg, border: `1px solid ${C.blue}40`, borderRadius: 8, padding: "9px 14px", fontSize: 11, fontWeight: 700, color: C.blue, cursor: "pointer", fontFamily: F, whiteSpace: "nowrap" }}>
+                ← Sugestão
+              </button>
+            )}
+          </div>
+          {dcSuggestion && !diagnosticoCinesio && (
+            <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4, fontStyle: "italic" }}>
+              Baseado na queixa: <strong>{dcSuggestion}</strong>
+            </div>
+          )}
+        </div>
+
         <CollapsibleSub title="Histórico e comorbidades">
           <Row cols="1fr 1fr">
             <Field l="Comorbidades">
               <TagSelect options={["HAS", "DM2", "Obesidade", "Osteoporose", "Artrite/AR", "Fibromialgia", "Depressão", "Ansiedade", "Doença cardíaca", "DPOC", "Neoplasia", "Imunossupressão", "Nenhuma"]}
-                value={comorbid} onChange={setComorbid} />
+                value={comorbid} onChange={handleComorbidChange} />
+              {medicalDetected.comorbid.length > 0 && (
+                <div style={{ fontSize: 9, color: C.textDim, marginTop: 4, display: "flex", gap: 4 }}>
+                  <span>🧬 Detectado:</span>
+                  {medicalDetected.comorbid.map(d => <span key={d} style={{ color: C.green, fontWeight: 600 }}>{d}</span>)}
+                </div>
+              )}
             </Field>
             <Field l="Antecedentes / cirurgias">
               <TagSelect options={["Cirurgia prévia (área)", "Trauma anterior", "Fratura óssea", "Imobilização prolongada", "Fisioterapia anterior", "Infiltração corticoide", "Nenhum relevante"]}
-                value={antec} onChange={setAntec} />
+                value={antec} onChange={handleAntecChange} />
+              {medicalDetected.antec.length > 0 && (
+                <div style={{ fontSize: 9, color: C.textDim, marginTop: 4, display: "flex", gap: 4 }}>
+                  <span>📋 Detectado:</span>
+                  {medicalDetected.antec.map(d => <span key={d} style={{ color: C.green, fontWeight: 600 }}>{d}</span>)}
+                </div>
+              )}
             </Field>
           </Row>
           <Field l="Medicamentos em uso">
@@ -460,15 +515,60 @@ export default function Assessment({
       </CollapsibleSection>
 
       {/* Testes especiais */}
-      {kb && (
-        <CollapsibleSection title={`Testes Especiais — ${kb.label}`} icon="🧪" expanded={expandedSections.includes("testes")} onToggle={()=>toggleSection("testes")}>
-          <p style={{ fontSize: 12, color: C.textMuted, margin: "0 0 14px" }}>
-            Selecione o resultado de cada teste. Clique em ▼ para ver a execução detalhada ou ▶ Vídeo para demonstração.
-          </p>
-          {kb.tests.map(t => (
-            <TestCard key={t.name} test={t} result={tests[t.name] || ""} onResult={v => setTests(tr => ({ ...tr, [t.name]: v }))} />
-          ))}
-        </CollapsibleSection>
+      {kbList.length > 0 && (
+        <>
+          <style>{`
+            @keyframes fadeSlideDown { from { opacity:0; max-height:0; transform:translateY(-6px) } to { opacity:1; max-height:2000px; transform:translateY(0) } }
+            @keyframes fadeSlideUp { from { opacity:1; max-height:2000px; transform:translateY(0) } to { opacity:0; max-height:0; transform:translateY(-6px) } }
+            .teste-accordion-content { overflow:hidden; transition:all 0.3s ease; }
+            .teste-accordion-content.open { animation:fadeSlideDown 0.3s ease forwards; }
+            .teste-accordion-content.closed { animation:fadeSlideUp 0.2s ease forwards; }
+          `}</style>
+          {kbList.map((kbItem, idx) => {
+            const condKey = queixaKeys[idx] || kbItem.label;
+            const isExpanded = expandedSections.includes("testes-" + condKey);
+            return (
+              <div key={condKey} style={{ ...cardStyle(), padding: isMobile?"14px 12px":"20px 22px", marginBottom:10 }}>
+                <div onClick={() => toggleSection("testes-" + condKey)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", userSelect:"none" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:16 }}>🧪</span>
+                    <span style={{ fontWeight:700, fontSize:14, color:C.text }}>
+                      Testes Especiais — {kbItem.label}
+                    </span>
+                    <span style={{ fontSize:10, color:C.textMuted, background:C.surface, borderRadius:4, padding:"1px 6px" }}>
+                      {kbItem.tests?.length || 0} testes
+                    </span>
+                  </div>
+                  <span style={{ fontSize:18, color:C.textMuted, transition:"transform 0.25s ease", transform:isExpanded?"rotate(180deg)":"rotate(0deg)" }}>
+                    ▼
+                  </span>
+                </div>
+                <div className={`teste-accordion-content ${isExpanded ? "open" : "closed"}`} style={isExpanded ? {} : { maxHeight:0, opacity:0 }}>
+                  {isExpanded && (
+                    <div style={{ marginTop:14 }}>
+                      {kbItem.tests?.length > 0 && (
+                        <>
+                          <p style={{ fontSize: 12, color: C.textMuted, margin: "0 0 14px" }}>
+                            Selecione o resultado de cada teste. Clique em ▼ para ver a execução detalhada ou ▶ Vídeo para demonstração.
+                          </p>
+                          {kbItem.tests.map(t => {
+                            const testKey = condKey + "|" + t.name;
+                            return (
+                              <TestCard key={testKey} test={t} result={tests[testKey] || ""} onResult={v => setTests(tr => ({ ...tr, [testKey]: v }))} />
+                            );
+                          })}
+                        </>
+                      )}
+                      {(!kbItem.tests || kbItem.tests.length === 0) && (
+                        <p style={{ fontSize: 12, color: C.textMuted, fontStyle:"italic" }}>Nenhum teste específico cadastrado para esta condição.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </>
       )}
 
       {/* Observações */}

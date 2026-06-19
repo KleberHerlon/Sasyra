@@ -1,7 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { PLAN_LIMITS, PLAN_LABELS, AI_LIMITS, AI_EXPANSION } from "../data/plans";
 
 const STORAGE_KEY = "sasyra_subscription";
+const SUB_EVENT = "sasyra-sub-changed";
 
 function loadSub() {
   try {
@@ -22,9 +23,21 @@ function monthKey() { return new Date().toISOString().slice(0,7); }
 export function useSubscription() {
   const [sub, setSubState] = useState(loadSub);
 
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) setSubState(JSON.parse(raw));
+      } catch {}
+    };
+    window.addEventListener(SUB_EVENT, handler);
+    return () => window.removeEventListener(SUB_EVENT, handler);
+  }, []);
+
   const saveSub = useCallback((next) => {
     setSubState(next);
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+    window.dispatchEvent(new CustomEvent(SUB_EVENT));
   }, []);
 
   const plan = sub.plan;
