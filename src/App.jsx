@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { EvaSlider, TagSelect, SingleSelect, AudioField, useProgress, Section, Row, Field, SubHeading, useMediaQuery, GonioRow, MRCRow, MUSCLES, JOINTS, MVMT, getRef, isOutOfRange, PaywallModal } from "./components";
 import Assessment from "./Assessment";
 import ScaleModal from "./ScaleModal";
@@ -8,6 +8,8 @@ import Financeiro from "./screens/Financeiro";
 import Plans from "./screens/Plans";
 import SubscriptionSettings from "./screens/SubscriptionSettings";
 import { useSubscription } from "./hooks/useSubscription";
+import ExpressAssessment from "./components/ExpressAssessment";
+import { detectKB } from "./utils/clinicalDetection";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -760,113 +762,6 @@ const KB = {
   },
 };
 
-const detectKB = txt => {
-  const t = txt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const conds = [
-    // ── Sinônimos clínicos populares (antes dos padrões principais) ──────
-    ["lombalgia",            /ciatica|ciatalgia|dor\s*ciatica|isquialgia/],
-    ["lombalgia",            /lomb[aeio]|costa|dor\s*lombar|lombalgia/],
-    ["hernia-disco-lombar",  /hernia\s*(de\s*)?disco(?!.*cerv)/],
-    ["cervicalgia",          /cerv|pescoco|cervicalgia/],
-    ["gonalgia",             /joelho\s*(inchado|edema|entorse)/],
-    ["ombralgia",            /bursite(?!.*olecran)/],
-    ["fibromialgia",         /cansaco\s*cronico|fadiga\s*cronica|dor\s*generalizada/],
-    ["tendinopatia-patelar", /joelho\s*(de\s*)?saltador/],
-    // ── Nomes de articulações (batida pura, após padrões específicos) ──
-    ["gonalgia",             /\bjoelho\b/],
-    ["coxartrose",           /\bquadril\b/],
-    // ── Top 50 patologias ortopédicas ─────────────────────────────────
-    ["fascite-plantar",      /fascite\s*plantar|fasceite|windlass/],
-    ["tendinopatia-aquiles", /tendinopatia\s*(de\s*)?aquiles|tendao\s*aquiles|aquileu/],
-    ["entorse-tornozelo",    /entorse\s*(de\s*)?tornozelo|torcao\s*tornozelo|ltfa/],
-    ["sindrome-patelo femoral", /dor\s*patelofemoral|sindrome\s*patelofemoral|patelofemoral/],
-    ["tendinopatia-patelar", /tendinopatia\s*patelar|tendao\s*patelar/],
-    ["lca",                  /lca|lesao\s*(do\s*)?lca|ruptura\s*lca|reconstrucao\s*lca|cruzado\s*anterior/],
-    ["lesao-meniscal",       /lesao\s*meniscal|menisco|meniscectomia/],
-    ["artrose-joelho",       /artrose\s*(de\s*)?joelho|osteoartrite\s*joelho|oa\s*joelho|gonartrose/],
-    ["tendinopatia-gluteo",  /tendinopatia\s*(de\s*)?gluteo|bursite\s*trocanterica|sindrome\s*dolorosa\s*trocanter/],
-    ["impacto-femoroacetabular", /impacto\s*femoroacetabular|pincer|cam\s*lesao/],
-    ["coxartrose",           /artrose\s*(de\s*)?quadril|osteoartrite\s*quadril|coxartrose/],
-    ["lombalgia",            /lomb|costa|dor\s*lombar|lombalgia/],
-    ["hernia-disco-lombar",  /hernia\s*(de\s*)?disco\s*lombar|protrusao\s*discal\s*lombar/],
-    ["estenose-lombar",      /estenose\s*(do\s*)?canal\s*lombar|estenose\s*lombar/],
-    ["espondilolistese",     /espondilolistese|espondilolise/],
-    ["cervicalgia",          /cerv|pescoco|cervicalgia/],
-    ["hernia-disco-cervical",/hernia\s*(de\s*)?disco\s*cervical|protrusao\s*discal\s*cervical/],
-    ["radiculopatia-cervical",/radiculopatia\s*cervical|foraminal|esporao\s*cervical/],
-    ["impacto-ombro",        /sindrome\s*(do\s*)?impacto\s*(do\s*)?ombro|impacto\s*subacromial|pinzamento/],
-    ["manguito-rotador",     /lesao\s*(do\s*)?manguito\s*rotador|manguito|ruptura\s*manguito|supraespinhal/],
-    ["capsulite-adesiva",    /capsulite\s*adesiva|ombro\s*congelado|aderencia\s*articular/],
-    ["instabilidade-ombro",  /instabilidade\s*anterior\s*(do\s*)?ombro|luxacao\s*glenoumeral|bankart/],
-    ["ombralgia",            /ombr|ombralgia/],
-    ["epicondilite-lateral", /epicondilite\s*lateral|cotovelo\s*(de\s*)?tenista|epicondilalgia\s*lateral/],
-    ["epicondilite-medial",  /epicondilite\s*medial|cotovelo\s*(de\s*)?golfista|epicondilalgia\s*medial/],
-    ["cotovelo",             /cotov|olecran/],
-    ["tunel-carpo",          /sindrome\s*(do\s*)?tunel\s*(do\s*)?carpo|tunel\s*carpo|compressao\s*mediano/],
-    ["de-quervain",          /tenossinovite\s*(de\s*)?quervain|de\s*quervain/],
-    ["osteoartrite-mao",     /rizartrose|artrose\s*(de\s*)?mao|artrose\s*dodos/],
-    ["dtm",                  /dtm|disfuncao\s*temporomandibular|atm\s*dor/],
-    ["escoliose",            /escoliose\s*idiopatica|escoliose/],
-    ["hipercifose",          /hipercifose\s*toracica|hipercifose|cifose/],
-    ["canelite",             /canelite|sindrome\s*(do\s*)?estresse\s*tibial|shin\s*splint/],
-    ["estiramento-isquiotibiais", /estiramento\s*(de\s*)?isquiotibiais|isquiotibiais|distensao\s*isquio|posterior\s*coxa/],
-    ["distensao-gemeos",     /distensao\s*(de\s*)?gemeos|panturrilha|gastrocnemio\s*lesao/],
-    ["pubalgia",             /pubalgia|osteite\s*pubica|dor\s*inguinal\s*esforco/],
-    ["trato-iliotibial",     /sindrome\s*(do\s*)?trato\s*iliotibial|banda\s*iliotibial|tfl|iliotibial/],
-    ["condromalacia",        /condromalacia\s*patelar|amolecimento\s*patela/],
-    ["bursite-olecraniana",  /bursite\s*olecraniana/],
-    ["dedo-gatilho",         /dedo\s*gatilho|dedos\s*gatilho|tenossinovite\s*flexor/],
-    ["desfiladeiro-toracico",/desfiladeiro\s*toracico|sindrome\s*do\s*desfiladeiro/],
-    ["fibromialgia",         /fibromialgia/],
-    ["esporao-calcaneo",     /esporao\s*(de\s*)?calcaneo|calcaneo\s*dor/],
-    ["artrite-reumatoide",   /artrite\s*reumatoide|ar\s*joelho/],
-    ["pos-artroplastia-joelho", /artroplastia\s*(de\s*)?joelho|protese\s*(de\s*)?joelho|pos-operatorio\s*joelho/],
-    ["pos-artroplastia-quadril", /artroplastia\s*(de\s*)?quadril|protese\s*(de\s*)?quadril|pos-operatorio\s*quadril/],
-    ["fratura-colles",       /fratura\s*(de\s*)?colles|fratura\s*radio\s*distal|fratura\s*punho/],
-    ["miosite-ossificante",  /miosite\s*ossificante/],
-    ["tendinopatia-biceps",  /tendinopatia\s*(do\s*)?biceps\s*braquial|tendao\s*(da\s*)?cabeca\s*longa/],
-    ["subluxacao-patelar",   /subluxacao\s*patelar|instabilidade\s*patelar/],
-    ["metatarsalgia",        /metatarsalgia|dor\s*metatarso/],
-    ["neuroma-morton",       /neuroma\s*(de\s*)?morton|neuroma/],
-    ["tornozelo",            /tornoz|pe\s|fasci|aquile/],
-  ];
-  for (const [key, regex] of conds) {
-    if (regex.test(t)) return key;
-  }
-  // ── Músculos (agrupados por região) ──────────────────────────────────
-  const muscMap = {
-    "trapezio":"cervicalgia", "quadriceps":"gonalgia", "isquiotibiais":"gonalgia",
-    "gluteo":"lombalgia", "adutores":"coxartrose", "biceps-braquial":"ombralgia",
-    "triceps-braquial":"cotovelo", "gastrocnemio":"tornozelo", "soleo":"tornozelo",
-    "tibial-anterior":"tornozelo", "fibulares":"tornozelo", "peitoral":"ombralgia",
-    "grande-dorsal":"ombralgia", "romboides":"cervicalgia", "serratil-anterior":"ombralgia",
-    "tensor-fascia-lata":"coxartrose", "piriforme":"lombalgia", "iliopsoas":"lombalgia",
-    "reto-abdominal":"lombalgia", "obliquo":"lombalgia", "multifidos":"lombalgia",
-    "quadrado-lombar":"lombalgia", "esternocleidomastoideo":"cervicalgia",
-    "escalenos":"cervicalgia", "popliteo":"gonalgia", "quadrado-plantar":"tornozelo",
-  };
-  const muscTerms = {
-    "trapezio":/trapezio/, "quadriceps":/quadriceps/,
-    "isquiotibiais":/isquiotibiais|isquio/, "gluteo":/gluteo/,
-    "adutores":/adutores/, "biceps-braquial":/biceps\s*braquial/,
-    "triceps-braquial":/triceps\s*braquial/, "gastrocnemio":/gastrocnemio|gemeos/,
-    "soleo":/soleo/, "tibial-anterior":/tibial\s*anterior/,
-    "fibulares":/fibulares|fibular/, "peitoral":/peitoral/,
-    "grande-dorsal":/grande\s*dorsal|latissimo\s*do\s*dorso/, "romboides":/romboides/,
-    "serratil-anterior":/serratil/, "tensor-fascia-lata":/tensor\s*da\s*fascia\s*lata|tfl/,
-    "piriforme":/piriforme/, "iliopsoas":/iliopsoas/,
-    "reto-abdominal":/reto\s*abdominal|abdominal|abdomen/,
-    "obliquo":/obliquo/, "multifidos":/multifidos/,
-    "quadrado-lombar":/quadrado\s*lombar/, "esternocleidomastoideo":/esternocleidomastoideo/,
-    "escalenos":/escalenos/, "popliteo":/popliteo/,
-    "quadrado-plantar":/quadrado\s*plantar/,
-  };
-  for (const [mk, regex] of Object.entries(muscTerms)) {
-    if (regex.test(t)) return muscMap[mk];
-  }
-  return "";
-};
-
 // ── CIF Engine ────────────────────────────────────────────────────────────────
 function generateCIF({ evaMov, avds, localDor, gonio, tests, yellowFlags, tempoDor }) {
   void localDor; void gonio; void tests; void tempoDor;
@@ -1146,6 +1041,7 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChan
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontWeight:700, fontSize:14, color:C.text, marginBottom:2, display:"flex", alignItems:"center", gap:6 }}>
                       {p.nome}
+                      {p.hasExpress && <span style={{ fontSize:10, color:"#b45309", background:"#fef3c7", borderRadius:6, padding:"2px 7px", border:"1px solid #f59e0b", whiteSpace:"nowrap", fontWeight:700, letterSpacing:"0.03em" }}>⚡ Atendimento Express · Evolução Pendente</span>}
                       {count > 0 && <span style={{ fontSize:11, color:"#c00", background:"#fee", borderRadius:6, padding:"2px 6px", border:"1px solid #fcc", whiteSpace:"nowrap" }}>{'🚩'.repeat(count)}</span>}
                     </div>
                     <div style={{ fontSize:11, color:C.textMuted, display:"flex", gap:8, flexWrap:"wrap" }}>
@@ -1202,6 +1098,13 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChan
 }
 
 // ── App ───────────────────────────────────────────────────────────────────────
+class ErrorBoundary extends React.Component {
+  constructor(props){super(props);this.state={hasError:false}}
+  static getDerivedStateFromError(){return{hasError:true}}
+  componentDidCatch(e,info){console.error("SASYRA Error:",e,info)}
+  render(){return this.state.hasError?<div style={{padding:40,textAlign:"center",fontFamily:"system-ui",color:"#4ADE80",background:"#0E141B",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}><span style={{fontSize:48}}>🔧</span><h1 style={{fontSize:18,fontWeight:800,margin:0}}>Algo deu errado</h1><p style={{fontSize:13,color:"#5E7A96",margin:0}}>O SASYRA encontrou um erro inesperado. Os dados estão salvos no seu navegador.</p><button onClick={()=>{this.setState({hasError:false});window.location.reload()}} style={{background:"#4ADE80",color:"#0E141B",border:"none",borderRadius:8,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"system-ui"}}>↻ Recarregar</button></div>:this.props.children}
+}
+
 export default function Sasyra() {
   const [user, setUser] = useState(null);
   const [theme, setTheme] = useState(() => localStorage.getItem("sasyra_theme") || "dark");
@@ -1233,7 +1136,27 @@ export default function Sasyra() {
     } else {
       resetAssessment();
     }
+    if (p.hasExpress) {
+      setShowExpressModal(true);
+    }
     setPatientView(false);
+  };
+
+  const completeExpressEvaluation = () => {
+    setShowExpressModal(false);
+    setPatientView(false);
+    const lastExpress = assessmentHistory
+      .filter(a => a.patientId === (pt.id || pt.nome) && a.isExpress)
+      .sort((a, b) => (b.id || 0) - (a.id || 0))[0];
+    if (lastExpress) {
+      setQueixa(lastExpress.queixa || "");
+      setLocalDor(lastExpress.localDor || []);
+      if (lastExpress.vitalSigns) setExpressVital(lastExpress.vitalSigns);
+      if (lastExpress.redFlags) setExpressRedFlags(lastExpress.redFlags);
+      if (lastExpress.impressaoClinica) setImpressaoClinica(lastExpress.impressaoClinica);
+    }
+    // Remove express flag so modal doesn't show again
+    setPatients(ps => ps.map(x => (x.id || x.nome) === (pt.id || pt.nome) ? { ...x, hasExpress: false } : x));
   };
 
   const addPatient = (p) => {
@@ -1308,6 +1231,15 @@ export default function Sasyra() {
   const [obs, setObs] = useState("");
   const [aiLoad, setAiLoad] = useState(false);
   const [aiRes, setAiRes] = useState("");
+
+  // Modo Express
+  const [isExpress, setIsExpress] = useState(false);
+  const [impressaoClinica, setImpressaoClinica] = useState("");
+  const [expressVital, setExpressVital] = useState(null);
+  const [expressRedFlags, setExpressRedFlags] = useState([]);
+  const [expressAutoCIF, setExpressAutoCIF] = useState([]);
+  const [expressScales, setExpressScales] = useState([]);
+  const [showExpressModal, setShowExpressModal] = useState(false);
 
   // Evolução
   const [logs, setLogs] = useState(() => { try { const d = localStorage.getItem("sasyra_logs"); return d ? JSON.parse(d) : []; } catch { return []; } });
@@ -1391,6 +1323,45 @@ export default function Sasyra() {
     setTests({}); setObs(""); setRegiao("Centro-Oeste");
   };
 
+  // ── Express Assessment ──────────────────────────────────────────────────────
+  const saveExpressAssessment = (expressData) => {
+    if (!pt.id && !pt.nome) return;
+    setAssessmentHistory(prev => {
+      const pid = pt.id || pt.nome;
+      const entry = {
+        id:Date.now(), date:new Date().toISOString().slice(0,10), patientId:pid,
+        queixa: expressData.queixa, localDor: expressData.localDor, regiao: expressData.regiao,
+        vitalSigns: expressData.vitalSigns, redFlags: expressData.redFlags,
+        impressaoClinica: expressData.impressaoClinica,
+        autoCIF: expressData.autoCIF, recommendedScales: expressData.recommendedScales,
+        honorario: expressData.honorario,
+        isExpress: true, status: "Incompleto/Triagem",
+      };
+      // Inject vital signs into Diário (logs)
+      const vs = expressData.vitalSigns;
+      if (vs?.spo2 || vs?.glucose || vs?.heartRate || vs?.bpSystolic) {
+        const logEntry = {
+          id:Date.now() + 1, patientId: pid,
+          data: new Date().toISOString().slice(0,10),
+          eva: null, procedimentos: [], resposta: "", evolucao: "",
+          metas: "", escalas: "", escalaData: null,
+          pa: vs.bpSystolic && vs.bpDiastolic ? `${vs.bpSystolic}/${vs.bpDiastolic}` : "",
+          spo2: vs.spo2 || "", glucose: vs.glucose || "", heartRate: vs.heartRate || "",
+          isExpressVital: true,
+        };
+        setLogs(l => [logEntry, ...l]);
+      }
+      return [...prev, entry];
+    });
+    // Save patient with express flag
+    setPatients(ps => ps.map(p => {
+      if ((p.id || p.nome) === pid) return { ...p, hasExpress: true, expressDate: new Date().toISOString().slice(0,10) };
+      return p;
+    }));
+    setIsExpress(false);
+    setPatientView(true);
+  };
+
   // ── AI call ───────────────────────────────────────────────────────────────
   const runAI = async (payPerUse = false) => {
     if (payPerUse && !buyAndUseAI()) { setAiRes("Erro ao processar pagamento."); return; }
@@ -1422,6 +1393,7 @@ export default function Sasyra() {
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
           model:"claude-sonnet-4-6", max_tokens:1000,
+          system:"A saída deve ser gerada estritamente em Português do Brasil (pt-BR). Use terminologia clínica humanizada adotada no Brasil (ex: usar 'fisioterapeuta' e não 'fisioterapeuta', 'paciente' e não 'utente', 'joelho' e não 'rótula'). É terminantemente proibido responder em inglês ou português de Portugal.",
           messages:[{role:"user",content:
 `Você é fisioterapeuta ortopédico especialista em medicina baseada em evidências (PEDro, Cochrane, CPGs internacionais).
 Com base nos dados clínicos abaixo, forneça análise estruturada e atualizada:
@@ -1439,7 +1411,7 @@ Com base nos dados clínicos abaixo, forneça análise estruturada e atualizada:
 DADOS CLÍNICOS:
 ${summary}
 
-Responda em português, tópicos claros e objetivos. Seja preciso, clínico e baseado em evidências. Quando citar estudos, informe: Autor (Ano) – Nível de evidência.`
+Responda em tópicos claros e objetivos. Seja preciso, clínico e baseado em evidências. Quando citar estudos, informe: Autor (Ano) – Nível de evidência.`
           }]
         })
       });
@@ -1480,6 +1452,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
     <PaywallModal open={paywallOpen} onClose={() => setPaywallOpen(false)}
       featureName={paywallFeature.name} featureDesc={paywallFeature.desc}
       onUpgrade={() => { setPaywallOpen(false); setAppView("plans"); }} />
+    {renderExpressModal()}
   </>;
 
   // Paywall modal (renders on top of assessment view)
@@ -1488,8 +1461,33 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
       featureName={paywallFeature.name} featureDesc={paywallFeature.desc}
       onUpgrade={() => { setPaywallOpen(false); setAppView("plans"); }} />
   );
+
+  // Express modal render function (function declaration for hoisting)
+  function renderExpressModal() { return showExpressModal ? (
+    <div style={{ position:"fixed", top:0,left:0,right:0,bottom:0, background:"rgba(0,0,0,0.6)", display:"flex",alignItems:"center",justifyContent:"center", zIndex:1000 }}>
+      <div style={{ background:"var(--surface)", border:`1px solid ${C.amber}50`, borderRadius:16, padding:"24px 28px", maxWidth:460, width:"90%", textAlign:"center", fontFamily:F }}>
+        <div style={{ fontSize:36, marginBottom:10 }}>⚡</div>
+        <div style={{ fontSize:16, fontWeight:800, color:C.amber, marginBottom:8 }}>Atendimento Express Detectado</div>
+        <div style={{ fontSize:13, color:"var(--textSub)", lineHeight:1.6, marginBottom:18 }}>
+          Este paciente possui uma avaliação <strong>Express</strong> recente.
+          Deseja realizar a <strong>Evolução Completa</strong> e preencher os dados omitidos?
+        </div>
+        <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+          <button onClick={() => { setShowExpressModal(false); }}
+            style={{ background:"transparent", border:"1px solid var(--border)", borderRadius:10, padding:"10px 20px", fontSize:13, fontWeight:700, color:"var(--textSub)", cursor:"pointer", fontFamily:F }}>
+            Não, manter como Express
+          </button>
+          <button onClick={completeExpressEvaluation}
+            style={{ background:C.amber, border:"none", borderRadius:10, padding:"10px 20px", fontSize:13, fontWeight:800, color:"#061A0C", cursor:"pointer", fontFamily:F }}>
+            Sim, realizar Evolução Completa
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null; }
+
   return (
-    <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
+    <ErrorBoundary><div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
 
       {/* Header */}
       <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:isMobile?"10px 12px":"0 24px", display:"flex", flexWrap:"wrap", alignItems:"center", justifyContent:"space-between", minHeight:isMobile?"auto":60, gap:isMobile?8:0 }}>
@@ -1504,7 +1502,11 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
             <button key={k} onClick={()=>setTab(k)} style={{ background:tab===k?C.greenBg:"transparent", border:`1px solid ${tab===k?C.green+"50":"transparent"}`, borderRadius:8, padding:isMobile?"5px 10px":"7px 16px", fontSize:isMobile?11:13, fontWeight:tab===k?700:400, color:tab===k?C.green:C.textMuted, cursor:"pointer", fontFamily:F }}>{ic} {lb}</button>
           ))}
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          <button onClick={() => setIsExpress(e => !e)}
+            style={{ background: isExpress ? C.amberBg : "transparent", border: `1px solid ${isExpress ? C.amber+"60" : C.border}`, borderRadius: 8, padding: "5px 10px", fontSize: 11, fontWeight: isExpress ? 800 : 400, color: isExpress ? C.amber : C.textMuted, cursor: "pointer", fontFamily: F, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
+            {isExpress ? "⚡ Express ON" : "⚡ Express"}
+          </button>
           <button onClick={()=>setAppView("subscription")}
             style={{ background:plan==="start"?`${C.amber}15`:"transparent", border:`1px solid ${plan==="start"?C.amber+"50":C.border}`, borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, color:plan==="start"?C.amber:C.green, cursor:"pointer", fontFamily:F, whiteSpace:"nowrap" }}>
             {plan === "start" ? "⭐ Start" : `⭐ ${planLabel}`}
@@ -1536,7 +1538,17 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
       <div style={{ maxWidth:900, margin:"0 auto", padding:isMobile?"12px 8px":"20px 16px" }}>
 
         {/* ══════════════ AVALIAÇÃO ══════════════════════════════════════════ */}
-        {tab==="avaliacao" && (
+        {isExpress ? (
+          <ExpressAssessment
+            pt={pt} up={up}
+            queixa={queixa} setQueixa={setQueixa} setQueixaKey={setQueixaKey}
+            localDor={localDor} setLocalDor={setLocalDor}
+            setRegiao={setRegiao}
+            impressaoClinica={impressaoClinica} setImpressaoClinica={setImpressaoClinica}
+            onSave={saveExpressAssessment}
+            onCancel={() => setIsExpress(false)}
+          />
+        ) : (tab==="avaliacao" && (
           <Assessment
             pt={pt} up={up} regiao={regiao} setRegiao={setRegiao}
             queixa={queixa} setQueixa={setQueixa} setQueixaKey={setQueixaKey}
@@ -1576,7 +1588,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
             aiRemaining={aiRemaining} aiLimit={aiLimit}
             hasExpansion={hasExpansion} purchaseAIExpansion={purchaseAIExpansion}
           />
-        )}
+        ))}
 
         {/* ══════════════ EVIDÊNCIAS ══════════════════════════════════════════ */}
         {tab==="evidencias" && (
@@ -2310,7 +2322,8 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
       </div>
 
       {paywallModal}
+      {renderExpressModal()}
       <ScaleModal scale={scaleModal.scale} open={scaleModal.open} onClose={() => setScaleModal({open:false, scale:null})} onSave={handleScaleSave} initial={scaleModal.scale?.questions?.reduce((a,q)=>a,{})} />
-    </div>
+    </div></ErrorBoundary>
   );
 }

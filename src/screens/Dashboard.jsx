@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Agenda from "./Agenda";
+import ExpressAssessment from "../components/ExpressAssessment";
+import { detectKB } from "../utils/clinicalDetection";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -234,17 +236,6 @@ const KB = {
   },
 };
 
-const detectKB = txt => {
-  const t = txt.toLowerCase();
-  if (t.match(/lomb|costas/)) return "lombalgia";
-  if (t.match(/cerv|pescoço/)) return "cervicalgia";
-  if (t.match(/joelh|gon/)) return "gonalgia";
-  if (t.match(/ombr/)) return "ombralgia";
-  if (t.match(/tornoz|pé |pe |fasci|aquile/)) return "tornozelo";
-  if (t.match(/cotov|epicond|tênisist|golfist/)) return "cotovelo";
-  return "";
-};
-
 // ── CIF Engine ────────────────────────────────────────────────────────────────
 function generateCIF({ evaMov, avds, localDor, gonio, tests, yellowFlags, tempoDor }) {
   void localDor; void gonio; void tests; void tempoDor;
@@ -469,8 +460,12 @@ function GonioRow({ row, onUpdate, onRemove }) {
 function TestCard({ test, result, onResult }) {
   const [open, setOpen] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
+  const iframeRef = useRef(null);
   const borderColor = result==="Positivo"?`${C.red}60`:result==="Negativo"?`${C.green}50`:C.border;
   const videoId = test.video ? test.video.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/)?.[1] : null;
+  useEffect(()=>()=>{
+    try{if(iframeRef.current)iframeRef.current.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}','*')}catch{}
+  },[iframeRef]);
   return (
     <div style={{ background:C.surface, border:`1px solid ${borderColor}`, borderRadius:10, padding:"12px 14px", marginBottom:8 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
@@ -485,8 +480,8 @@ function TestCard({ test, result, onResult }) {
         </div>
       </div>
       {showVideo && videoId && (
-        <div style={{ marginTop:10 }}>
-          <iframe src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`} title={test.name} allow="autoplay; encrypted-media" allowFullScreen style={{ width:"100%", maxWidth:320, aspectRatio:"16/9", border:"none", borderRadius:8 }} />
+        <div onClick={e=>e.stopPropagation()} style={{ marginTop:10 }}>
+          <iframe ref={iframeRef} src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&enablejsapi=1`} title={test.name} allow="autoplay; encrypted-media" allowFullScreen style={{ width:"100%", maxWidth:320, aspectRatio:"16/9", border:"none", borderRadius:8 }} />
         </div>
       )}
       {open && (
@@ -883,7 +878,7 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, user }) {
             }}>
               <div style={{ width:40, height:40, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:800, color:C.green, flexShrink:0 }}>{p.nome[0]?.toUpperCase()}</div>
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontWeight:700, fontSize:14, color:C.text, marginBottom:2 }}>{p.nome}</div>
+                <div style={{ fontWeight:700, fontSize:14, color:C.text, marginBottom:2, display:"flex", alignItems:"center", gap:6 }}>{p.nome}{p.hasExpress && <span style={{ fontSize:10, color:"#b45309", background:"#fef3c7", borderRadius:6, padding:"2px 7px", border:"1px solid #f59e0b", whiteSpace:"nowrap", fontWeight:700, letterSpacing:"0.03em" }}>⚡ Atendimento Express · Evolução Pendente</span>}</div>
                 <div style={{ fontSize:11, color:C.textMuted, display:"flex", gap:8, flexWrap:"wrap" }}>
                   {p.sexo && <span>{p.sexo}</span>}
                   {p.dataNasc && <span>Nasc: {p.dataNasc}</span>}
@@ -915,6 +910,7 @@ export default function Dashboard() {
 
   const selectPatient = (p) => {
     setPt({ ...pt, ...p });
+    if (p.hasExpress) { setShowExpressModal(true); }
     setPatientView(false);
   };
 
@@ -965,6 +961,11 @@ export default function Dashboard() {
   const [obs, setObs] = useState("");
   const [aiLoad, setAiLoad] = useState(false);
   const [aiRes, setAiRes] = useState("");
+
+  // Modo Express
+  const [isExpress, setIsExpress] = useState(false);
+  const [impressaoClinica, setImpressaoClinica] = useState("");
+  const [showExpressModal, setShowExpressModal] = useState(false);
 
   // Diário
   const [logs, setLogs] = useState([]);
@@ -1055,6 +1056,68 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
     setAppView("patients");
   };
 
+  // ── Express Assessment ──────────────────────────────────────────────────────
+  const saveExpressAssessment = (expressData) => {
+    if (!pt.id && !pt.nome) return;
+    setAssessmentHistory(prev => {
+      const pid = pt.id || pt.nome;
+      const entry = {
+        id:Date.now(), date:new Date().toISOString().slice(0,10), patientId:pid,
+        queixa: expressData.queixa, localDor: expressData.localDor, regiao: expressData.regiao,
+        vitalSigns: expressData.vitalSigns, redFlags: expressData.redFlags,
+        impressaoClinica: expressData.impressaoClinica,
+        autoCIF: expressData.autoCIF, recommendedScales: expressData.recommendedScales,
+        honorario: expressData.honorario,
+        isExpress: true, status: "Incompleto/Triagem",
+      };
+      return [...prev, entry];
+    });
+    setPatients(ps => ps.map(p => {
+      if ((p.id || p.nome) === pid) return { ...p, hasExpress: true, expressDate: new Date().toISOString().slice(0,10) };
+      return p;
+    }));
+    setIsExpress(false);
+    setPatientView(true);
+  };
+
+  const completeExpressEvaluation = () => {
+    setShowExpressModal(false);
+    setPatientView(false);
+    const lastExpress = assessmentHistory
+      .filter(a => a.patientId === (pt.id || pt.nome) && a.isExpress)
+      .sort((a, b) => (b.id || 0) - (a.id || 0))[0];
+    if (lastExpress) {
+      setQueixa(lastExpress.queixa || "");
+      setLocalDor(lastExpress.localDor || []);
+      if (lastExpress.impressaoClinica) setImpressaoClinica(lastExpress.impressaoClinica);
+    }
+    setPatients(ps => ps.map(x => (x.id || x.nome) === (pt.id || pt.nome) ? { ...x, hasExpress: false } : x));
+  };
+
+  // Express modal (completar avaliação pendente)
+  const expressModal = showExpressModal && (
+    <div style={{ position:"fixed", top:0,left:0,right:0,bottom:0, background:"rgba(0,0,0,0.6)", display:"flex",alignItems:"center",justifyContent:"center", zIndex:1000 }}>
+      <div style={{ background:C.surface, border:`1px solid ${C.amber}50`, borderRadius:16, padding:"24px 28px", maxWidth:460, width:"90%", textAlign:"center", fontFamily:F }}>
+        <div style={{ fontSize:36, marginBottom:10 }}>⚡</div>
+        <div style={{ fontSize:16, fontWeight:800, color:C.amber, marginBottom:8 }}>Atendimento Express Detectado</div>
+        <div style={{ fontSize:13, color:C.textSub, lineHeight:1.6, marginBottom:18 }}>
+          Este paciente possui uma avaliação <strong>Express</strong> recente.
+          Deseja realizar a <strong>Evolução Completa</strong> e preencher os dados omitidos?
+        </div>
+        <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+          <button onClick={() => { setShowExpressModal(false); }}
+            style={{ background:"transparent", border:"1px solid var(--border)", borderRadius:10, padding:"10px 20px", fontSize:13, fontWeight:700, color:"var(--textSub)", cursor:"pointer", fontFamily:F }}>
+            Não, manter como Express
+          </button>
+          <button onClick={completeExpressEvaluation}
+            style={{ background:C.amber, border:"none", borderRadius:10, padding:"10px 20px", fontSize:13, fontWeight:800, color:"#061A0C", cursor:"pointer", fontFamily:F }}>
+            Sim, realizar Evolução Completa
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   // ── Render ────────────────────────────────────────────────────────────────
   if (!user) return <LoginScreen onLogin={setUser} />;
   if (appView === "agenda") return (
@@ -1078,7 +1141,11 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
             <button key={k} onClick={()=>setTab(k)} style={{ background:tab===k?C.greenBg:"transparent", border:`1px solid ${tab===k?C.green+"50":"transparent"}`, borderRadius:8, padding:"7px 16px", fontSize:13, fontWeight:tab===k?700:400, color:tab===k?C.green:C.textMuted, cursor:"pointer", fontFamily:F }}>{ic} {lb}</button>
           ))}
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          <button onClick={() => setIsExpress(e => !e)}
+            style={{ background: isExpress ? C.amberBg : "transparent", border: `1px solid ${isExpress ? C.amber+"60" : C.border}`, borderRadius: 8, padding: "5px 10px", fontSize: 11, fontWeight: isExpress ? 800 : 400, color: isExpress ? C.amber : C.textMuted, cursor: "pointer", fontFamily: F, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
+            {isExpress ? "⚡ Express ON" : "⚡ Express"}
+          </button>
           {pt.nome && (
             <>
               <div style={{ width:30, height:30, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.green }}>{pt.nome[0]?.toUpperCase()}</div>
@@ -1106,7 +1173,17 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
       <div style={{ maxWidth:900, margin:"0 auto", padding:"20px 16px" }}>
 
         {/* ══════════════ AVALIAÇÃO ══════════════════════════════════════════ */}
-        {tab==="avaliacao" && <>
+        {isExpress ? (
+          <ExpressAssessment
+            pt={pt} up={up}
+            queixa={queixa} setQueixa={setQueixa} setQueixaKey={setQueixaKey}
+            localDor={localDor} setLocalDor={setLocalDor}
+            setRegiao={setRegiao}
+            impressaoClinica={impressaoClinica} setImpressaoClinica={setImpressaoClinica}
+            onSave={saveExpressAssessment}
+            onCancel={() => setIsExpress(false)}
+          />
+        ) : (tab==="avaliacao" && <>
 
           {/* Identificação */}
           <Section title="Identificação do Paciente" icon="👤">
@@ -1422,7 +1499,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
               </div>
             )}
           </Section>
-        </>}
+        </>)}
 
         {/* ══════════════ EVIDÊNCIAS ══════════════════════════════════════════ */}
         {tab==="evidencias" && (
@@ -1717,6 +1794,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
         )}
 
       </div>
+      {expressModal}
     </div>
   );
 }

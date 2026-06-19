@@ -261,8 +261,10 @@ export function GonioRow({ row, onUpdate, onRemove }) {
 export function TestCard({ test, result, onResult }) {
   const [open, setOpen] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
+  const playerRef = useRef(null);
   const borderColor = result==="Positivo"?`${C.red}60`:result==="Negativo"?`${C.green}50`:C.border;
   const videoId = test.video ? test.video.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/)?.[1] : null;
+  useEffect(()=>()=>{try{playerRef.current?.pauseVideo?.()}catch{}},[playerRef]);
   return (
     <div style={{ background:C.surface, border:`1px solid ${borderColor}`, borderRadius:10, padding:"12px 14px", marginBottom:8 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
@@ -277,8 +279,9 @@ export function TestCard({ test, result, onResult }) {
         </div>
       </div>
       {showVideo && videoId && (
-        <div style={{ marginTop:10, aspectRatio:"16/9", maxWidth:320 }}>
-          <YouTube videoId={videoId} opts={{ height:"100%", width:"100%", playerVars:{ rel:0, modestbranding:1 } }} />
+        <div onClick={e=>e.stopPropagation()} style={{ marginTop:10, aspectRatio:"16/9", maxWidth:320 }}>
+          <YouTube videoId={videoId} opts={{ height:"100%", width:"100%", playerVars:{ rel:0, modestbranding:1 } }}
+            onReady={e=>{playerRef.current=e.target}} />
         </div>
       )}
       {open && (
