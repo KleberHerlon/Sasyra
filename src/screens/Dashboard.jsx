@@ -1059,23 +1059,19 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
   // ── Express Assessment ──────────────────────────────────────────────────────
   const saveExpressAssessment = (expressData) => {
     if (!pt.id && !pt.nome) return;
-    setAssessmentHistory(prev => {
-      const pid = pt.id || pt.nome;
-      const entry = {
-        id:Date.now(), date:new Date().toISOString().slice(0,10), patientId:pid,
-        queixa: expressData.queixa, localDor: expressData.localDor, regiao: expressData.regiao,
-        vitalSigns: expressData.vitalSigns, redFlags: expressData.redFlags,
-        impressaoClinica: expressData.impressaoClinica,
-        autoCIF: expressData.autoCIF, recommendedScales: expressData.recommendedScales,
-        honorario: expressData.honorario,
-        isExpress: true, status: "Incompleto/Triagem",
-      };
-      return [...prev, entry];
-    });
-    setPatients(ps => ps.map(p => {
-      if ((p.id || p.nome) === pid) return { ...p, hasExpress: true, expressDate: new Date().toISOString().slice(0,10) };
-      return p;
-    }));
+    const pid = pt.id || pt.nome;
+    setAssessmentHistory(prev => [...prev, {
+      id:Date.now(), date:new Date().toISOString().slice(0,10), patientId:pid,
+      queixa: expressData.queixa, localDor: expressData.localDor, regiao: expressData.regiao,
+      vitalSigns: expressData.vitalSigns, redFlags: expressData.redFlags,
+      impressaoClinica: expressData.impressaoClinica,
+      autoCIF: expressData.autoCIF, recommendedScales: expressData.recommendedScales,
+      honorario: expressData.honorario,
+      isExpress: true, status: "Incompleto/Triagem",
+    }]);
+    setPatients(ps => ps.map(p =>
+      (p.id || p.nome) === pid ? { ...p, hasExpress: true, expressDate: new Date().toISOString().slice(0,10) } : p
+    ));
     setIsExpress(false);
     setPatientView(true);
   };
