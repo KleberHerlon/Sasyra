@@ -677,3 +677,164 @@ export function BodyMap({ value, onChange, sex }) {
     </div>
   );
 }
+
+// ── PaywallModal ──────────────────────────────────────────────────────────────
+export function PaywallModal({ open, onClose, featureName, featureDesc, onUpgrade }) {
+  if (!open) return null;
+  const C2 = {
+    bg:          "var(--bg)",
+    surface:     "var(--surface)",
+    card:        "var(--card)",
+    border:      "var(--border)",
+    green:       "var(--green)",
+    greenBg:     "var(--greenBg)",
+    greenBgHov:  "var(--greenBgHov)",
+    text:        "var(--text)",
+    textMuted:   "var(--textMuted)",
+  };
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.6)", backdropFilter:"blur(4px)", padding:16 }}
+      onClick={onClose}>
+      <div style={{ background:C2.surface, border:`1px solid ${C2.border}`, borderRadius:16, padding:"32px 28px", maxWidth:440, width:"100%", textAlign:"center" }}
+        onClick={e=>e.stopPropagation()}>
+        <div style={{ fontSize:48, marginBottom:8 }}>🔒</div>
+        <h2 style={{ margin:"0 0 4px", fontSize:20, fontWeight:800, color:C2.text, fontFamily:"'Inter','Segoe UI',sans-serif" }}>
+          {featureName} disponível apenas no <span style={{ color:C2.green }}>Plano IA Premium</span>
+        </h2>
+        {featureDesc && (
+          <p style={{ fontSize:13, color:C2.textMuted, lineHeight:1.6, margin:"12px 0 20px", fontFamily:"'Inter','Segoe UI',sans-serif" }}>
+            {featureDesc}
+          </p>
+        )}
+        <div style={{ fontSize:11, color:C2.textMuted, lineHeight:1.5, margin:"0 0 16px", fontFamily:"'Inter','Segoe UI',sans-serif" }}>
+          🔹 Assine o <strong>IA Premium (R$ 79,90/mês)</strong> — 300 análises/mês inclusas<br/>
+          🔹 Ou pague <strong>R$ 4,90 por análise avulsa</strong> no seu plano atual
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          <button onClick={()=>{onUpgrade?.(); onClose?.();}}
+            style={{ background:C2.green, color:"#061A0C", border:"none", borderRadius:10, padding:"12px 24px", fontSize:15, fontWeight:800, cursor:"pointer", fontFamily:"'Inter','Segoe UI',sans-serif" }}>
+            🔓 Ver Opções com IA
+          </button>
+          <button onClick={onClose}
+            style={{ background:"transparent", border:`1px solid ${C2.border}`, borderRadius:10, padding:"10px 20px", fontSize:13, fontWeight:600, color:C2.textMuted, cursor:"pointer", fontFamily:"'Inter','Segoe UI',sans-serif" }}>
+            Continuar sem IA
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── PlanCard ──────────────────────────────────────────────────────────────────
+export function PlanCard({ plan, isAnnual, onSelect, isCurrent }) {
+  const isPremium = plan.key === "ia";
+  const C3 = {
+    surface:     "var(--surface)",
+    card:        "var(--card)",
+    border:      "var(--border)",
+    green:       "var(--green)",
+    greenBg:     "var(--greenBg)",
+    text:        "var(--text)",
+    textMuted:   "var(--textMuted)",
+    amber:       "var(--amber)",
+    amberBg:     "var(--amberBg)",
+  };
+  const accent = isPremium ? C3.amber : C3.green;
+  const accentBg = isPremium ? C3.amberBg : C3.greenBg;
+  const price = isAnnual ? plan.yearlyMonth : plan.monthly;
+  const allFeatures = Object.entries(plan.features);
+  const unlocked = allFeatures.filter(([, f]) => f[plan.key]);
+  const locked = allFeatures.filter(([, f]) => !f[plan.key]);
+  return (
+    <div style={{
+      flex:1, minWidth:270,
+      background: isPremium ? C3.card : (plan.highlight ? C3.card : C3.surface),
+      border: isPremium ? `2px solid ${C3.amber}99` : (plan.highlight ? `1px solid ${C3.green+"60"}` : `1px solid ${C3.border}`),
+      borderRadius:16, padding:"28px 22px", display:"flex", flexDirection:"column",
+      position:"relative", overflow:"hidden",
+      boxShadow: isPremium ? `0 0 40px ${C3.amber}25, inset 0 0 0 1px ${C3.amber}15` : (plan.highlight ? `0 0 30px ${C3.green}15` : "none"),
+    }}>
+      {plan.badge && (
+        <div style={{
+          position:"absolute", top:12, right:-28, background:isPremium ? C3.amber : C3.green, color:"#061A0C",
+          fontSize:10, fontWeight:800, padding:"4px 32px", transform:"rotate(45deg)",
+          letterSpacing:"0.05em", fontFamily:"'Inter','Segoe UI',sans-serif",
+        }}>
+          {plan.badge}
+        </div>
+      )}
+      {isPremium ? (
+        <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:`linear-gradient(90deg,transparent,${C3.amber},transparent)` }} />
+      ) : plan.highlight ? (
+        <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,transparent,${C3.green},transparent)` }} />
+      ) : null}
+      <div style={{ fontSize:11, fontWeight:700, color:C3.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:4, fontFamily:"'Inter','Segoe UI',sans-serif" }}>{plan.name}</div>
+      <div style={{ fontSize:13, color:C3.textMuted, marginBottom:12, fontFamily:"'Inter','Segoe UI',sans-serif" }}>{plan.tagline}</div>
+
+      {plan.featuredNote && (
+        <div style={{ fontSize:11, color:isPremium ? C3.text : C3.text, lineHeight:1.5, marginBottom:16, padding:"8px 10px", background:accentBg, borderRadius:8, fontFamily:"'Inter','Segoe UI',sans-serif" }}>
+          {plan.featuredNote}
+        </div>
+      )}
+
+      <div style={{ marginBottom:16 }}>
+        {isAnnual ? (
+          <>
+            <span style={{ fontSize:30, fontWeight:800, color:isPremium ? C3.amber : C3.text, fontFamily:"'Inter','Segoe UI',sans-serif" }}>R$ {plan.yearlyMonth.toFixed(2)}</span>
+            <span style={{ fontSize:13, color:C3.textMuted, marginLeft:4, fontFamily:"'Inter','Segoe UI',sans-serif" }}>/mês</span>
+            <div style={{ fontSize:11, color:C3.amber, marginTop:4, fontFamily:"'Inter','Segoe UI',sans-serif" }}>
+              <s style={{ color:C3.textMuted }}>R$ {plan.monthly.toFixed(2)}</s> — 20% de desconto
+            </div>
+            <div style={{ fontSize:11, color:C3.textMuted, marginTop:2, fontFamily:"'Inter','Segoe UI',sans-serif" }}> Cobrado R$ {plan.yearly.toFixed(2)}/ano</div>
+          </>
+        ) : (
+          <>
+            <span style={{ fontSize:30, fontWeight:800, color:isPremium ? C3.amber : C3.text, fontFamily:"'Inter','Segoe UI',sans-serif" }}>R$ {plan.monthly.toFixed(2)}</span>
+            <span style={{ fontSize:13, color:C3.textMuted, marginLeft:4, fontFamily:"'Inter','Segoe UI',sans-serif" }}>/mês</span>
+          </>
+        )}
+      </div>
+
+      {/* Unlocked features */}
+      <div style={{ marginBottom:8 }}>
+        <div style={{ fontSize:10, fontWeight:700, color:accent, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6, fontFamily:"'Inter','Segoe UI',sans-serif" }}>✓ Incluso</div>
+        {unlocked.map(([key, feat]) => (
+          <div key={key} style={{ display:"flex", alignItems:"flex-start", gap:8, marginBottom:6, fontFamily:"'Inter','Segoe UI',sans-serif" }}>
+            <span style={{ fontSize:14, lineHeight:"1.3", flexShrink:0, color:accent }}>✅</span>
+            <div>
+              <div style={{ fontSize:12, fontWeight:600, color:C3.text }}>{feat.label}</div>
+              <div style={{ fontSize:11, color:C3.textMuted }}>{feat.value}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Locked features */}
+      {locked.length > 0 && (
+        <div style={{ marginBottom:8, padding:"8px 10px", background:C3.amberBg, borderRadius:8 }}>
+          <div style={{ fontSize:10, fontWeight:700, color:C3.amber, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:4, fontFamily:"'Inter','Segoe UI',sans-serif" }}>⚠ Não incluso</div>
+          {locked.map(([key, feat]) => (
+            <div key={key} style={{ display:"flex", alignItems:"flex-start", gap:6, marginBottom:3, fontFamily:"'Inter','Segoe UI',sans-serif" }}>
+              <span style={{ fontSize:11, lineHeight:"1.5", color:C3.amber }}>✕</span>
+              <span style={{ fontSize:11, color:C3.textMuted }}>{feat.label}: <strong style={{color:C3.amber}}>{feat.note || feat.value}</strong></span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button onClick={()=>onSelect?.(plan.key)}
+        style={{
+          marginTop:"auto", width:"100%",
+          background: isCurrent ? C3.border : (isPremium ? C3.amber : (plan.highlight ? C3.green : "transparent")),
+          color: isCurrent ? C3.textMuted : (isPremium ? "#1a1400" : (plan.highlight ? "#061A0C" : C3.green)),
+          border: `1px solid ${isCurrent ? C3.border : (isPremium ? C3.amber : (plan.highlight ? C3.green : C3.green+"50"))}`,
+          borderRadius:10, padding:"12px 16px", fontSize:14, fontWeight:800,
+          cursor: isCurrent ? "default" : "pointer",
+          fontFamily:"'Inter','Segoe UI',sans-serif",
+          transition:"all 0.12s",
+        }}>
+        {isCurrent ? "✓ Plano Atual" : (plan.key === "start" ? "Ativar Start" : "Adquirir Plano")}
+      </button>
+    </div>
+  );
+}

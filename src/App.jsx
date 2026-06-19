@@ -1,10 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { EvaSlider, TagSelect, SingleSelect, AudioField, useProgress, Section, Row, Field, SubHeading, useMediaQuery, GonioRow, MRCRow, MUSCLES, JOINTS, MVMT, getRef, isOutOfRange } from "./components";
+import { EvaSlider, TagSelect, SingleSelect, AudioField, useProgress, Section, Row, Field, SubHeading, useMediaQuery, GonioRow, MRCRow, MUSCLES, JOINTS, MVMT, getRef, isOutOfRange, PaywallModal } from "./components";
 import Assessment from "./Assessment";
 import ScaleModal from "./ScaleModal";
 import SCALES from "./scales";
 import Agenda from "./screens/Agenda";
 import Financeiro from "./screens/Financeiro";
+import Plans from "./screens/Plans";
+import SubscriptionSettings from "./screens/SubscriptionSettings";
+import { useSubscription } from "./hooks/useSubscription";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -1233,7 +1236,14 @@ export default function Sasyra() {
     setPatientView(false);
   };
 
-  const addPatient = (p) => setPatients(ps => [...ps, p]);
+  const addPatient = (p) => {
+    if (!canAddPatient(patients.length)) {
+      setPaywallFeature({ name:"Gestão de Pacientes", desc:`O plano Start tem limite de ${20} pacientes ativos. Faça upgrade para o Consultório Evidência e cadastre quantos pacientes precisar.` });
+      setPaywallOpen(true);
+      return;
+    }
+    setPatients(ps => [...ps, p]);
+  };
 
   const deletePatient = (p) => {
     const pid = p.id || p.nome;
@@ -1305,6 +1315,18 @@ export default function Sasyra() {
   const [expandedCats, setExpandedCats] = useState([]);
   const [scaleModal, setScaleModal] = useState({ open:false, scale:null });
 
+  // ── Subscription / Paywall ────────────────────────────────────────────────
+  const { canAddPatient, canUseFeature, plan, label: planLabel, setPlan, sub, useAI, buyAndUseAI, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion } = useSubscription();
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [paywallFeature, setPaywallFeature] = useState({ name:"", desc:"" });
+
+  const tryFeature = useCallback((feature, name, desc) => {
+    if (canUseFeature(feature)) return true;
+    setPaywallFeature({ name, desc });
+    setPaywallOpen(true);
+    return false;
+  }, [canUseFeature]);
+
   // ── localStorage ─────────────────────────────────────────────────────────
   useEffect(() => { const t = setTimeout(() => { try { localStorage.setItem("sasyra_patients", JSON.stringify(patients)); } catch { /* storage full or unavailable */ } }, 500); return () => clearTimeout(t); }, [patients]);
   useEffect(() => { const t = setTimeout(() => { try { localStorage.setItem("sasyra_assessments", JSON.stringify(assessmentHistory)); } catch { /* storage full or unavailable */ } }, 500); return () => clearTimeout(t); }, [assessmentHistory]);
@@ -1370,7 +1392,9 @@ export default function Sasyra() {
   };
 
   // ── AI call ───────────────────────────────────────────────────────────────
-  const runAI = async () => {
+  const runAI = async (payPerUse = false) => {
+    if (payPerUse && !buyAndUseAI()) { setAiRes("Erro ao processar pagamento."); return; }
+    if (!payPerUse && !useAI()) { setAiRes("Limite de análises excedido."); return; }
     setAiLoad(true); setAiRes("");
     try {
       const summary = [
@@ -1393,7 +1417,7 @@ export default function Sasyra() {
         `Observações: ${obs}`,
       ].join("\n");
 
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("/api/anthropic", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
@@ -1449,7 +1473,21 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
   if (appView === "financeiro") return (
     <Financeiro onNavigateToPatient={navigateToPatientFromAgenda} onNavigate={(v) => setAppView(v)} />
   );
-  if (patientView) return <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} onAgenda={() => setAppView("agenda")} onViewChange={(v) => setAppView(v)} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} />;
+  if (appView === "plans") return <Plans onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} />;
+  if (appView === "subscription") return <SubscriptionSettings onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} />;
+  if (patientView) return <>
+    <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} onAgenda={() => setAppView("agenda")} onViewChange={(v) => setAppView(v)} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} />
+    <PaywallModal open={paywallOpen} onClose={() => setPaywallOpen(false)}
+      featureName={paywallFeature.name} featureDesc={paywallFeature.desc}
+      onUpgrade={() => { setPaywallOpen(false); setAppView("plans"); }} />
+  </>;
+
+  // Paywall modal (renders on top of assessment view)
+  const paywallModal = (
+    <PaywallModal open={paywallOpen} onClose={() => setPaywallOpen(false)}
+      featureName={paywallFeature.name} featureDesc={paywallFeature.desc}
+      onUpgrade={() => { setPaywallOpen(false); setAppView("plans"); }} />
+  );
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
 
@@ -1467,6 +1505,10 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
           ))}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <button onClick={()=>setAppView("subscription")}
+            style={{ background:plan==="start"?`${C.amber}15`:"transparent", border:`1px solid ${plan==="start"?C.amber+"50":C.border}`, borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, color:plan==="start"?C.amber:C.green, cursor:"pointer", fontFamily:F, whiteSpace:"nowrap" }}>
+            {plan === "start" ? "⭐ Start" : `⭐ ${planLabel}`}
+          </button>
           {pt.nome && (
             <>
               <div style={{ width:30, height:30, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.green, flexShrink:0 }}>{pt.nome[0]?.toUpperCase()}</div>
@@ -1530,6 +1572,9 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
             assessmentHistory={assessmentHistory} saveAssessment={saveAssessment}
             loadAssessment={loadAssessment} resetAssessment={resetAssessment}
             patientId={pt.id || pt.nome}
+            tryFeature={tryFeature} plan={plan}
+            aiRemaining={aiRemaining} aiLimit={aiLimit}
+            hasExpansion={hasExpansion} purchaseAIExpansion={purchaseAIExpansion}
           />
         )}
 
@@ -2264,6 +2309,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
 
       </div>
 
+      {paywallModal}
       <ScaleModal scale={scaleModal.scale} open={scaleModal.open} onClose={() => setScaleModal({open:false, scale:null})} onSave={handleScaleSave} initial={scaleModal.scale?.questions?.reduce((a,q)=>a,{})} />
     </div>
   );

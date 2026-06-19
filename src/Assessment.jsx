@@ -160,6 +160,7 @@ export default function Assessment({
   kb, cifSuggestions, autoCIF, imc,
   progSteps, detectKB,
   assessmentHistory, saveAssessment, loadAssessment, resetAssessment, patientId,
+  tryFeature, plan, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion,
 }) {
   const patientAssessments = assessmentHistory
     .filter(a => a.patientId === patientId)
@@ -272,7 +273,19 @@ export default function Assessment({
               ✓ Condição identificada: <strong>{kb.label}</strong> — protocolos carregados automaticamente
             </div>
 
-            {cifSuggestions.length > 0 && (
+            {plan !== "ia" ? (
+              <div style={{ background: C.card, borderRadius: 8, padding: "12px", marginBottom: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>CIF sugeridos pela condição</div>
+                <div style={{ fontSize: 12, color: C.textMuted, display:"flex", alignItems:"center", gap:8 }}>
+                  🔒 Sugestão CIF disponível no <strong style={{color:C.green}}>Plano IA Premium</strong>.
+                  <button onClick={() => tryFeature("cif", "CIF Automatizada",
+                    "A classificação CIF automatizada com qualificadores está disponível apenas no Plano IA Premium. Faça upgrade e tenha relatórios CIF completos automaticamente.")}
+                    style={{ background:"transparent", border:"none", color:C.green, fontWeight:700, cursor:"pointer", fontSize:12, fontFamily:F, textDecoration:"underline" }}>
+                    Desbloquear
+                  </button>
+                </div>
+              </div>
+            ) : cifSuggestions.length > 0 && (
               <div style={{ background: C.card, borderRadius: 8, padding: "10px 12px", marginBottom: 10 }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>CIF sugeridos pela condição</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -285,7 +298,19 @@ export default function Assessment({
               </div>
             )}
 
-            {autoCIF.length > 0 && (
+            {plan !== "ia" ? (
+              <div style={{ background: C.surface, borderRadius: 8, padding: "12px", marginBottom: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>CIF identificados automaticamente (baseados nos dados preenchidos)</div>
+                <div style={{ fontSize: 12, color: C.textMuted, display:"flex", alignItems:"center", gap:8 }}>
+                  🔒 CIF automática com qualificadores disponível no <strong style={{color:C.green}}>Plano IA Premium</strong>.
+                  <button onClick={() => tryFeature("cif", "CIF Automatizada com Qualificadores",
+                    "Os qualificadores CIF são gerados automaticamente pela engine SASYRA com base nos seus dados de avaliação. Disponível apenas no Plano IA Premium.")}
+                    style={{ background:"transparent", border:"none", color:C.green, fontWeight:700, cursor:"pointer", fontSize:12, fontFamily:F, textDecoration:"underline" }}>
+                    Desbloquear
+                  </button>
+                </div>
+              </div>
+            ) : autoCIF.length > 0 && (
               <div style={{ background: C.surface, borderRadius: 8, padding: "10px 12px", marginBottom: 10 }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>CIF identificados automaticamente (baseados nos dados preenchidos)</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -524,15 +549,34 @@ export default function Assessment({
         <p style={{ fontSize: 12, color: C.textMuted, margin: "0 0 14px", lineHeight: 1.7 }}>
           Preencha os campos da avaliação e clique em analisar. A IA cruzará os dados com evidências científicas atualizadas (PEDro, Cochrane, CPGs) e gerará um plano de tratamento personalizado e baseado em evidências.
         </p>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <button onClick={runAI} disabled={aiLoad || !queixa} style={{ ...primaryBtn({ background: C.green, color: "#061A0C" }), opacity: aiLoad || !queixa ? 0.45 : 1 }}>
-            {aiLoad ? "⏳ Analisando…" : "🔍 Gerar análise clínica"}
-          </button>
-          <div style={{ display: "flex", gap: 6 }}>
-            {progSteps.filter(s => !s.done).map(s => (
-              <span key={s.key} style={{ fontSize: 10, color: C.amber, background: C.amberBg, border: `1px solid ${C.amber}30`, borderRadius: 6, padding: "2px 8px" }}>Pendente: {s.label}</span>
-            ))}
+        <div style={{ display: "flex", flexDirection:"column", gap:8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <button onClick={() => {
+              if (aiRemaining <= 0 && plan !== "ia") { runAI(true); return; }
+              runAI();
+            }} disabled={aiLoad || !queixa} style={{ ...primaryBtn({ background: C.green, color: "#061A0C" }), opacity: aiLoad || !queixa ? 0.45 : 1 }}>
+              {aiLoad ? "⏳ Analisando…" : "🔍"} Gerar análise clínica
+            </button>
+            <div style={{ display: "flex", gap: 6 }}>
+              {progSteps.filter(s => !s.done).map(s => (
+                <span key={s.key} style={{ fontSize: 10, color: C.amber, background: C.amberBg, border: `1px solid ${C.amber}30`, borderRadius: 6, padding: "2px 8px" }}>Pendente: {s.label}</span>
+              ))}
+            </div>
           </div>
+          {plan === "ia" && (
+            <div style={{ fontSize: 11, color: aiRemaining < 10 ? C.amber : C.textMuted, fontFamily:F }}>
+              📊 {aiRemaining}/{aiLimit} análises restantes neste mês
+            </div>
+          )}
+          {plan !== "ia" && (
+            <div style={{ fontSize: 11, color: C.textMuted, fontFamily:F, display:"flex", alignItems:"center", gap:6 }}>
+              {hasExpansion && aiRemaining > 0 ? (
+                <span style={{ color:C.green }}>✅ {aiRemaining} crédito(s) restante(s)</span>
+              ) : (
+                <span>Ao clicar em <strong>Gerar análise clínica</strong>, você será cobrado <strong>R$ 4,90</strong> por esta análise avulsa.</span>
+              )}
+            </div>
+          )}
         </div>
         {aiRes && (
           <div style={{ marginTop: 16, background: C.surface, border: `1px solid ${C.green}30`, borderRadius: 10, padding: 18 }}>
