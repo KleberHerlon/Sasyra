@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SASYRA — Guia do Sistema</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',-apple-system,sans-serif; background:#0a0e1a; color:#e8edf5; line-height:1.6; }
+
+  .cover { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; background:radial-gradient(ellipse at 50% 30%, #141b33 0%, #0a0e1a 70%); padding:40px 24px; position:relative; overflow:hidden; }
+  .cover::before { content:''; position:absolute; top:-50%; left:-50%; width:200%; height:200%; background:radial-gradient(circle at 30% 40%, rgba(34,197,94,0.04) 0%, transparent 50%), radial-gradient(circle at 70% 60%, rgba(245,158,11,0.03) 0%, transparent 50%); }
+  .cover-content { position:relative; z-index:1; max-width:720px; }
+  .cover h1 { font-size:72px; font-weight:900; letter-spacing:16px; color:#e8edf5; margin-bottom:4px; }
+  .cover .sub { font-size:18px; font-weight:800; letter-spacing:8px; color:#22c55e; margin-bottom:24px; }
+  .cover .tagline { font-size:16px; font-weight:300; color:#8896b0; max-width:520px; margin:0 auto 48px; line-height:1.7; }
+  .cover .version { font-size:13px; color:#4a5568; letter-spacing:2px; }
+
+  .deco { display:flex; align-items:center; gap:8px; margin:0 auto 32px; justify-content:center; }
+  .deco .line { width:40px; height:1.5px; background:#22c55e; opacity:0.4; }
+  .deco .dot { width:6px; height:6px; border-radius:50%; background:#f59e0b; }
+
+  .toc { max-width:600px; margin:0 auto; padding:40px 24px; }
+  .toc h2 { font-size:14px; font-weight:700; color:#22c55e; letter-spacing:4px; margin-bottom:20px; }
+  .toc ol { list-style:none; counter-reset:toc; }
+  .toc ol li { counter-increment:toc; padding:10px 0; border-bottom:1px solid #1a2040; font-size:14px; color:#8896b0; display:flex; gap:12px; align-items:center; }
+  .toc ol li::before { content:counter(toc); width:26px; height:26px; border-radius:50%; background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#22c55e; flex-shrink:0; }
+
+  .screens { max-width:1000px; margin:0 auto; padding:0 24px 80px; }
+  .screen-section { margin-bottom:60px; page-break-inside:avoid; }
+  .screen-header { display:flex; align-items:center; gap:16px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #1a2040; }
+  .screen-num { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#22c55e,#16a34a); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; color:#fff; flex-shrink:0; }
+  .screen-header h2 { font-size:20px; font-weight:700; color:#e8edf5; }
+  .screen-desc { font-size:14px; color:#8896b0; margin-bottom:16px; max-width:720px; line-height:1.7; }
+  .img-wrap { border-radius:12px; overflow:hidden; border:1px solid #1a2040; background:#060a14; box-shadow:0 8px 32px rgba(0,0,0,0.4); }
+  .img-wrap img { width:100%; height:auto; display:block; }
+  .footer { text-align:center; padding:40px 24px; border-top:1px solid #1a2040; color:#4a5568; font-size:12px; letter-spacing:1px; }
+
+  @media print { .cover { min-height:100vh; break-after:page; } .screen-section { break-inside:avoid; } }
+</style>
+</head>
+<body>
+<div class="cover">
+  <div class="cover-content">
+    <div class="deco"><span class="line"></span><span class="dot"></span><span class="line"></span></div>
+    <h1>SASYRA</h1>
+    <div class="sub">REABILITAÇÃO E EVIDÊNCIA</div>
+    <p class="tagline">Sistema de apoio à decisão clínica para avaliação, documentação e tratamento ortopédico baseado em evidências</p>
+    <div class="version">GUIA DO SISTEMA · v1.0.0 · 18/06/2026</div>
+  </div>
+</div>
+
+<div class="toc">
+  <h2>CONTEÚDO</h2>
+  <ol><li>Tela de Login</li><li>Lista de Pacientes</li><li>Paciente Cadastrado</li><li>Avaliação Completa (todas as seções)</li><li>BodyMap Interativo</li><li>Avaliação — Exame Físico</li><li>Testes Ortopédicos Especiais</li><li>Diário / Evolução por Sessão</li><li>Relatório Clínico</li><li>Base de Evidências Científicas</li><li>Agenda</li><li>Financeiro</li><li>Gerenciamento de Assinatura</li><li>Planos de Assinatura</li><li>36 Escalas Validadas</li><li>Análise por Inteligência Artificial</li></ol>
+</div>
+
+<div class="screens">
+      <div class="screen-section">
+        <div class="screen-header">
+          <span class="screen-num">1</span>
+          <h2>Tela de Login</h2>
+        </div>
+        <p class="screen-desc">Tela inicial com seleção de profissão (Fisioterapeuta, TO, Educador Físico) e entrada de nome e CREFITO. Design com gradiente radial e logotipo SASYRA.</p>
+        <div class="img-wrap">
+          <img src="C:\Users\User\sasyra-app\screenshots\01-login.png" alt="Tela de Login" loading="lazy" />
+        </div>
+      </div>
+    
+
+      <div class="screen-section">
+        <div class="screen-header">
+          <span class="screen-num">2</span>
+          <h2>Lista de Pacientes</h2>
+        </div>
+        <p class="screen-desc">Dashboard com lista de pacientes, botão para adicionar novo paciente e atalhos para Agenda e Financeiro.</p>
+        <div class="img-wrap">
+          <img src="C:\Users\User\sasyra-app\screenshots\02-patient-list-empty.png" alt="Lista de Pacientes" loading="lazy" />
+        </div>
+      </div>
+    
+
+      <div class="screen-section">
+        <div class="screen-header">
+          <span class="screen-num">3</span>
+          <h2>Paciente Cadastrado</h2>
+        </div>
+        <p class="screen-desc">Paciente João Carlos Silva na lista com indicadores da última avaliação e red flags.</p>
+        <div class="img-wrap">
+          <img src="C:\Users\User\sasyra-app\screenshots\03-patient-list-full.png" alt="Paciente Cadastrado" loading="lazy" />
+        </div>
+      </div>
+    
+
+      <div class="screen-section">
+        <div class="screen-header">
+          <span class="screen-num">4</span>
+          <h2>Avaliação Completa (todas as seções)</h2>
+        </div>
+        <p class="screen-desc">Todas as 7 seções da avaliação expandidas: Identificação do Paciente, Anamnese, Dor e Funcionalidade, Exame Físico, Goniometria, Testes Especiais e Observações Clínicas.</p>
+        <div class="img-wrap">
+          <img src="C:\Users\User\sasyra-app\screenshots\04-assessment-full.png" alt="Avaliação Completa (todas as seções)" loading="lazy" />
+        </div>
+      </div>
+    
+
+      <div class="screen-section">
+        <div class="screen-header">
+          <span class="screen-num">5</span>
+          <h2>BodyMap Interativo</h2>
+        </div>
+        <p class="screen-desc">Mapa corporal em SVG com 30+ regiões clicáveis. O fisioterapeuta marca a localização exata da dor. Exibe detalhes anatômicos (articulações e músculos) de cada região selecionada.</p>
+        <div class="img-wrap">
+          <img src="C:\Users\User\sasyra-app\screenshots\05-bodymap.png" alt="BodyMap Interativo" loading="lazy" />
+        </div>
+      </div>
+    
+
+      <div class="screen-section">
+        <div class="screen-header">
+          <span class="screen-num">6</span>
+          <h2>Avaliação — Exame Físico</h2>
+        </div>
+        <p class="screen-desc">Exame físico completo expandido: postura, marcha, edema, palpação, sensibilidade, reflexos, força muscular (MRC 0-5) e goniometria articular com valores de referência.</p>
+        <div class="img-wrap">
+          <img src="C:\Users\User\sasyra-app\screenshots\06-exame-fisico.png" alt="Avaliação — Exame Físico" loading="lazy" />
+        </div>
+      </div>
+    
+
+      <div class="screen-section">
+        <div class="screen-header">
+          <span class="screen-num">7</span>
+          <h2>Testes Ortopédicos Especiais</h2>
+        </div>
+        <p class="screen-desc">38+ testes ortopédicos especiais com descrição detalhada, classificação (positivo/negativo), vídeos incorporados do YouTube e nível de evidência científica.</p>
+        <div class="img-wrap">
+          <img src="C:\Users\User\sasyra-app\screenshots\07-testes-ortopedicos.png" alt="Testes Ortopédicos Especiais" loading="lazy" />
+        </div>
+      </div>
+    
+
+      <div class="screen-section">
+        <div class="screen-header">
+          <span class="screen-num">8</span>
+          <h2>Diário / Evolução por Sessão</h2>
+        </div>
+        <p class="screen-desc">Registro de evolução por sessão com procedimentos categorizados, EVA, resposta ao tratamento, metas, escalas aplicadas, ADMs e MRC. Categorias expansíveis: Eletroterapia, Terapia Manual, Cinesioterapia, etc.</p>
+        <div class="img-wrap">
+          <img src="C:\Users\User\sasyra-app\screenshots\08-diario.png" alt="Diário / Evolução por Sessão" loading="lazy" />
+        </div>
+      </div>
+    
+
+      <div class="screen-section">
+        <div class="screen-header">
+          <span class="screen-num">9</span>
+          <h2>Relatório Clínico</h2>
+        </div>
+        <p class="screen-desc">Relatório clínico completo formatado para impressão: dados do paciente, avaliação, classificação CIF, objetivos terapêuticos (curto, médio e longo prazo), plano de tratamento e evolução.</p>
+        <div class="img-wrap">
+          <img src="C:\Users\User\sasyra-app\screenshots\09-relatorio.png" alt="Relatório Clínico" loading="lazy" />
+        </div>
+      </div>
+    
+
+      <div class="screen-section">
+        <div class="screen-header">
+          <span class="screen-num">10</span>
+          <h2>Base de Evidências Científicas</h2>
+        </div>
+        <p class="screen-desc">Mais de 30 patologias ortopédicas com diretrizes PEDro, Cochrane e CPGs internacionais. Para cada condição: gold standard, red flags, yellow flags e alertas de encaminhamento médico.</p>
+        <div class="img-wrap">
+          <img src="C:\Users\User\sasyra-app\screenshots\10-evidencias.png" alt="Base de Evidências Científicas" loading="lazy" />
+        </div>
+      </div>
+    
+
+      <div class="screen-section">
+        <div class="screen-header">
+          <span class="screen-num">11</span>
+          <h2>Agenda</h2>
+        </div>
+        <p class="screen-desc">Agenda mensal com visualização semanal, gerenciamento de horários, registro de faltas e navegação por paciente.</p>
+        <div class="img-wrap">
+          <img src="C:\Users\User\sasyra-app\screenshots\11-agenda.png" alt="Agenda" loading="lazy" />
+        </div>
+      </div>
+    
+
+      <div class="screen-section">
+        <div class="screen-header">
+          <span class="screen-num">12</span>
+          <h2>Financeiro</h2>
+        </div>
+        <p class="screen-desc">Módulo financeiro com tabelas de honorários CREFITO por região, gestão de recebimentos, despesas e fluxo de caixa.</p>
+        <div class="img-wrap">
+          <img src="C:\Users\User\sasyra-app\screenshots\12-financeiro.png" alt="Financeiro" loading="lazy" />
+        </div>
+      </div>
+    
+
+      <div class="screen-section">
+        <div class="screen-header">
+          <span class="screen-num">13</span>
+          <h2>Gerenciamento de Assinatura</h2>
+        </div>
+        <p class="screen-desc">Painel de assinatura com plano atual (Start), histórico de faturas, gerenciamento de usuários extras e opção de upgrade para planos superiores.</p>
+        <div class="img-wrap">
+          <img src="C:\Users\User\sasyra-app\screenshots\13-assinatura.png" alt="Gerenciamento de Assinatura" loading="lazy" />
+        </div>
+      </div>
+    
+
+      <div class="screen-section">
+        <div class="screen-header">
+          <span class="screen-num">14</span>
+          <h2>Planos de Assinatura</h2>
+        </div>
+        <p class="screen-desc">Quatro planos: Start (R$9,90/mês — 50 pacientes, voz limitada), Consultório Evidência (R$14,90/mês — 200 pacientes, financeiro), Clínicas & Equipes (R$49,90/mês — ilimitado, multiusuário) e IA Premium (R$79,90/mês — 300 análises IA/mês + CIF automatizada). Plano IA Premium destacado com badge 'MAIS COMPLETO'.</p>
+        <div class="img-wrap">
+          <img src="C:\Users\User\sasyra-app\screenshots\14-planos.png" alt="Planos de Assinatura" loading="lazy" />
+        </div>
+      </div>
+    
+
+      <div class="screen-section">
+        <div class="screen-header">
+          <span class="screen-num">15</span>
+          <h2>36 Escalas Validadas</h2>
+        </div>
+        <p class="screen-desc">ODI (Oswestry), KOOS, DASH, SF-36, WOMAC, Escala de Tampa para Cinesiofobia, NRS, HAD e mais 30 escalas funcionais validadas em português com cálculo automático de pontuação, MCID e MDC.</p>
+        <div class="img-wrap">
+          <img src="C:\Users\User\sasyra-app\screenshots\15-escalas.png" alt="36 Escalas Validadas" loading="lazy" />
+        </div>
+      </div>
+    
+
+      <div class="screen-section">
+        <div class="screen-header">
+          <span class="screen-num">16</span>
+          <h2>Análise por Inteligência Artificial</h2>
+        </div>
+        <p class="screen-desc">Análise clínica gerada por IA (Claude Sonnet) baseada nos dados da avaliação: hipótese diagnóstica funcional CIF, objetivos terapêuticos, plano de tratamento com evidências (PEDro/Cochrane), contraindicações e prognóstico.</p>
+        <div class="img-wrap">
+          <img src="C:\Users\User\sasyra-app\screenshots\16-ia-analysis.png" alt="Análise por Inteligência Artificial" loading="lazy" />
+        </div>
+      </div>
+    </div>
+
+<div class="footer">SASYRA — Sistema de Apoio à Decisão Clínica em Reabilitação © 2026</div>
+</body>
+</html>

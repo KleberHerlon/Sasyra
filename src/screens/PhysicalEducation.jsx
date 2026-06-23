@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Accordion from "../components/Accordion";
 import { calcPollock7Dobras, calcPollock3Dobras, calcVO2maxCooper, calcVO2maxRockport, calc1RMPreditivo, calcPercentual1RM, DOBRAS_LOCATIONS, RM_TABLE, calcISAK6Dobras, calcBioimpedancia, savePhysicalAssessment, loadPhysicalAssessments, getBFEvolution, saveTreino, loadTreinos, calcVolumeLoad, calcWeeklyVolume, calcProgression, suggestNextCycle } from "../data/physicalAssessment";
 import { getDiretriz, OBJETIVOS, DIVISOES_TREINO, montarEstruturaTreino, sugerirCarga, EVIDENCIA_CARDS, getRestricoesClinicas } from "../data/exercisePrescription";
-import { searchExercises, MUSCLE_GROUPS } from "../data/exercises";
+import { searchExercises, MUSCLE_GROUPS, parseFoco, getExercisesByFoco } from "../data/exercises";
 import { detectMultipleKB } from "../utils/clinicalDetection";
 import { detectPerformanceEntities, detectPerformanceGoals, detectRiskFactors, detectRestrictions } from "../utils/performanceDetection";
 import { acsmRiskStrata, RISK_FACTOR_LABELS } from "../data/acsmRisk";
@@ -95,15 +95,16 @@ function AudioField({ value, onChange, placeholder, rows }) {
   );
 }
 
-function ExerciseSearch({ onSelect }) {
+function ExerciseSearch({ onSelect, foco }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
+  const focoParsed = foco ? parseFoco(foco) : [];
 
   useEffect(() => {
     if (query.length < 2) { setResults([]); return; }
-    const timer = setTimeout(() => setResults(searchExercises(query)), 200);
+    const timer = setTimeout(() => setResults(searchExercises(query, focoParsed)), 200);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, focoParsed]);
 
   return (
     <div style={{ position:"relative" }}>
@@ -111,16 +112,24 @@ function ExerciseSearch({ onSelect }) {
         style={inp({ padding:"10px 14px" })} />
       {results.length > 0 && (
         <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:100, background:C.surface, border:`1px solid ${C.borderLight}`, borderRadius:10, marginTop:4, maxHeight:280, overflow:"auto", boxShadow:"0 8px 24px rgba(0,0,0,0.4)" }}>
-          {results.map(ex => (
-            <button key={ex.id} onClick={() => { onSelect(ex); setQuery(""); setResults([]); }}
-              style={{ width:"100%", background:"none", border:"none", borderBottom:`1px solid ${C.border}`, padding:"10px 14px", cursor:"pointer", textAlign:"left", color:C.text, fontFamily:F, display:"flex", alignItems:"center", gap:8 }}>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:13, fontWeight:700 }}>{ex.nome}</div>
-                <div style={{ fontSize:11, color:C.textMuted }}>{ex.musculoPrimario} · {ex.equipamento}</div>
-              </div>
-              <span style={{ fontSize:10, color:C.green, background:C.greenBg, border:`1px solid ${C.green}30`, borderRadius:6, padding:"2px 8px" }}>{ex.grupo}</span>
-            </button>
-          ))}
+          {results.map(ex => {
+            const matchFoco = focoParsed.some(f =>
+              ex.musculoPrimario.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(f.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")) ||
+              ex.grupo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(f.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""))
+            );
+            return (
+              <button key={ex.id} onClick={() => { onSelect(ex); setQuery(""); setResults([]); }}
+                style={{ width:"100%", background:"none", border:"none", borderBottom:`1px solid ${C.border}`, padding:"10px 14px", cursor:"pointer", textAlign:"left", color:C.text, fontFamily:F, display:"flex", alignItems:"center", gap:8 }}>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:13, fontWeight:700 }}>{ex.nome}</div>
+                  <div style={{ fontSize:11, color:C.textMuted }}>{ex.musculoPrimario} · {ex.equipamento}</div>
+                </div>
+                {ex.videoUrl && <span style={{ fontSize:11, color:C.red }}>▶</span>}
+                {ex.instrucoes?.length > 0 && <span style={{ fontSize:9, color:C.blue }}>📋</span>}
+                <span style={{ fontSize:10, color: matchFoco ? C.green : C.textMuted, background: matchFoco ? C.greenBg : "transparent", border:`1px solid ${matchFoco ? C.green+"30" : C.border}`, borderRadius:6, padding:"2px 8px" }}>{ex.grupo}</span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -128,6 +137,7 @@ function ExerciseSearch({ onSelect }) {
 }
 
 function ExerciseRow({ exercise, index, onRemove, onUpdate }) {
+  const [showInstrucoes, setShowInstrucoes] = useState(false);
   return (
     <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:"12px 14px", marginBottom:8 }}>
       <div style={{ display:"flex", alignItems:"center", gap:10 }}>
@@ -136,8 +146,28 @@ function ExerciseRow({ exercise, index, onRemove, onUpdate }) {
           <div style={{ fontWeight:700, fontSize:13, color:C.text }}>{exercise.nome}</div>
           <div style={{ fontSize:10, color:C.textMuted, marginTop:1 }}>{exercise.musculoPrimario} · {exercise.equipamento}</div>
         </div>
-        {onRemove && <button onClick={onRemove} style={{ background:"none", border:"none", color:C.red, fontSize:16, cursor:"pointer", padding:"0 4px" }}>×</button>}
+        <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+          {exercise.videoUrl && (
+            <a href={exercise.videoUrl} target="_blank" rel="noopener noreferrer" title="Ver vídeo do exercício"
+              style={{ background:"none", border:"none", color:C.red, fontSize:14, cursor:"pointer", padding:"0 4px", textDecoration:"none" }}>▶</a>
+          )}
+          {exercise.instrucoes?.length > 0 && (
+            <button onClick={() => setShowInstrucoes(!showInstrucoes)} title="Ver instruções"
+              style={{ background:"none", border:"none", color:C.blue, fontSize:13, cursor:"pointer", padding:"0 4px" }}>{showInstrucoes ? "△" : "▽"}</button>
+          )}
+          {onRemove && <button onClick={onRemove} style={{ background:"none", border:"none", color:C.red, fontSize:16, cursor:"pointer", padding:"0 4px" }}>×</button>}
+        </div>
       </div>
+      {showInstrucoes && exercise.instrucoes?.length > 0 && (
+        <div style={{ marginTop:8, background:C.cardAlt, borderRadius:8, padding:"10px 12px", fontSize:11, color:C.textSub, lineHeight:1.7 }}>
+          <div style={{ fontSize:9, fontWeight:800, color:C.blue, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>📋 Instruções</div>
+          <ol style={{ margin:0, paddingLeft:16 }}>
+            {exercise.instrucoes.map((inst, i) => (
+              <li key={i} style={{ marginBottom:4 }}>{inst}</li>
+            ))}
+          </ol>
+        </div>
+      )}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:8, marginTop:10 }}>
         <div>
           <span style={{ fontSize:9, color:C.textDim, fontWeight:700, textTransform:"uppercase" }}>Séries</span>
@@ -611,7 +641,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
               <span style={lbl()}>Objetivo do Treino</span>
               <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:6 }}>
                 {OBJETIVOS.map(o => (
-                  <button key={o.id} onClick={() => setObjetivo(o.id)} style={iconBtn(objetivo === o.id, C.green)}>
+                  <button key={o.id} onClick={() => setObjetivo(objetivo === o.id ? "" : o.id)} style={iconBtn(objetivo === o.id, C.green)}>
                     {objetivo === o.id && <span style={{fontSize:10}}>✓ </span>}{o.icon} {o.label}
                   </button>
                 ))}
@@ -1010,7 +1040,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                   <span style={lbl()}>Divisão de Treino</span>
                   <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:6 }}>
                     {DIVISOES_TREINO.map(d => (
-                      <button key={d.id} onClick={() => setDivisao(d.id)} style={iconBtn(divisao === d.id, C.green)}>
+                      <button key={d.id} onClick={() => setDivisao(divisao === d.id ? "" : d.id)} style={iconBtn(divisao === d.id, C.green)}>
                         {divisao === d.id && "✓ "}{d.label}
                       </button>
                     ))}
@@ -1020,7 +1050,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                   <span style={lbl()}>Objetivo</span>
                   <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:6 }}>
                     {OBJETIVOS.map(o => (
-                      <button key={o.id} onClick={() => setObjetivo(o.id)} style={iconBtn(objetivo === o.id, C.green)}>
+                      <button key={o.id} onClick={() => setObjetivo(objetivo === o.id ? "" : o.id)} style={iconBtn(objetivo === o.id, C.green)}>
                         {objetivo === o.id && "✓ "}{o.icon} {o.label}
                       </button>
                     ))}
@@ -1194,7 +1224,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                   <span style={lbl()}>PSE da Sessão (CR-10)</span>
                   <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginTop:4 }}>
                     {PSE_CR10.filter(p => p.valor <= 10).map(p => (
-                      <button key={p.valor} onClick={() => setPseAtual(String(p.valor))} style={iconBtn(pseAtual === String(p.valor), PSE_COLORS[p.valor] || C.green)}>
+                      <button key={p.valor} onClick={() => setPseAtual(pseAtual === String(p.valor) ? "" : String(p.valor))} style={iconBtn(pseAtual === String(p.valor), PSE_COLORS[p.valor] || C.green)}>
                         {p.valor}
                       </button>
                     ))}
@@ -1296,7 +1326,9 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
               )}
             </Accordion>
 
-            {estruturaTreino.map(grupo => (
+            {estruturaTreino.map(grupo => {
+              const sugestoes = getExercisesByFoco(grupo.foco);
+              return (
               <Accordion key={grupo.key} title={grupo.nome} icon="🏋️" badge={`${grupo.exercicios.length} ex.`} defaultOpen>
                 <div style={{ fontSize:12, color:C.textMuted, marginBottom:10 }}>Foco: {grupo.foco}</div>
                 {grupo.diretrizAplicada && (
@@ -1305,7 +1337,44 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                   </div>
                 )}
 
-                <ExerciseSearch onSelect={(ex) => addExercicio(grupo.key, ex)} />
+                <ExerciseSearch onSelect={(ex) => addExercicio(grupo.key, ex)} foco={grupo.foco} />
+
+                {sugestoes.length > 0 && grupo.exercicios.length < 12 && (
+                  <div style={{ marginTop:12, marginBottom:8 }}>
+                    <div style={{ fontSize:10, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>
+                      ⚡ Sugestões para {grupo.foco}
+                    </div>
+                    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                      {sugestoes.map(({ muscle, exercises }) => (
+                        <div key={muscle}>
+                          <div style={{ fontSize:10, fontWeight:700, color:C.amber, marginBottom:4 }}>{muscle}</div>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+                            {exercises.map(ex => {
+                              const jaAdicionado = grupo.exercicios.some(e => e.id.startsWith(ex.id));
+                              return (
+                                <button key={ex.id} onClick={() => !jaAdicionado && addExercicio(grupo.key, ex)}
+                                  disabled={jaAdicionado}
+                                  style={{
+                                    fontSize:11, fontFamily:F, cursor: jaAdicionado ? "not-allowed" : "pointer",
+                                    background: jaAdicionado ? C.greenBg : C.surface,
+                                    border: `1px solid ${jaAdicionado ? C.green+"40" : C.borderLight}`,
+                                    color: jaAdicionado ? C.green : C.text,
+                                    borderRadius:8, padding:"6px 10px", opacity: jaAdicionado ? 0.7 : 1,
+                                    display:"inline-flex", alignItems:"center", gap:4,
+                                  }}>
+                                  {jaAdicionado && <span style={{fontSize:10}}>✓</span>}
+                                  {ex.nome}
+                                  {ex.videoUrl && <span style={{ fontSize:9, color: C.red }}>▶</span>}
+                                  <span style={{ fontSize:9, color: jaAdicionado ? C.green : C.textDim }}>({ex.equipamento})</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {grupo.exercicios.length > 0 && (
                   <div style={{ marginTop:12 }}>
@@ -1317,13 +1386,14 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                   </div>
                 )}
 
-                {grupo.exercicios.length === 0 && (
+                {grupo.exercicios.length === 0 && sugestoes.length === 0 && (
                   <div style={{ marginTop:10, textAlign:"center", padding:"16px", color:C.textDim, fontSize:12 }}>
                     Nenhum exercício adicionado. Use a busca acima para adicionar exercícios ao treino.
                   </div>
                 )}
               </Accordion>
-            ))}
+              );
+            })}
 
             {savedTreinos.length > 0 && (
               <Accordion title={`Histórico de Prescrições (${savedTreinos.length})`} icon="📚">
