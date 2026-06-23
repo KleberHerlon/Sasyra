@@ -9,6 +9,9 @@ import { acsmRiskStrata, RISK_FACTOR_LABELS } from "../data/acsmRisk";
 import { PSE_CR10, calcInternalLoad, calcMonotony, deloadSuggestion, PSE_COLORS } from "../data/pseFoster";
 import { gerarMacrociclo, gerarMicrocicloSemanal, sugerirTransicao } from "../data/periodizacaoEngine";
 import { calcIMC, calcRCQ, calcFCRegistro, FC_ZONA_CORES } from "../data/peScales";
+import { savePseSessions, loadPseSessions } from "../data/physicalAssessment";
+import PerformanceDashboard from "./PerformanceDashboard";
+import { gerarPDFPerformance } from "../utils/pdfGenerator";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -256,6 +259,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
       setSavedAssessments(loadPhysicalAssessments(sid));
       setSavedTreinos(loadTreinos(sid));
       setBfEvolution(getBFEvolution(sid));
+      setPseSessoes(loadPseSessions(sid));
     }
   }, [student?.id, student?.nome]);
 
@@ -496,7 +500,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
           </span>
         </div>
         <div style={{ display:"flex", gap:4 }}>
-          {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação Física"],["prescricao","📝","Prescrição"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
+          {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação Física"],["prescricao","📝","Prescrição"],["dashboard","📊","Dashboard"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               background: tab === k ? C.greenBg : "transparent",
               border: `1px solid ${tab === k ? C.green + "50" : "transparent"}`,
@@ -507,7 +511,24 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
           ))}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <button onClick={() => window.print()} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>🖨️ PDF</button>
+          <button onClick={() => gerarPDFPerformance({
+            student,
+            assessment: {
+              percentualGordura: pollockResult?.percentualGordura || savedAssessments?.[savedAssessments.length - 1]?.percentualGordura,
+              densidadeCorporal: pollockResult?.densidadeCorporal,
+              vo2max: cooperResult?.vo2max || savedAssessments?.[savedAssessments.length - 1]?.cooper?.vo2max,
+              rm: rmResult?.rm || savedAssessments?.[savedAssessments.length - 1]?.rm?.rm,
+              protocolo: pollockResult?.protocolo,
+              imc: imcVal?.imc,
+              referencia: pollockResult?.referencia,
+            },
+            treino: estruturaTreino,
+            objetivo,
+            nivel,
+            divisao,
+            pseSessoes,
+            macrociclo,
+          })} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>📄 Gerar PDF</button>
           {student?.nome && (
             <>
               <div style={{ width:30, height:30, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.green }}>
@@ -1199,6 +1220,8 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                       setPseAnalise(carga);
                       setPseAtual("");
                       setPseDuracao("");
+                      const sid = student.id || student.nome;
+                      savePseSessions(sid, novas);
                       if (novas.length >= 2) {
                         const mono = calcMonotony(novas);
                         if (mono) {
@@ -1324,6 +1347,23 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
               </Accordion>
             )}
           </>
+        )}
+
+        {tab === "dashboard" && (
+          <PerformanceDashboard
+            student={student}
+            bfEvolution={bfEvolution}
+            savedAssessments={savedAssessments}
+            rmResult={rmResult}
+            cooperResult={cooperResult}
+            weeklyVolume={weeklyVolume}
+            pseSessoes={pseSessoes}
+            acsmRisk={acsmRisk}
+            objetivo={objetivo}
+            nivel={nivel}
+            estruturaTreino={estruturaTreino}
+            macrociclo={macrociclo}
+          />
         )}
 
         {tab === "evidencias" && (

@@ -242,6 +242,25 @@ export function loadTreinos(studentId) {
   return data[studentId]?.treinos || [];
 }
 
+export function savePseSessions(studentId, sessoes) {
+  if (!studentId) return;
+  const key = "pe_data";
+  const raw = localStorage.getItem(key);
+  const data = raw ? JSON.parse(raw) : {};
+  if (!data[studentId]) data[studentId] = { assessments: [], treinos: [], pse: [] };
+  data[studentId].pse = sessoes;
+  localStorage.setItem(key, JSON.stringify(data));
+}
+
+export function loadPseSessions(studentId) {
+  if (!studentId) return [];
+  const key = "pe_data";
+  const raw = localStorage.getItem(key);
+  if (!raw) return [];
+  const data = JSON.parse(raw);
+  return data[studentId]?.pse || [];
+}
+
 export function calcVolumeLoad(exercicios) {
   if (!exercicios || exercicios.length === 0) return 0;
   return exercicios.reduce((total, ex) => {
