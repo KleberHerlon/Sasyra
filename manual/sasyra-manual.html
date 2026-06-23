@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Manual do Usuário — SASYRA</title>
+  <style>
+    @page { size: A4; margin: 2.2cm 2cm; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.55;
+      color: #1a1a1a;
+      background: #fff;
+      counter-reset: h2-counter;
+    }
+    .page { max-width: 210mm; margin: 0 auto; padding: 0; }
+
+    /* Cover */
+    .cover {
+      page-break-after: always;
+      text-align: center;
+      padding: 120px 40px 60px;
+      background: linear-gradient(145deg, #0d1f12 0%, #1a3a24 100%);
+      color: #fff;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;
+    }
+    .cover h1 { font-size: 42pt; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 12px; }
+    .cover .sub { font-size: 18pt; font-weight: 300; color: #8fc9a8; margin-bottom: 40px; }
+    .cover .meta { font-size: 11pt; color: #6a9e7e; }
+    .cover .logo { font-size: 64pt; margin-bottom: 20px; }
+
+    /* TOC */
+    .toc { page-break-after: always; padding: 40px 50px; }
+    .toc h2 { font-size: 20pt; font-weight: 700; margin-bottom: 20px; color: #1a5c32; }
+    .toc ul { list-style: none; columns: 2; column-gap: 30px; }
+    .toc li { margin-bottom: 4px; }
+    .toc a { color: #1a5c32; text-decoration: none; font-size: 10pt; display: flex; align-items: baseline; gap: 6px; }
+    .toc a::before { content: attr(data-num); font-weight: 700; color: #3a8a5a; min-width: 28px; }
+    .toc a:hover { text-decoration: underline; }
+
+    /* Chapters */
+    h2.chapter {
+      page-break-before: always;
+      padding-top: 30px;
+      font-size: 18pt; font-weight: 800; color: #0d331a;
+      border-bottom: 3px solid #2d7a4a;
+      padding-bottom: 6px;
+      margin-bottom: 18px;
+      counter-increment: h2-counter;
+    }
+    h2.chapter::before { content: counter(h2-counter) ". "; }
+
+    h3 { font-size: 13pt; font-weight: 700; color: #1d5c34; margin: 18px 0 8px; }
+    h4 { font-size: 11pt; font-weight: 600; color: #2a6a40; margin: 14px 0 6px; }
+
+    p { margin-bottom: 0.6em; text-align: justify; }
+
+    ul, ol { margin: 6px 0 10px 22px; }
+    li { margin-bottom: 3px; }
+
+    code {
+      background: #eef4f0; padding: 1px 6px; border-radius: 3px;
+      font-family: 'Cascadia Code', 'JetBrains Mono', monospace; font-size: 9pt;
+    }
+
+    .note {
+      background: #e7f3ed; border-left: 4px solid #2d7a4a;
+      padding: 10px 14px; border-radius: 4px; margin: 12px 0; font-size: 9.5pt;
+    }
+    .warning {
+      background: #fff3e0; border-left: 4px solid #e67e22;
+      padding: 10px 14px; border-radius: 4px; margin: 12px 0; font-size: 9.5pt;
+    }
+    .tip {
+      background: #e3f2fd; border-left: 4px solid #1976d2;
+      padding: 10px 14px; border-radius: 4px; margin: 12px 0; font-size: 9.5pt;
+    }
+
+    table {
+      width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 9.5pt;
+    }
+    th { background: #1d5c34; color: #fff; padding: 6px 10px; text-align: left; font-weight: 600; }
+    td { padding: 5px 10px; border-bottom: 1px solid #ddd; }
+    tr:nth-child(even) td { background: #f6faf8; }
+
+    .screenshot {
+      border: 1px solid #ccc; border-radius: 6px; margin: 12px 0;
+      max-width: 100%; display: block;
+    }
+    .tag {
+      display: inline-block; background: #2d7a4a; color: #fff;
+      padding: 1px 8px; border-radius: 10px; font-size: 8pt; font-weight: 700;
+    }
+    .tag-blue { background: #60A5FA; }
+    .tag-amber { background: #FBBF24; color: #1a1a1a; }
+    .tag-purple { background: #A78BFA; }
+
+    .footer { page-break-after: always; }
+    .page-break { page-break-before: always; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════ COVER ═══════════ -->
+<div class="cover">
+  <div class="logo">⚕️</div>
+  <h1>SASYRA</h1>
+  <div class="sub">Sistema de Apoio à Saúde e Reabilitação</div>
+  <div class="meta">
+    Manual do Usuário — Versão 1.0<br>
+    Junho 2026
+  </div>
+</div>
+
+<!-- ═══════════ TOC ═══════════ -->
+<div class="toc">
+  <h2>Sumário</h2>
+  <ul>
+    <li><a href="#ch1" data-num="1">Introdução</a></li>
+    <li><a href="#ch2" data-num="2">Primeiros Passos</a></li>
+    <li><a href="#ch3" data-num="3">Pacientes</a></li>
+    <li><a href="#ch4" data-num="4">Módulo Fisioterapia</a></li>
+    <li><a href="#ch5" data-num="5">Módulo Educação Física</a></li>
+    <li><a href="#ch6" data-num="6">Módulo Terapia Ocupacional</a></li>
+    <li><a href="#ch7" data-num="7">Módulo Nutrição</a></li>
+    <li><a href="#ch8" data-num="8">Módulo Pediatria</a></li>
+    <li><a href="#ch9" data-num="9">Módulo CrossFit</a></li>
+    <li><a href="#ch10" data-num="10">Módulo Neuro</a></li>
+    <li><a href="#ch11" data-num="11">Agenda</a></li>
+    <li><a href="#ch12" data-num="12">Financeiro</a></li>
+    <li><a href="#ch13" data-num="13">Planos e Assinatura</a></li>
+    <li><a href="#ch14" data-num="14">Integrações</a></li>
+    <li><a href="#ch15" data-num="15">App do Paciente</a></li>
+    <li><a href="#ch16" data-num="16">PWA — Instalar como App</a></li>
+    <li><a href="#ch17" data-num="17">Perguntas Frequentes</a></li>
+    <li><a href="#ch18" data-num="18">Suporte Técnico</a></li>
+  </ul>
+</div>
+
+<!-- ═══════════ 1. INTRODUÇÃO ═══════════ -->
+<h2 class="chapter" id="ch1">Introdução</h2>
+
+<h3>1.1 O que é o SASYRA?</h3>
+<p>
+  O <strong>SASYRA</strong> (Sistema de Apoio à Saúde e Reabilitação) é uma plataforma
+  web desenvolvida para profissionais de saúde que atuam na reabilitação e no
+  condicionamento físico. Ele unifica em um único ambiente digital as principais
+  ferramentas do dia a dia clínico: avaliação, prescrição de exercícios, evolução do
+  paciente, controle financeiro, agendamento e prontuário eletrônico.
+</p>
+
+<h3>1.2 Público-alvo</h3>
+<ul>
+  <li>Fisioterapeutas</li>
+  <li>Profissionais de Educação Física / Personal Trainers</li>
+  <li>Terapeutas Ocupacionais</li>
+  <li>Nutricionistas</li>
+  <li>Fisioterapeutas Pediátricos</li>
+  <li>Fisioterapeutas Neurofuncionais</li>
+  <li>Coaches de CrossFit</li>
+</ul>
+
+<h3>1.3 Requisitos de Sistema</h3>
+<table>
+  <tr><th>Item</th><th>Mínimo</th><th>Recomendado</th></tr>
+  <tr><td>Navegador</td><td>Chrome 100+ / Edge 100+ / Firefox 100+</td><td>Chrome 120+</td></tr>
+  <tr><td>Conexão</td><td>Internet (ocasional)</td><td>Internet permanente</td></tr>
+  <tr><td>Resolução</td><td>1024×768</td><td>1366×768+</td></tr>
+  <tr><td>Dispositivo</td><td>Desktop / Notebook</td><td>Desktop + Tablet</td></tr>
+</table>
+<p>
+  O SASYRA funciona como <strong>PWA (Progressive Web App)</strong> — pode ser
+  instalado no celular ou desktop e utilizado offline parcialmente.
+</p>
+
+<!-- ═══════════ 2. PRIMEIROS PASSOS ═══════════ -->
+<h2 class="chapter" id="ch2">Primeiros Passos</h2>
+
+<h3>2.1 Acesso ao Sistema</h3>
+<p>
+  O SASYRA é uma aplicação web. Acesse pelo navegador no endereço fornecido
+  pelo seu plano. Na primeira tela, você escolherá sua <strong>profissão</strong>
+  e <strong>tema</strong> (claro/escuro):
+</p>
+<ul>
+  <li><strong>Fisioterapeuta</strong> → Módulo Fisioterapia</li>
+  <li><strong>Educador Físico</strong> → Módulo Educação Física</li>
+  <li><strong>Terapeuta Ocupacional</strong> → Módulo Terapia Ocupacional</li>
+  <li><strong>Nutricionista</strong> → Módulo Nutrição</li>
+  <li><strong>Fisioterapeuta Pediátrico</strong> → Módulo Pediatria</li>
+  <li><strong>Coach CrossFit</strong> → Módulo CrossFit</li>
+  <li><strong>Fisioterapeuta Neurofuncional</strong> → Módulo Neuro</li>
+</ul>
+
+<div class="note">
+  <strong>Dica:</strong> A escolha da profissão determina o módulo principal.
+  Você pode alternar entre módulos futuramente pelo botão
+  <strong>"Trocar Módulo"</strong> no topo da tela.
+</div>
+
+<h3>2.2 Estrutura da Tela Inicial</h3>
+<p>
+  Após o login, a tela principal exibe:
+</p>
+<ul>
+  <li><strong>Header superior</strong> — nome do sistema, módulo ativo, botões de navegação (Agenda, Financeiro, Planos, Integrações, Trocar Módulo)</li>
+  <li><strong>Lista de Pacientes</strong> — barra de busca, botão "Novo Paciente", lista com nome, convênio, telefone, ações (selecionar, deletar)</li>
+  <li><strong>Up-sell de Planos</strong> — banner no topo da lista destacando benefícios do plano Evidência / Clínicas</li>
+</ul>
+
+<h3>2.3 Alternar Tema</h3>
+<p>
+  O tema (claro/escuro) pode ser alternado no momento do login ou
+  posteriormente. O SASYRA usa um tema escuro padrão (dark mode) otimizado
+  para uso prolongado em clínicas.
+</p>
+
+<!-- ═══════════ 3. PACIENTES ═══════════ -->
+<h2 class="chapter" id="ch3">Gerenciamento de Pacientes</h2>
+
+<h3>3.1 Cadastrar Novo Paciente</h3>
+<p>
+  Clique em <strong>"+ Novo Paciente"</strong> na tela inicial. Preencha os
+  campos obrigatórios:
+</p>
+<ul>
+  <li><strong>Nome</strong> completo</li>
+  <li><strong>Data de nascimento</strong></li>
+  <li><strong>Sexo</strong></li>
+  <li><strong>Lateralidade</strong> (destro / canhoto / ambidestro)</li>
+  <li><strong>Estado civil</strong></li>
+  <li><strong>Profissão</strong></li>
+  <li><strong>Convênio</strong></li>
+  <li><strong>Telefone</strong></li>
+  <li><strong>Peso</strong> e <strong>altura</strong> (para cálculo de IMC)</li>
+</ul>
+
+<div class="warning">
+  <strong>Atenção:</strong> O plano Start tem limite de 20 pacientes ativos.
+  Acima disso, é necessário fazer upgrade para Evidência ou Clínicas.
+</div>
+
+<h3>3.2 Buscar Pacientes</h3>
+<p>
+  Use o campo de busca no topo da lista para filtrar por nome, convênio
+  ou telefone. A busca é textual e funciona em tempo real.
+</p>
+
+<h3>3.3 Selecionar e Atender</h3>
+<p>
+  Clique no nome do paciente para abrir o módulo de avaliação/atendimento.
+  A tela exibirá:
+</p>
+<ul>
+  <li>Dados cadastrais no cabeçalho</li>
+  <li>Abas de acordo com o módulo selecionado</li>
+  <li>Botão <strong>"← Voltar à lista"</strong> no topo</li>
+</ul>
+
+<h3>3.4 Excluir Paciente</h3>
+<p>
+  Use o botão <strong>🗑️</strong> ao lado do paciente na lista.
+  A exclusão é definitiva e remove todas as avaliações associadas.
+</p>
+
+<!-- ═══════════ 4. FISIOTERAPIA ═══════════ -->
+<h2 class="chapter" id="ch4">Módulo Fisioterapia</h2>
+
+<h3>4.1 Visão Geral</h3>
+<p>
+  O módulo de Fisioterapia é o mais completo do SASYRA. Ele organiza o
+  atendimento clínico em <strong>3 grandes áreas</strong> acessíveis por abas:
+  <strong>Avaliação</strong>, <strong>Evolução</strong> e <strong>Evidências</strong>.
+</p>
+
+<h3>4.2 Aba Avaliação</h3>
+<p>Subdividida em seções:</p>
+
+<h4>4.2.1 Anamnese</h4>
+<ul>
+  <li><strong>Queixa principal (QP)</strong> — descrição livre da queixa do paciente</li>
+  <li><strong>História da Doença Atual (HDA)</strong> — cronologia e evolução dos sintomas</li>
+  <li><strong>Localização da Dor</strong> — seleção por regiões anatômicas (ombro, joelho, coluna, etc.)</li>
+  <li><strong>Red Flags</strong> — checklist de sinais de alerta (fratura, neoplasia, infecção, cauda equina)</li>
+  <li><strong>Yellow Flags</strong> — fatores psicossociais (catastrofização, cinesiofobia)</li>
+  <li><strong>Escalas</strong> — seleção e aplicação de escalas validadas (ODI, NDI, DASH, KOOS, etc.)</li>
+</ul>
+
+<h4>4.2.2 Testes Especiais</h4>
+<p>
+  Biblioteca de <strong>+40 testes ortopédicos</strong> organizados por região:
+</p>
+<ul>
+  <li><strong>Lombar:</strong> Lasègue (SLR), Slump Test, Schober, FABER, Gaenslen, Waddell</li>
+  <li><strong>Cervical:</strong> Spurling, Distração, FRT (Flexion-Rotation), ULTT 1/2a</li>
+  <li><strong>Ombro:</strong> Neer, Hawkins-Kennedy, Empty/Full Can, O'Brien, Apreensão/Relocação, Lift-off</li>
+  <li><strong>Joelho:</strong> Lachman, Pivot Shift, McMurray, Thessaly, Valgo/Varo, Clarke, Dial Test</li>
+  <li><strong>Tornozelo:</strong> Anterior Drawer, Talar Tilt, Ottawa Rules, Windlass, Thompson</li>
+  <li><strong>Cotovelo:</strong> Mills, Cozen, Golfer, Valgus Stress, Moving Valgus, Milking</li>
+</ul>
+<p>
+  Cada teste exibe <strong>nome, descrição, sensibilidade/especificidade</strong>
+  e instruções passo a passo com link para vídeo demonstrativo.
+</p>
+
+<h4>4.2.3 Goniometria</h4>
+<p>
+  Mensuração de <strong>amplitude de movimento (ADM)</strong> para as
+  principais articulações. Selecione o movimento e registre os valores
+  ativo/passivo lado direito e esquerdo. Valores fora da faixa normal
+  recebem destaque visual.
+</p>
+
+<h4>4.2.4 Força Muscular (MRC)</h4>
+<p>
+  Escala de <strong>0 a 5</strong> (Medical Research Council) para os
+  principais grupos musculares, com entrada bilateral. Inclui graduação
+  intermediária (<code>4-</code>, <code>4</code>, <code>4+</code>).
+</p>
+
+<h4>4.2.5 Exame Físico</h4>
+<p>
+  Campos para palpação, inspeção, edema, sensibilidade, reflexos,
+  testes de função neurológica e avaliação de marcha.
+</p>
+
+<h4>4.2.6 Procedimentos</h4>
+<p>
+  Lista categorizada de procedimentos fisioterapêuticos com seleção
+  múltipla por tags:
+</p>
+<ul>
+  <li>Eletroterapia (TENS, FES, Ultrassom, Laser, Magnetoterapia)</li>
+  <li>Termoterapia (Crioterapia, Termoterapia)</li>
+  <li>Terapia Manual (Massagem, Mobilização, Manipulação, Dry Needling, Ventosa, Liberação Miofascial)</li>
+  <li>Bandagens Funcionais (Bandagem, Kinesio Taping)</li>
+  <li>Cinesioterapia (RPG, Pilates, Treino de Força, Propriocepção, Funcional, Neuromotor)</li>
+  <li>Hidroterapia</li>
+  <li>Alongamento Global</li>
+  <li>Abordagens Cognitivo-Comportamentais (PNE, Graded Exposure, CFT)</li>
+</ul>
+
+<h4>4.2.7 Conduta e Prescrição</h4>
+<p>
+  Campo livre para descrever a conduta fisioterapêutica, orientações
+  e plano de tratamento.
+</p>
+
+<h4>4.2.8 Salvamento</h4>
+<p>
+  A avaliação é salva automaticamente ao sair do paciente ou ao clicar
+  em <strong>"💾 Salvar Avaliação"</strong>. O histórico completo fica
+  disponível na aba <strong>Evolução</strong>.
+</p>
+
+<h3>4.3 Aba Evolução</h3>
+<ul>
+  <li><strong>Histórico cronológico</strong> de todas as avaliações</li>
+  <li><strong>Comparativo</strong> de escalas e medidas ao longo do tempo</li>
+  <li><strong>Filtro por data</strong> e <strong>busca textual</strong></li>
+  <li><strong>Exportação</strong> de relatórios individuais</li>
+</ul>
+
+<h3>4.4 Aba Evidências</h3>
+<ul>
+  <li><strong>Diretrizes de Prática Clínica (CPGs)</strong> — diretrizes JOSPT/APTA, NICE, Cochrane, com links diretos</li>
+  <li><strong>Estudos PEDro</strong> — ensaios clínicos ranqueados por pontuação PEDro (7-10), com conclusão e link</li>
+  <li><strong>Escalas recomendadas</strong> por patologia</li>
+  <li><strong>Red Flags</strong> específicos de cada condição</li>
+  <li><strong>Classificação Internacional de Funcionalidade (CIF)</strong> — códigos associados</li>
+  <li>Patologias disponíveis: lombalgia, cervicalgia, gonalgia, ombralgia, tornozelo, cotovelo + Top 50 ortopédicas</li>
+</ul>
+
+<!-- ═══════════ 5. EDUCAÇÃO FÍSICA ═══════════ -->
+<h2 class="chapter" id="ch5">Módulo Educação Física</h2>
+
+<h3>5.1 Visão Geral</h3>
+<p>
+  Módulo para prescrição de treinos e avaliação física de alunos/academias.
+  Abas: <strong>Perfil</strong>, <strong>Treinos</strong>, <strong>Avaliação</strong>,
+  <strong>Evolução</strong>, <strong>Evidências</strong>.
+</p>
+
+<h3>5.2 Perfil do Aluno</h3>
+<ul>
+  <li>Dados pessoais e contato</li>
+  <li>Nível de atividade física</li>
+  <li>Restrições clínicas (detectadas automaticamente da anamnese da fisioterapia via <strong>Ponte de Transição</strong>)</li>
+  <li>Objetivos do aluno (emagrecimento, hipertrofia, condicionamento, reabilitação)</li>
+  <li>Lesões prévias e cirurgias</li>
+</ul>
+
+<h3>5.3 Prescrição de Treinos</h3>
+<ul>
+  <li><strong>Objetivo</strong> do ciclo (força, hipertrofia, resistência, potência)</li>
+  <li><strong>Nível</strong> do aluno (iniciante, intermediário, avançado)</li>
+  <li><strong>Divisão</strong> (full body, upper/lower, push/pull/legs, ABC, ABCD, AB superiores/AB inferiores)</li>
+  <li><strong>Estrutura do treino:</strong> exercícios com séries, repetições, carga, RPE, intervalo, anotações</li>
+  <li><strong>Biblioteca de exercícios</strong> com +70 exercícios categorizados (peito, costas, pernas, ombros, braços, core, cardio)</li>
+  <li><strong>Busca textual</strong> na biblioteca</li>
+  <li><strong>Restrições bloqueadas</strong> — exercícios contraindicados aparecem como 🚫 e não podem ser adicionados</li>
+</ul>
+
+<h3>5.4 Avaliação Física</h3>
+<ul>
+  <li><strong>Dobras cutâneas</strong> (7 dobras: tríceps, subescapular, bíceps, crista ilíaca, supraespinhal, abdominal, coxa)</li>
+  <li><strong>Cálculo automático</strong> de % de gordura (fórmula de Faulkner / 7 dobras), densidade corporal, massa gorda e magra</li>
+  <li><strong>Perímetros</strong> (braço, antebraço, tórax, cintura, abdômen, quadril, coxa, perna)</li>
+  <li><strong>Testes de aptidão:</strong> Cooper (VO₂max), flexão de braço, abdominal 1 min, banco de Wells (flexibilidade)</li>
+  <li><strong>1RM preditivo</strong> (fórmula de Brzycki) — com bloqueio para repetições > 10 (alternativa: teste de 10RM)</li>
+  <li><strong>Classificação automática</strong> dos resultados em tabelas de referência</li>
+</ul>
+
+<h3>5.5 PSE (Percepção Subjetiva de Esforço)</h3>
+<ul>
+  <li>Registro de sessão com <strong>PSE (0-10)</strong>, duração e data</li>
+  <li><strong>Carga Interna</strong> = PSE × duração (min)</li>
+  <li>Gráfico de evolução da carga interna ao longo do tempo</li>
+</ul>
+
+<h3>5.6 Compartilhar com o Aluno</h3>
+<p>
+  O botão <strong>"📱 Compartilhar"</strong> no cabeçalho do aluno gera um
+  <strong>código de acesso</strong> (formato <code>PAT-XXXXXXXX-XXXX</code>)
+  e abre o <strong>PatientView</strong> — portal do paciente com treinos,
+  avaliações e evolução. O código pode ser enviado via WhatsApp.
+</p>
+
+<!-- ═══════════ 6. TO ═══════════ -->
+<h2 class="chapter" id="ch6">Módulo Terapia Ocupacional</h2>
+
+<h3>6.1 Visão Geral</h3>
+<p>
+  Módulo para Terapeutas Ocupacionais. Abas: <strong>Anamnese</strong>,
+  <strong>Avaliação</strong>, <strong>Evolução</strong>, <strong>Evidências</strong>.
+  Cor predominante: <span class="tag">Verde</span>.
+</p>
+
+<h3>6.2 Anamnese TO</h3>
+<ul>
+  <li>Diagnóstico médico e encaminhamento</li>
+  <li>História ocupacional (trabalho, lazer, AVDs)</li>
+  <li>Queixas principais relacionadas ao desempenho ocupacional</li>
+  <li>Contexto social e ambiental</li>
+  <li>Tecnologia assistiva e adaptações já utilizadas</li>
+</ul>
+
+<h3>6.3 Avaliação TO</h3>
+<ul>
+  <li><strong>AVDs (Atividades de Vida Diária):</strong> alimentação, higiene, banho, vestuário, uso do banheiro, transferências</li>
+  <li><strong>AIVDs (Atividades Instrumentais):</strong> preparo de refeições, limpeza, lavanderia, uso de transporte, manejo de finanças, uso de medicamentos, uso de telefone, compras</li>
+  <li><strong>Mobilidade funcional:</strong> leito, cadeira, banheiro, deambulação
+
+</li>
+  <li><strong>Habilidades motoras finas:</strong> preensão palmar, pinça, destreza manual, coordenação bilateral</li>
+  <li><strong>Habilidades percepto-cognitivas:</strong> atenção, memória, praxia, gnosi, funções executivas</li>
+  <li><strong>Escalas funcionais:</strong> MIF, Medida Canadense de Desempenho Ocupacional (COPM), Índice de Barthel, Medida de Independência Funcional</li>
+</ul>
+
+<h3>6.4 Órteses e Adaptações</h3>
+<ul>
+  <li>Registro de órteses prescritas (tipo, local, material, finalidade)</li>
+  <li>Adaptações ambientais e instrumentais</li>
+  <li>Cadeira de rodas e dispositivos de mobilidade</li>
+</ul>
+
+<!-- ═══════════ 7. NUTRIÇÃO ═══════════ -->
+<h2 class="chapter" id="ch7">Módulo Nutrição</h2>
+
+<h3>7.1 Visão Geral</h3>
+<p>
+  Módulo para nutricionistas. Abas: <strong>Anamnese</strong>,
+  <strong>Plano Alimentar</strong>, <strong>Evolução</strong>,
+  <strong>Evidências</strong>. Cor: <span class="tag">Verde</span>.
+</p>
+
+<h3>7.2 Anamnese Nutricional</h3>
+<ul>
+  <li>História alimentar e dietética pregressa</li>
+  <li>Preferências, aversões e restrições alimentares</li>
+  <li>Horários e hábitos de refeições</li>
+  <li>Consumo hídrico</li>
+  <li>Uso de suplementos e medicamentos</li>
+  <li>História de peso (máximo, mínimo, habitual)</li>
+  <li>Comorbidades (DM, HAS, dislipidemia, DII, alergias)</li>
+  <li>Cirurgias bariátrica/gastrointestinal prévia</li>
+</ul>
+
+<h3>7.3 Plano Alimentar</h3>
+<ul>
+  <li>Objetivo (emagrecimento, hipertrofia, manutenção, controle metabólico)</li>
+  <li>Protocolo (padrão, low-carb, mediterrâneo, DASH, etc.)</li>
+  <li>Estrutura de refeições com horários</li>
+  <li>Registro de alimentos por refeição</li>
+  <li>Recomendações e orientações específicas</li>
+</ul>
+
+<h3>7.4 Antropometria</h3>
+<ul>
+  <li>Peso, altura, IMC (cálculo automático com classificação)</li>
+  <li>Circunferências (cintura, quadril, RCQ)</li>
+  <li>Dobras cutâneas e % de gordura</li>
+  <li>Histórico de medidas com gráfico evolutivo</li>
+</ul>
+
+<!-- ═══════════ 8. PEDIATRIA ═══════════ -->
+<h2 class="chapter" id="ch8">Módulo Pediatria</h2>
+
+<h3>8.1 Visão Geral</h3>
+<p>
+  Módulo para fisioterapeutas pediátricos. Abas: <strong>Anamnese</strong>,
+  <strong>Terapia</strong>, <strong>Evolução</strong>, <strong>Evidências</strong>.
+  Cor: <span class="tag tag-blue">Azul (#60A5FA)</span>.
+</p>
+
+<h3>8.2 Anamnese Pediátrica</h3>
+<ul>
+  <li><strong>História gestacional:</strong> idade gestacional, intercorrências na gestação, tipo de parto</li>
+  <li><strong>História perinatal:</strong> APGAR, peso ao nascer, complicações neonatais (UTI, icterícia, convulsões)</li>
+  <li><strong>Marcos motores:</strong> idade de sustentação cervical, sentar, engatinhar, andar</li>
+  <li><strong>Comorbidades pediátricas:</strong> cardiopatias, pneumopatias, epilepsia, hidrocefalia, alterações sensoriais</li>
+  <li><strong>Exame físico pediátrico:</strong> tônus muscular, reflexos primitivos, coordenação motora, marcha</li>
+</ul>
+
+<h3>8.3 Escalas Pediátricas</h3>
+<ul>
+  <li><strong>GMFCS</strong> (Classificação da Função Motora Grossa) — níveis I a V</li>
+  <li><strong>AIMS</strong> (Alberta Infant Motor Scale) — escore de desenvolvimento motor</li>
+  <li><strong>M-CHAT</strong> (Modified Checklist for Autism in Toddlers) — triagem para autismo (TagSelect de sintomas)</li>
+</ul>
+
+<h3>8.4 Plano Terapêutico</h3>
+<ul>
+  <li>Estimulação motora global</li>
+  <li>Treino de marcha</li>
+  <li>Fortalecimento muscular</li>
+  <li>Integração sensorial</li>
+  <li>Exercícios lúdicos e brincadeiras terapêuticas</li>
+</ul>
+
+<h3>8.5 Evidências Pediátricas</h3>
+<p>
+  Condições: paralisia cerebral, síndrome de Down, TEA, mielomeningocele,
+  distrofia muscular, torcicolo congênito.
+</p>
+
+<!-- ═══════════ 9. CROSSFIT ═══════════ -->
+<h2 class="chapter" id="ch9">Módulo CrossFit</h2>
+
+<h3>9.1 Visão Geral</h3>
+<p>
+  Módulo para coaches e fisioterapeutas especializados em CrossFit.
+  Abas: <strong>Perfil</strong>, <strong>Treinos</strong>,
+  <strong>Métricas</strong>, <strong>Evolução</strong>, <strong>Evidências</strong>.
+  Cor: <span class="tag tag-amber">Âmbar (#FBBF24)</span>.
+</p>
+
+<h3>9.2 Perfil do Atleta</h3>
+<ul>
+  <li>Nível (iniciante, intermediário, avançado, competitivo)</li>
+  <li>Modalidades favoritas (weightlifting, gymnastics, monostructural)</li>
+  <li>Lesões prévias</li>
+  <li>Movimentos proibidos (bloqueio na prescrição)</li>
+</ul>
+
+<h3>9.3 Treinos</h3>
+<ul>
+  <li>Registro de sessões: <strong>Strength</strong>, <strong>Metcon</strong>, <strong>Gymnastics</strong>, <strong>Weightlifting</strong></li>
+  <li>RPE (Rating of Perceived Exertion) tracking em cada treino</li>
+  <li><strong>Benchmarks WODs predefinidos:</strong> Fran, Helen, Cindy, Grace, Isabel, Diane, Annie, Karen, Kelly</li>
+  <li>Tempo, rounds, carga para cada WOD</li>
+</ul>
+
+<h3>9.4 1RM Tracking</h3>
+<p>
+  Registro de 1RM para: Snatch, Clean & Jerk, Back Squat, Front Squat,
+  Deadlift, Bench Press, Shoulder Press. Gráfico de evolução por exercício.
+</p>
+
+<h3>9.5 Evidências</h3>
+<p>
+  Lombalgia em CrossFitters, Ombro do CrossFitter, Joelho do CrossFitter,
+  Rabdomiólise, Tendinopatias.
+</p>
+
+<!-- ═══════════ 10. NEURO ═══════════ -->
+<h2 class="chapter" id="ch10">Módulo Neuro</h2>
+
+<h3>10.1 Visão Geral</h3>
+<p>
+  Módulo para fisioterapeutas neurofuncionais. Abas: <strong>Anamnese</strong>,
+  <strong>Avaliação</strong>, <strong>Evolução</strong>, <strong>Evidências</strong>.
+  Cor: <span class="tag tag-purple">Roxo (#A78BFA)</span>.
+</p>
+
+<h3>10.2 Anamnese Neurológica</h3>
+<ul>
+  <li>Diagnóstico neurológico principal</li>
+  <li>Tempo e mecanismo da lesão</li>
+  <li>Lado afetado (D, E, bilateral)</li>
+  <li>Sintomas neurológicos específicos</li>
+</ul>
+
+<h3>10.3 Exame Neurológico</h3>
+<ul>
+  <li><strong>Tônus muscular</strong> — normal, espástico, flácido, rígido, distônico</li>
+  <li><strong>Força muscular MRC</strong> (0-5) para 6 grupos bilaterais: flexores de ombro, extensores de cotovelo, flexores de quadril, extensores de joelho, flexores plantares, flexores dorsais</li>
+  <li><strong>Sensibilidade</strong> — tátil, dolorosa, proprioceptiva, térmica</li>
+  <li><strong>Coordenação</strong> — index-nariz, calcanhar-joelho, diadococinesia</li>
+  <li><strong>Marcha</strong> — tipo (hemiplégica, atáxica, parkinsoniana, escarvante, steppage)</li>
+  <li><strong>Reflexos</strong> — patelar, aquileu, bicipital, tricipital, cutâneo-plantar, clônus</li>
+</ul>
+
+<h3>10.4 Escalas Embutidas</h3>
+<ul>
+  <li><strong>MAS (Ashworth Modificada):</strong> 6 itens (flexores cotovelo D/E, extensores joelho D/E, flexores plantares D/E), total 0-24</li>
+  <li><strong>BBS (Berg Balance Scale) simplificada:</strong> 5 itens, total 0-20, classificação de risco de queda</li>
+  <li><strong>MIF (Medida de Independência Funcional) simplificada:</strong> 6 itens (alimentação, higiene, banho, vestir superior/inferior, uso banheiro), total 0-42</li>
+</ul>
+
+<h3>10.5 Evidências</h3>
+<p>AVC, lesão medular, Parkinson, esclerose múltipla, TCE, ELA, ataxia.</p>
+
+<!-- ═══════════ 11. AGENDA ═══════════ -->
+<h2 class="chapter" id="ch11">Agenda</h2>
+
+<h3>11.1 Visão Geral</h3>
+<p>
+  Tela de agendamento de consultas. Acessível pelo botão <strong>"📅 Agenda"</strong>
+  no header principal.
+</p>
+
+<h3>11.2 Funcionalidades</h3>
+<ul>
+  <li>Visão por <strong>dia</strong> com slots de 30 min</li>
+  <li>Agendamento de <strong>avaliação</strong> ou <strong>sessão</strong></li>
+  <li>Seleção de paciente a partir da lista cadastrada</li>
+  <li>Definição de horário e duração</li>
+  <li>Visualização de horários ocupados</li>
+  <li>Sincronização com <strong>Google Calendar</strong> (quando configurado)</li>
+</ul>
+
+<h3>11.3 Notificações</h3>
+<ul>
+  <li>Lembrete automático 30 min antes (pop-up no navegador)</li>
+  <li>Lembrete 24h antes via <strong>WhatsApp</strong> (quando configurado)</li>
+</ul>
+
+<!-- ═══════════ 12. FINANCEIRO ═══════════ -->
+<h2 class="chapter" id="ch12">Financeiro</h2>
+
+<h3>12.1 Visão Geral</h3>
+<p>
+  Tela de gestão financeira. Acessível pelo botão <strong>"💰 Financeiro"</strong>
+  no header principal.
+</p>
+
+<h3>12.2 Funcionalidades</h3>
+<ul>
+  <li>Controle de <strong>recebimentos</strong> por paciente</li>
+  <li>Registro de <strong>formas de pagamento</strong></li>
+  <li><strong>Relatórios</strong> de faturamento mensal</li>
+  <li>Projeções financeiras com base em histórico</li>
+  <li>Controle de <strong>inadimplência</strong></li>
+  <li>Notificação de <strong>pagamento confirmado</strong> via WhatsApp (quando configurado)</li>
+</ul>
+
+<!-- ═══════════ 13. PLANOS ═══════════ -->
+<h2 class="chapter" id="ch13">Planos e Assinatura</h2>
+
+<h3>13.1 Planos Disponíveis</h3>
+<table>
+  <tr><th>Plano</th><th>Preço</th><th>Pacientes</th><th>IA</th><th>Diferenciais</th></tr>
+  <tr><td><strong>Start</strong></td><td>Grátis</td><td>20</td><td>—</td><td>Módulos básicos, paciente avulso</td></tr>
+  <tr><td><strong>Evidência</strong></td><td>R$ 29,90/mês</td><td>Ilimitado</td><td>30 análises/mês</td><td>2 profissionais, evidências, todos os módulos, integrações</td></tr>
+  <tr><td><strong>Clínicas</strong></td><td>R$ 49,90/mês</td><td>Ilimitado</td><td>50 análises/mês</td><td>3+ profissionais, financeiro, agenda multi</td></tr>
+  <tr><td><strong>IA Premium</strong></td><td>R$ 19,90 (add-on)</td><td>—</td><td>300 análises/mês</td><td>Add-on a qualquer plano</td></tr>
+</table>
+
+<h3>13.2 Limites de IA</h3>
+<ul>
+  <li><strong>Start:</strong> 0 análises/mês (uso avulso R$ 4,90)</li>
+  <li><strong>Evidência:</strong> 30 análises/mês inclusas</li>
+  <li><strong>Clínicas:</strong> 50 análises/mês inclusas</li>
+  <li><strong>IA Premium:</strong> 300 análises/mês (+ R$ 19,90 sobre qualquer plano)</li>
+  <li>Acima do limite: R$ 4,90 por análise avulsa</li>
+</ul>
+
+<h3>13.3 Upgrade / Downgrade</h3>
+<p>
+  Acesse a tela <strong>"Planos"</strong> pelo header para visualizar todos
+  os planos e fazer upgrade. O downgrade pode ser solicitado pelo botão
+  <strong>"Gerenciar Assinatura"</strong>.
+</p>
+
+<div class="note">
+  <strong>Dica:</strong> Upgrade de Start para Evidência desbloqueia pacientes
+  ilimitados, todos os módulos e análises de IA com tecnologia Claude (Anthropic).
+</div>
+
+<!-- ═══════════ 14. INTEGRAÇÕES ═══════════ -->
+<h2 class="chapter" id="ch14">Integrações</h2>
+
+<h3>14.1 Visão Geral</h3>
+<p>
+  Tela acessível pelo botão <strong>"🔗 Integrações"</strong> no header.
+  Reúne serviços externos que ampliam as funcionalidades do SASYRA.
+</p>
+
+<h3>14.2 Google Calendar</h3>
+<p><strong>Pré-requisito:</strong> Credencial OAuth 2.0 do Google Cloud Console.</p>
+<ul>
+  <li><strong>Como configurar:</strong></li>
+  <ol>
+    <li>Crie um projeto no <a href="https://console.cloud.google.com">Google Cloud Console</a></li>
+    <li>Ative a Google Calendar API</li>
+    <li>Crie credenciais OAuth 2.0 (Web Application)</li>
+    <li>Adicione <code>https://seudominio.com/oauth-callback.html</code> como redirect autorizado</li>
+    <li>Defina <code>VITE_GOOGLE_CLIENT_ID</code> no arquivo <code>.env</code></li>
+  </ol>
+  <li><strong>Funcionalidades:</strong> sincronização automática de consultas (avaliações e sessões) com sua agenda Google, lembretes 30 min + 24h, atualização e exclusão de eventos</li>
+  <li><strong>Fluxo:</strong> ao conectar, uma janela do Google é aberta para autorização. Após autorizar, a janela é fechada automaticamente e o status aparece como "Conectado"</li>
+</ul>
+
+<h3>14.3 WhatsApp</h3>
+<p><strong>Pré-requisito:</strong> Conta WhatsApp Business API (WABA).</p>
+<ul>
+  <li><strong>Como configurar:</strong></li>
+  <ol>
+    <li>Crie uma conta em <a href="https://business.whatsapp.com">business.whatsapp.com</a></li>
+    <li>Obtenha token de acesso permanente</li>
+    <li>Defina <code>VITE_WHATSAPP_TOKEN</code> e <code>VITE_WHATSAPP_PHONE_ID</code> no <code>.env</code></li>
+    <li>Crie os templates de mensagem no painel WABA</li>
+  </ol>
+  <li><strong>Templates necessários:</strong></li>
+  <ul>
+    <li><code>lembrete_consulta</code> — parâmetros: patient_name, date, time, professional</li>
+    <li><code>lembrete_avaliacao</code> — parâmetros: patient_name, date</li>
+    <li><code>confirmacao_pagamento</code> — parâmetros: patient_name, amount</li>
+    <li><code>acesso_paciente</code> — parâmetros: patient_name, code, url</li>
+  </ul>
+  <li><strong>Funcionalidades:</strong> envio automático de lembretes de consulta/avaliação, confirmação de pagamento, código de acesso do paciente</li>
+</ul>
+
+<h3>14.4 App do Paciente</h3>
+<p>
+  O "App do Paciente" é o portal que permite ao aluno/paciente acompanhar
+  seus treinos, avaliações e evolução. Está sempre ativo — basta gerar o
+  código de acesso no módulo Educação Física → "Compartilhar" e enviar
+  ao paciente.
+</p>
+
+<!-- ═══════════ 15. APP DO PACIENTE ═══════════ -->
+<h2 class="chapter" id="ch15">App do Paciente</h2>
+
+<h3>15.1 O que é</h3>
+<p>
+  O PatientView é o portal do paciente dentro do SASYRA. Ele exibe em
+  uma interface limpa e mobile-friendly tudo o que o profissional
+  registrou:
+</p>
+<ul>
+  <li><strong>Treinos ativos</strong> — prescrição completa com exercícios, séries, repetições, cargas e RPE</li>
+  <li><strong>Última avaliação física</strong> — % de gordura, densidade corporal, IMC, 1RM, VO₂max</li>
+  <li><strong>Evolução</strong> — gráfico de % de gordura ao longo do tempo, carga interna PSE</li>
+</ul>
+
+<h3>15.2 Como Compartilhar</h3>
+<ol>
+  <li>No módulo <strong>Educação Física</strong>, selecione o aluno</li>
+  <li>Clique em <strong>"📱 Compartilhar"</strong> no cabeçalho</li>
+  <li>Um código único <code>PAT-XXXXXXXX-XXXX</code> é gerado automaticamente</li>
+  <li>Compartilhe o código com o aluno</li>
+  <li>O aluno acessa o portal pelo link: <code>https://seudominio.com/paciente?code=PAT-XXXX</code></li>
+</ol>
+
+<h3>15.3 Envio por WhatsApp</h3>
+<p>
+  Se o WhatsApp estiver configurado, o código pode ser enviado diretamente
+  pelo template <strong>"acesso_paciente"</strong>. O template inclui o nome
+  do paciente e o código de acesso.
+</p>
+
+<!-- ═══════════ 16. PWA ═══════════ -->
+<h2 class="chapter" id="ch16">PWA — Instalar como App</h2>
+
+<h3>16.1 O que é PWA?</h3>
+<p>
+  O SASYRA é um <strong>Progressive Web App (PWA)</strong> — uma aplicação
+  web que pode ser instalada no seu dispositivo como se fosse um app nativo,
+  com acesso offline e notificações.
+</p>
+
+<h3>16.2 Instalar no Desktop (Chrome/Edge)</h3>
+<ol>
+  <li>Abra o SASYRA no navegador</li>
+  <li>Clique no ícone de <strong>instalação</strong> na barra de endereços (⊕ ou computador com seta)</li>
+  <li>Confirme em <strong>"Instalar"</strong></li>
+  <li>O SASYRA será aberto em uma janela própria, sem a barra do navegador</li>
+</ol>
+
+<h3>16.3 Instalar no Celular (Android)</h3>
+<ol>
+  <li>Abra o SASYRA no Chrome</li>
+  <li>Toque no menu ⋮ → <strong>"Adicionar à tela inicial"</strong></li>
+  <li>Confirme o nome e toque em <strong>"Adicionar"</strong></li>
+  <li>O ícone aparecerá na tela inicial como um app comum</li>
+</ol>
+
+<h3>16.4 Instalar no iPhone (iOS)</h3>
+<ol>
+  <li>Abra o SASYRA no Safari</li>
+  <li>Toque no botão <strong>Compartilhar</strong> (quadrado com seta)</li>
+  <li>Role até <strong>"Adicionar à Tela de Início"</strong></li>
+  <li>Confirme o nome e toque em <strong>"Adicionar"</strong></li>
+</ol>
+
+<h3>16.5 Funcionalidades Offline</h3>
+<ul>
+  <li><strong>Cache-first</strong> para assets (CSS, JS, imagens) — app carrega mesmo sem internet</li>
+  <li><strong>Network-first</strong> para dados (avaliações, pacientes) — tenta servidor primeiro, fallback para cache</li>
+  <li>Dados são mantidos em <strong>localStorage</strong> — funcionam offline</li>
+  <li>Sincronização ocorre automaticamente quando a conexão é restabelecida</li>
+</ul>
+
+<!-- ═══════════ 17. FAQ ═══════════ -->
+<h2 class="chapter" id="ch17">Perguntas Frequentes</h2>
+
+<h3>17.1 Preciso de internet para usar o SASYRA?</h3>
+<p>
+  Não necessariamente. O app funciona offline para consulta de dados já
+  cadastrados. Para salvar novas avaliações ou sincronizar com Supabase,
+  é necessária conexão.
+</p>
+
+<h3>17.2 Onde ficam armazenados meus dados?</h3>
+<p>
+  Os dados ficam no <strong>localStorage do navegador</strong> (armazenamento
+  local). Se o Supabase estiver configurado, há sincronização automática
+  com a nuvem. Recomendamos configurar o Supabase para backup e acesso
+  multi-dispositivo.
+</p>
+
+<h3>17.3 Como recupero dados se trocar de computador?</h3>
+<p>
+  Sem Supabase: não há sincronização entre dispositivos. Os dados ficam
+  apenas no navegador onde foram cadastrados. Com Supabase: faça login
+  no novo dispositivo que os dados serão sincronizados automaticamente.
+</p>
+
+<h3>17.4 Quantos pacientes posso cadastrar?</h3>
+<p>
+  Plano Start: até <strong>20 pacientes</strong>. Planos Evidência e
+  Clínicas: <strong>ilimitados</strong>.
+</p>
+
+<h3>17.5 Posso usar em mais de um dispositivo?</h3>
+<p>
+  Sim, desde que o Supabase esteja configurado. Os dados serão sincronizados
+  entre os dispositivos via nuvem.
+</p>
+
+<h3>17.6 Como funciona a IA do SASYRA?</h3>
+<p>
+  A IA usa o modelo <strong>Claude (Anthropic)</strong> para sugerir
+  diagnósticos diferenciais, interpretar exames e recomendar condutas
+  baseadas em evidências. Disponível nos planos Evidência (30 análises/mês),
+  Clínicas (50 análises/mês) e IA Premium (300 análises/mês).
+</p>
+
+<h3>17.7 É possível emitir relatórios?</h3>
+<p>
+  Sim. No módulo de Educação Física há o botão <strong>"📄 Gerar PDF"</strong>
+  que exporta a avaliação física completa. No módulo de Fisioterapia, a aba
+  Evolução permite visualizar e exportar o histórico.
+</p>
+
+<h3>17.8 Como funciona a integração com Google Calendar?</h3>
+<p>
+  Após configurar o Client ID no .env e conectar na tela de Integrações,
+  toda consulta agendada no SASYRA é automaticamente sincronizada com sua
+  agenda Google, incluindo lembretes 30 min e 24h antes.
+</p>
+
+<h3>17.9 Preciso de conta WhatsApp Business para usar as notificações?</h3>
+<p>
+  Sim, as notificações via WhatsApp usam a API oficial do WhatsApp Business.
+  É necessário criar uma conta WABA e configurar os templates de mensagem.
+</p>
+
+<h3>17.10 O SASYRA tem app nativo (React Native)?</h3>
+<p>
+  Atualmente o SASYRA é um PWA (web app instalável). Um app nativo em
+  React Native para pacientes está nos planos futuros de desenvolvimento.
+</p>
+
+<!-- ═══════════ 18. SUPORTE ═══════════ -->
+<h2 class="chapter" id="ch18">Suporte Técnico</h2>
+
+<h3>18.1 Problemas Comuns</h3>
+
+<h4>O app não carrega</h4>
+<ol>
+  <li>Verifique a conexão com internet</li>
+  <li>Limpe o cache do navegador (Ctrl+Shift+Del)</li>
+  <li>Tente em modo anônimo/privado</li>
+  <li>Atualize o navegador para a versão mais recente</li>
+</ol>
+
+<h4>Dados não salvam</h4>
+<ol>
+  <li>Verifique se o localStorage não está cheio (especialmente em dispositivos móveis)</li>
+  <li>Limpe o cache e tente novamente</li>
+  <li>Se usar Supabase, verifique as credenciais no .env</li>
+</ol>
+
+<h4>Google Calendar não conecta</h4>
+<ol>
+  <li>Verifique se <code>VITE_GOOGLE_CLIENT_ID</code> está configurado no .env</li>
+  <li>Confirme que <code>/oauth-callback.html</code> está registrado como redirect autorizado no Google Cloud Console</li>
+  <li>Verifique se a Google Calendar API está ativada no projeto</li>
+</ol>
+
+<h4>WhatsApp não envia mensagens</h4>
+<ol>
+  <li>Verifique <code>VITE_WHATSAPP_TOKEN</code> e <code>VITE_WHATSAPP_PHONE_ID</code> no .env</li>
+  <li>Confirme que os templates de mensagem foram criados no painel WABA</li>
+  <li>Verifique se o número de telefone do paciente está no formato correto (com DDD e DDI 55)</li>
+</ol>
+
+<h3>18.2 Contato</h3>
+<p>
+  Para suporte técnico, dúvidas ou feedback, abra uma issue no repositório
+  oficial do projeto ou entre em contato pelo e-mail de suporte disponível
+  na plataforma.
+</p>
+
+<div class="note">
+  <strong>Versão do Manual:</strong> 1.0 — Junho 2026<br>
+  <strong>Versão do Sistema:</strong> SASYRA v1.0
+</div>
+
+<div style="page-break-before:always; padding-top:60px; text-align:center; color:#666;">
+  <p style="font-size:11pt;">© 2026 SASYRA — Sistema de Apoio à Saúde e Reabilitação</p>
+  <p style="font-size:9pt;">Este manual é parte integrante do software SASYRA.</p>
+</div>
+
+</body>
+</html>

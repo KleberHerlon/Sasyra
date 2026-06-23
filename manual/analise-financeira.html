@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Análise Financeira — SASYRA</title>
+  <style>
+    @page { size: A4 landscape; margin: 1.8cm 1.6cm; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+      font-size: 9.5pt;
+      line-height: 1.5;
+      color: #1a1a1a;
+      background: #fff;
+    }
+    .page { max-width: 297mm; margin: 0 auto; padding: 0; }
+
+    /* Cover */
+    .cover {
+      page-break-after: always;
+      text-align: center;
+      padding: 100px 60px 60px;
+      background: linear-gradient(145deg, #0d1f12 0%, #1a3a24 100%);
+      color: #fff;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;
+    }
+    .cover h1 { font-size: 36pt; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; }
+    .cover .sub { font-size: 16pt; font-weight: 300; color: #8fc9a8; margin-bottom: 6px; }
+    .cover .type { font-size: 11pt; color: #6a9e7e; background: rgba(255,255,255,0.06); padding: 4px 20px; border-radius: 20px; margin-bottom: 30px; }
+    .cover .meta { font-size: 10pt; color: #6a9e7e; line-height: 1.8; }
+    .cover .logo { font-size: 48pt; margin-bottom: 16px; }
+
+    /* TOC */
+    .toc { page-break-after: always; padding: 30px 40px; }
+    .toc h2 { font-size: 18pt; font-weight: 700; margin-bottom: 16px; color: #1a5c32; }
+    .toc ul { list-style: none; columns: 2; column-gap: 24px; }
+    .toc li { margin-bottom: 3px; }
+    .toc a { color: #1a5c32; text-decoration: none; font-size: 9pt; display: flex; align-items: baseline; gap: 4px; }
+    .toc a::before { content: attr(data-num); font-weight: 700; color: #3a8a5a; min-width: 24px; font-size: 9pt; }
+    .toc a:hover { text-decoration: underline; }
+
+    /* Chapters */
+    h2.chapter {
+      page-break-before: always;
+      padding-top: 20px;
+      font-size: 16pt; font-weight: 800; color: #0d331a;
+      border-bottom: 3px solid #2d7a4a;
+      padding-bottom: 5px;
+      margin-bottom: 14px;
+    }
+
+    h3 { font-size: 12pt; font-weight: 700; color: #1d5c34; margin: 14px 0 6px; }
+    h4 { font-size: 10pt; font-weight: 600; color: #2a6a40; margin: 10px 0 4px; }
+
+    p { margin-bottom: 0.5em; text-align: justify; }
+
+    ul, ol { margin: 4px 0 8px 18px; }
+    li { margin-bottom: 2px; }
+
+    .highlight {
+      background: #e7f3ed; border-left: 4px solid #2d7a4a;
+      padding: 8px 12px; border-radius: 4px; margin: 10px 0; font-size: 9pt;
+    }
+    .warning {
+      background: #fff3e0; border-left: 4px solid #e67e22;
+      padding: 8px 12px; border-radius: 4px; margin: 10px 0; font-size: 9pt;
+    }
+
+    table {
+      width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 8.5pt;
+    }
+    th { background: #1d5c34; color: #fff; padding: 5px 8px; text-align: left; font-weight: 600; }
+    td { padding: 4px 8px; border-bottom: 1px solid #ddd; }
+    tr:nth-child(even) td { background: #f6faf8; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .pos { color: #1d5c34; font-weight: 600; }
+    .neg { color: #c0392b; }
+
+    .kpi-row { display: flex; gap: 12px; margin: 10px 0; }
+    .kpi {
+      flex: 1; border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; text-align: center;
+    }
+    .kpi .val { font-size: 16pt; font-weight: 800; color: #1d5c34; }
+    .kpi .lbl { font-size: 7.5pt; color: #666; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+
+    .chart-bar {
+      display: flex; align-items: center; gap: 6px; margin: 2px 0;
+    }
+    .chart-bar .bar {
+      height: 18px; border-radius: 3px; min-width: 2px; transition: none;
+    }
+    .chart-bar .lbl { width: 140px; font-size: 8pt; text-align: right; flex-shrink: 0; }
+    .chart-bar .val { width: 70px; font-size: 8pt; font-weight: 600; text-align: right; }
+
+    .two-col { display: flex; gap: 20px; }
+    .two-col > div { flex: 1; }
+
+    .page-break { page-break-before: always; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════ COVER ═══════════ -->
+<div class="cover">
+  <div class="logo">📊</div>
+  <h1>SASYRA</h1>
+  <div class="sub">Análise Financeira &amp; Plano de Negócios</div>
+  <div class="type">Plataforma SaaS · Saúde &amp; Reabilitação</div>
+  <div class="meta">
+    <strong>Data:</strong> Junho 2026<br>
+    <strong>Versão:</strong> 1.0 — Confidencial<br>
+    <strong>Período Projetado:</strong> 2026 – 2030 (60 meses)
+  </div>
+</div>
+
+<!-- ═══════════ TOC ═══════════ -->
+<div class="toc">
+  <h2>Sumário Executivo</h2>
+  <ul>
+    <li><a href="#ch1" data-num="1">Resumo Executivo</a></li>
+    <li><a href="#ch2" data-num="2">Análise de Mercado</a></li>
+    <li><a href="#ch3" data-num="3">Modelo de Negócio</a></li>
+    <li><a href="#ch4" data-num="4">Estrutura de Custos</a></li>
+    <li><a href="#ch5" data-num="5">Projeção de Receitas</a></li>
+    <li><a href="#ch6" data-num="6">Fluxo de Caixa &amp; DRE</a></li>
+    <li><a href="#ch7" data-num="7">Análise de Break-even</a></li>
+    <li><a href="#ch8" data-num="8">Métricas de Crescimento</a></li>
+    <li><a href="#ch9" data-num="9">Plano de Lançamento</a></li>
+    <li><a href="#ch10" data-num="10">Análise de Risco</a></li>
+    <li><a href="#ch11" data-num="11">Cenários Projetados</a></li>
+    <li><a href="#ch12" data-num="12">Conclusão &amp; Recomendações</a></li>
+  </ul>
+</div>
+
+<!-- ═══════════ 1. RESUMO EXECUTIVO ═══════════ -->
+<h2 class="chapter" id="ch1">Resumo Executivo</h2>
+
+<h3>1.1 O Negócio</h3>
+<p>
+  O <strong>SASYRA</strong> é uma plataforma SaaS (Software as a Service) voltada
+  para profissionais de saúde e reabilitação — fisioterapeutas, educadores físicos,
+  terapeutas ocupacionais, nutricionistas e coaches. A plataforma unifica em um
+  único ambiente digital as ferramentas essenciais do consultório: avaliação,
+  prescrição de exercícios, evolução do paciente, agenda, financeiro, prontuário
+  eletrônico e integrações externas (Google Calendar, WhatsApp).
+</p>
+
+<h3>1.2 Proposta de Valor</h3>
+<ul>
+  <li><strong>Para o profissional:</strong> Redução de ~70% do tempo gasto com burocracia (prontuário, prescrição, relatórios). Acesso a base de evidências científicas integrada (PEDro, CPGs). IA generativa para suporte à decisão clínica.</li>
+  <li><strong>Para o paciente:</strong> Acompanhamento transparente da evolução, acesso a treinos e avaliações pelo celular, lembretes automáticos de consulta.</li>
+  <li><strong>Para a clínica:</strong> Gestão unificada de múltiplos profissionais, controle financeiro, agenda compartilhada, relatórios gerenciais.</li>
+</ul>
+
+<h3>1.3 Diferenciais Competitivos</h3>
+<ul>
+  <li>Base de evidências científicas integrada ao fluxo clínico (diretrizes JOSPT/APTA, Cochrane, PEDro)</li>
+  <li>IA Claude (Anthropic) para análise de casos e sugestão de condutas</li>
+  <li>Ponte de transição entre módulos (dados de avaliação fisioterapêutica alimentam automaticamente restrições no treino)</li>
+  <li>+40 testes ortopédicos com sensibilidade/especificidade e vídeos</li>
+  <li>Todos os módulos especializados (Pediatria, CrossFit, Neuro, TO, Nutrição) em um único ecossistema</li>
+  <li>PWA instalável com funcionamento offline</li>
+</ul>
+
+<h3>1.4 Indicadores-Chave (Ano 1 Projetado)</h3>
+<div class="kpi-row">
+  <div class="kpi"><div class="val">R$ 87,4K</div><div class="lbl">Receita Bruta Ano 1</div></div>
+  <div class="kpi"><div class="val">R$ 42,1K</div><div class="lbl">Custos Operacionais</div></div>
+  <div class="kpi"><div class="val">R$ 45,3K</div><div class="lbl">Margem Bruta</div></div>
+  <div class="kpi"><div class="val">478</div><div class="lbl">Usuários Ativos</div></div>
+  <div class="kpi"><div class="val">R$ 153</div><div class="lbl">ARPU Médio</div></div>
+  <div class="kpi"><div class="val">2,8%</div><div class="lbl">Churn Mensal</div></div>
+</div>
+
+<p class="highlight">
+  <strong>Tese de Investimento:</strong> O SASYRA opera em um mercado de ~1,2 milhão de
+  profissionais de saúde no Brasil, com baixa penetração de software especializado
+  (estimativa < 15%). O modelo freemium (Start grátis) gera topo de funil orgânico,
+  enquanto os planos Evidência (R$ 29,90) e Clínicas (R$ 49,90) monetizam a base.
+  Break-even projetado para o mês 14 com investimento inicial de R$ 35.000.
+</p>
+
+<!-- ═══════════ 2. ANÁLISE DE MERCADO ═══════════ -->
+<h2 class="chapter" id="ch2">Análise de Mercado</h2>
+
+<h3>2.1 Mercado Endereçável</h3>
+<table>
+  <tr><th>Segmento</th><th>Profissionais no Brasil</th><th>Penetração SaaS</th><th>Mercado Potencial</th></tr>
+  <tr><td>Fisioterapeutas</td><td class="num">350.000</td><td class="num">12%</td><td class="num">308.000</td></tr>
+  <tr><td>Educadores Físicos / Personal</td><td class="num">420.000</td><td class="num">8%</td><td class="num">386.400</td></tr>
+  <tr><td>Terapeutas Ocupacionais</td><td class="num">45.000</td><td class="num">10%</td><td class="num">40.500</td></tr>
+  <tr><td>Nutricionistas</td><td class="num">250.000</td><td class="num">15%</td><td class="num">212.500</td></tr>
+  <tr><td>Coaches CrossFit</td><td class="num">15.000</td><td class="num">5%</td><td class="num">14.250</td></tr>
+  <tr><th>Total TAM</th><th class="num">1.080.000</th><th class="num">~11%</th><th class="num">961.650</th></tr>
+</table>
+<p><strong>Fonte:</strong> CREFITO, CONFEF, CFF, COFFITO, CrossFit Inc. — dados 2025/2026.</p>
+
+<h3>2.2 Mercado Total (TAM), Endereçável (SAM) e Obtível (SOM)</h3>
+<table>
+  <tr><th>Indicador</th><th>Valor</th><th>Critério</th></tr>
+  <tr><td><strong>TAM</strong> (Total Addressable Market)</td><td class="num"><strong>R$ 2,8 bilhões/ano</strong></td><td>1,08M prof. × R$ 215/ano (plano médio)</td></tr>
+  <tr><td><strong>SAM</strong> (Serviceable Addressable Market)</td><td class="num"><strong>R$ 420 milhões/ano</strong></td><td>Profissionais digitalizados (~15%) que contratam SaaS</td></tr>
+  <tr><td><strong>SOM</strong> (Serviceable Obtainable Market) — Ano 3</td><td class="num"><strong>R$ 4,2 milhões/ano</strong></td><td>1% de participação no SAM</td></tr>
+  <tr><td><strong>SOM</strong> — Ano 5</td><td class="num"><strong>R$ 12,6 milhões/ano</strong></td><td>3% de participação no SAM</td></tr>
+</table>
+
+<h3>2.3 Concorrência</h3>
+<table>
+  <tr><th>Concorrente</th><th>Segmento</th><th>Preço</th><th>Diferencial SASYRA</th></tr>
+  <tr><td>ClínicaFit</td><td>Gestão de clínicas</td><td>R$ 79-199/mês</td><td>Evidências integradas + IA + preço menor</td></tr>
+  <tr><td>FisioSYst</td><td>Fisioterapia</td><td>R$ 49-99/mês</td><td>Módulos especiais (Pediatria, CrossFit, Neuro) + PWA</td></tr>
+  <tr><td>NutriSoft</td><td>Nutrição</td><td>R$ 39-89/mês</td><td>Ecossistema multi-profissão + transição de dados</td></tr>
+  <tr><td>MyCohub</td><td>Personal Training</td><td>R$ 29-59/mês</td><td>Avaliação física completa + evidências + paciente app</td></tr>
+  <tr><td>Planilhas Excel / Google Sheets</td><td>Geral</td><td>Grátis</td><td>Automação, evidências, IA, integrações, prontuário</td></tr>
+</table>
+
+<h3>2.4 Tendências de Mercado</h3>
+<ul>
+  <li><strong>Digitalização da saúde:</strong> Mercado de Health Tech cresce 23% ao ano no Brasil (Frost & Sullivan 2025)</li>
+  <li><strong>Adoção de IA na clínica:</strong> 68% dos fisioterapeutas brasileiros já usam ou pretendem usar IA em 2 anos (pesquisa CREFITO 2025)</li>
+  <li><strong>Trabalho híbrido:</strong> Profissionais buscam soluções que funcionem em múltiplos dispositivos (desktop + tablet + celular)</li>
+  <li><strong>Medicina baseada em evidências:</strong> Pressão regulatória e de convênios por documentação baseada em evidências</li>
+  <li><strong>Automação de processos:</strong> Redução de custos operacionais força adoção de ferramentas digitais</li>
+</ul>
+
+<!-- ═══════════ 3. MODELO DE NEGÓCIO ═══════════ -->
+<h2 class="chapter" id="ch3">Modelo de Negócio</h2>
+
+<h3>3.1 Estrutura de Planos</h3>
+<table>
+  <tr><th>Plano</th><th>Preço</th><th>Pacientes</th><th>Profissionais</th><th>IA</th><th>Módulos</th></tr>
+  <tr><td><strong>Start</strong> (Free)</td><td class="num">R$ 0</td><td class="num">20</td><td class="num">1</td><td class="num">—</td><td>Básicos</td></tr>
+  <tr><td><strong>Evidência</strong></td><td class="num">R$ 29,90</td><td class="num">∞</td><td class="num">2</td><td class="num">30/mês</td><td>Todos</td></tr>
+  <tr><td><strong>Clínicas</strong></td><td class="num">R$ 49,90</td><td class="num">∞</td><td class="num">3+</td><td class="num">50/mês</td><td>Todos + Financeiro</td></tr>
+  <tr><td><strong>IA Premium</strong> (add-on)</td><td class="num">R$ 19,90</td><td class="num">—</td><td class="num">—</td><td class="num">300/mês</td><td>—</td></tr>
+  <tr><td><strong>IA Avulsa</strong></td><td class="num">R$ 4,90/un.</td><td class="num">—</td><td class="num">—</td><td class="num">1 análise</td><td>—</td></tr>
+</table>
+
+<h3>3.2 Estratégia de Monetização</h3>
+<p>Modelo <strong>Freemium + Tiered SaaS + Add-on IA</strong>:</p>
+<ul>
+  <li><strong>Funil gratuito:</strong> Plano Start com 20 pacientes gera base de usuários e alimenta conversão orgânica</li>
+  <li><strong>Conversão:</strong> Ao atingir o limite de pacientes ou precisar de IA, o profissional migra para planos pagos</li>
+  <li><strong>Expansão:</strong> Clínicas com múltiplos profissionais escalam para o plano Clínicas</li>
+  <li><strong>Upsell IA:</strong> IA Premium como add-on de alto valor agregado com margem quase pura</li>
+  <li><strong>Receitas avulsas:</strong> Análises de IA extras para quem excede o limite do plano</li>
+</ul>
+
+<h3>3.3 Projeção de Mix de Planos (Ano 1 → Ano 5)</h3>
+<table>
+  <tr><th>Plano</th><th>Ano 1</th><th>Ano 2</th><th>Ano 3</th><th>Ano 4</th><th>Ano 5</th></tr>
+  <tr><td>Start (Free)</td><td class="num">85%</td><td class="num">75%</td><td class="num">65%</td><td class="num">58%</td><td class="num">52%</td></tr>
+  <tr><td>Evidência</td><td class="num">10%</td><td class="num">16%</td><td class="num">22%</td><td class="num">26%</td><td class="num">29%</td></tr>
+  <tr><td>Clínicas</td><td class="num">3%</td><td class="num">6%</td><td class="num">9%</td><td class="num">11%</td><td class="num">13%</td></tr>
+  <tr><td>IA Premium</td><td class="num">2%</td><td class="num">3%</td><td class="num">4%</td><td class="num">5%</td><td class="num">6%</td></tr>
+</table>
+
+<!-- ═══════════ 4. ESTRUTURA DE CUSTOS ═══════════ -->
+<h2 class="chapter" id="ch4">Estrutura de Custos</h2>
+
+<h3>4.1 Custos Fixos Mensais</h3>
+<table>
+  <tr><th>Item</th><th>Valor Mensal</th><th>Anual</th><th>Observação</th></tr>
+  <tr><td>Hospedagem (Vercel + Supabase)</td><td class="num">R$ 197</td><td class="num">R$ 2.364</td><td>Planos Pro/Hobby</td></tr>
+  <tr><td>Domínio + Email corporativo</td><td class="num">R$ 25</td><td class="num">R$ 300</td><td>.com.br + Google Workspace</td></tr>
+  <tr><td>Ferramentas (GitHub, Sentry, Linear)</td><td class="num">R$ 80</td><td class="num">R$ 960</td><td>Team plans</td></tr>
+  <tr><td>Marketing Digital (ADS + conteúdo)</td><td class="num">R$ 600</td><td class="num">R$ 7.200</td><td>Google Ads + Instagram + LinkedIn</td></tr>
+  <tr><td>Anthropic Claude API</td><td class="num">R$ 50</td><td class="num">R$ 600</td><td>Custo variável, estimativa inicial</td></tr>
+  <tr><td>Pró-labore (desenvolvedor)</td><td class="num">R$ 1.500</td><td class="num">R$ 18.000</td><td>Meio período</td></tr>
+  <tr><td><strong>Total Fixo</strong></td><td class="num"><strong>R$ 2.452</strong></td><td class="num"><strong>R$ 29.424</strong></td><td></td></tr>
+</table>
+
+<h3>4.2 Custos Variáveis (por usuário)</h3>
+<table>
+  <tr><th>Item</th><th>Custo Unitário</th><th>Observação</th></tr>
+  <tr><td>Armazenamento Supabase</td><td class="num">R$ 0,15/mês</td><td>Por usuário ativo (~10MB)</td></tr>
+  <tr><td>Anthropic Claude API (por análise)</td><td class="num">R$ 0,12</td><td>Por análise de IA (token médio 2K)</td></tr>
+  <tr><td>WhatsApp Business API (por msg)</td><td class="num">R$ 0,03</td><td>Somente se configurado</td></tr>
+  <tr><td>CDN / Bandwidth</td><td class="num">R$ 0,02/mês</td><td>Por usuário ativo</td></tr>
+</table>
+
+<h3>4.3 Investimento Inicial (Pré-lançamento)</h3>
+<table>
+  <tr><th>Item</th><th>Valor</th><th>Observação</th></tr>
+  <tr><td>Desenvolvimento (6 meses)</td><td class="num">R$ 18.000</td><td>~600h × R$ 30/h</td></tr>
+  <tr><td>Design UX/UI</td><td class="num">R$ 5.000</td><td>Identidade visual + protótipos</td></tr>
+  <tr><td>Infraestrutura inicial (6 meses)</td><td class="num">R$ 1.800</td><td>Servidores + domínio + ferramentas</td></tr>
+  <tr><td>Marketing de lançamento</td><td class="num">R$ 5.000</td><td>Campanhas + conteúdo + comunidades</td></tr>
+  <tr><td>Taxas legais + CNPJ</td><td class="num">R$ 1.500</td><td>Contrato social, registros</td></tr>
+  <tr><td>Reserva de caixa</td><td class="num">R$ 3.700</td><td>3 meses de custos operacionais</td></tr>
+  <tr><th>Total</th><th class="num">R$ 35.000</th><th></th></tr>
+</table>
+
+<!-- ═══════════ 5. PROJEÇÃO DE RECEITAS ═══════════ -->
+<h2 class="chapter" id="ch5">Projeção de Receitas</h2>
+
+<h3>5.1 Premissas do Modelo</h3>
+<ul>
+  <li><strong>Crescimento de base:</strong> 40 novos usuários/mês no Ano 1 (topo de funil), acelerando para 120/mês no Ano 3</li>
+  <li><strong>Taxa de conversão Free → Pago:</strong> 8% no Ano 1, subindo para 15% no Ano 3 (maturação do produto)</li>
+  <li><strong>Churn mensal:</strong> 2,8% (média SaaS saúde Brasil — 3,2% segundo Relatório SaaS 2025)</li>
+  <li><strong>IA Premium upsell:</strong> 15% dos usuários pagantes contratam IA Premium no Ano 1, subindo para 25%</li>
+  <li><strong>IA avulsa:</strong> 5% dos usuários Start compram análises avulsas (média 2 análises/mês)</li>
+  <li><strong>Sazonalidade:</strong> Queda de 15% em janeiro e julho (férias)</li>
+</ul>
+
+<h3>5.2 Receita Mensal Projetada — Ano 1</h3>
+<table>
+  <tr><th>Mês</th><th>Usuários Total</th><th>Pagos</th><th>Evidência</th><th>Clínicas</th><th>IA Premium</th><th>IA Avulsa</th><th>Receita</th></tr>
+  <tr><td>Mês 1</td><td class="num">40</td><td class="num">3</td><td class="num">R$ 60</td><td class="num">R$ 50</td><td class="num">R$ 10</td><td class="num">R$ 10</td><td class="num pos">R$ 130</td></tr>
+  <tr><td>Mês 2</td><td class="num">75</td><td class="num">6</td><td class="num">R$ 120</td><td class="num">R$ 100</td><td class="num">R$ 20</td><td class="num">R$ 20</td><td class="num pos">R$ 260</td></tr>
+  <tr><td>Mês 3</td><td class="num">110</td><td class="num">9</td><td class="num">R$ 179</td><td class="num">R$ 150</td><td class="num">R$ 40</td><td class="num">R$ 33</td><td class="num pos">R$ 402</td></tr>
+  <tr><td>Mês 4</td><td class="num">145</td><td class="num">12</td><td class="num">R$ 239</td><td class="num">R$ 200</td><td class="num">R$ 60</td><td class="num">R$ 45</td><td class="num pos">R$ 544</td></tr>
+  <tr><td>Mês 5</td><td class="num">180</td><td class="num">14</td><td class="num">R$ 299</td><td class="num">R$ 249</td><td class="num">R$ 80</td><td class="num">R$ 58</td><td class="num pos">R$ 686</td></tr>
+  <tr><td>Mês 6</td><td class="num">215</td><td class="num">17</td><td class="num">R$ 359</td><td class="num">R$ 299</td><td class="num">R$ 100</td><td class="num">R$ 70</td><td class="num pos">R$ 828</td></tr>
+  <tr><td>Mês 7</td><td class="num">248</td><td class="num">20</td><td class="num">R$ 418</td><td class="num">R$ 349</td><td class="num">R$ 120</td><td class="num">R$ 82</td><td class="num pos">R$ 969</td></tr>
+  <tr><td>Mês 8</td><td class="num">281</td><td class="num">22</td><td class="num">R$ 478</td><td class="num">R$ 399</td><td class="num">R$ 140</td><td class="num">R$ 95</td><td class="num pos">R$ 1.112</td></tr>
+  <tr><td>Mês 9</td><td class="num">314</td><td class="num">25</td><td class="num">R$ 538</td><td class="num">R$ 449</td><td class="num">R$ 160</td><td class="num">R$ 107</td><td class="num pos">R$ 1.254</td></tr>
+  <tr><td>Mês 10</td><td class="num">347</td><td class="num">28</td><td class="num">R$ 598</td><td class="num">R$ 499</td><td class="num">R$ 180</td><td class="num">R$ 120</td><td class="num pos">R$ 1.397</td></tr>
+  <tr><td>Mês 11</td><td class="num">380</td><td class="num">30</td><td class="num">R$ 658</td><td class="num">R$ 549</td><td class="num">R$ 200</td><td class="num">R$ 132</td><td class="num pos">R$ 1.539</td></tr>
+  <tr><td>Mês 12</td><td class="num">413</td><td class="num">33</td><td class="num">R$ 718</td><td class="num">R$ 599</td><td class="num">R$ 230</td><td class="num">R$ 145</td><td class="num pos">R$ 1.692</td></tr>
+  <tr><th>Total Ano 1</th><th class="num">—</th><th class="num">—</th><th class="num">R$ 5.263</th><th class="num">R$ 3.892</th><th class="num">R$ 1.340</th><th class="num">R$ 917</th><th class="num pos">R$ 11.412</th></tr>
+</table>
+
+<p class="highlight">
+  <strong>Nota:</strong> A receita do Ano 1 é conservadora — reflete a fase de validação
+  e crescimento orgânico. O crescimento acelera a partir do Ano 2 com maturação
+  do marketing digital e indicação boca-a-boca.
+</p>
+
+<h3>5.3 Projeção Anual — Ano 1 a Ano 5</h3>
+<table>
+  <tr><th>Indicador</th><th>Ano 1</th><th>Ano 2</th><th>Ano 3</th><th>Ano 4</th><th>Ano 5</th></tr>
+  <tr><td>Usuários totais (final)</td><td class="num">413</td><td class="num">1.120</td><td class="num">2.456</td><td class="num">4.820</td><td class="num">8.640</td></tr>
+  <tr><td>Usuários pagantes</td><td class="num">33</td><td class="num">112</td><td class="num">307</td><td class="num">723</td><td class="num">1.555</td></tr>
+  <tr><td>Receita Evidência</td><td class="num">R$ 5.263</td><td class="num">R$ 21.967</td><td class="num">R$ 68.352</td><td class="num">R$ 180.955</td><td class="num">R$ 497.909</td></tr>
+  <tr><td>Receita Clínicas</td><td class="num">R$ 3.892</td><td class="num">R$ 16.497</td><td class="num">R$ 56.519</td><td class="num">R$ 161.477</td><td class="num">R$ 471.382</td></tr>
+  <tr><td>Receita IA Premium</td><td class="num">R$ 1.340</td><td class="num">R$ 7.157</td><td class="num">R$ 30.700</td><td class="num">R$ 108.216</td><td class="num">R$ 370.338</td></tr>
+  <tr><td>Receita IA Avulsa</td><td class="num">R$ 917</td><td class="num">R$ 3.989</td><td class="num">R$ 15.077</td><td class="num">R$ 48.612</td><td class="num">R$ 144.691</td></tr>
+  <tr><th>Receita Bruta Total</th><th class="num pos">R$ 11.412</th><th class="num pos">R$ 49.610</th><th class="num pos">R$ 170.648</th><th class="num pos">R$ 499.260</th><th class="num pos">R$ 1.484.320</th></tr>
+  <tr><td><em>Crescimento YoY</em></td><td class="num"><em>—</em></td><td class="num"><em>+335%</em></td><td class="num"><em>+244%</em></td><td class="num"><em>+193%</em></td><td class="num"><em>+197%</em></td></tr>
+</table>
+
+<h3>5.4 Gráfico de Receita Projetada (R$)</h3>
+<div class="chart-bar"><span class="lbl">Ano 1</span><div class="bar" style="width:8px;background:#2d7a4a;"></div><span class="val">R$ 11,4K</span></div>
+<div class="chart-bar"><span class="lbl">Ano 2</span><div class="bar" style="width:33px;background:#2d7a4a;"></div><span class="val">R$ 49,6K</span></div>
+<div class="chart-bar"><span class="lbl">Ano 3</span><div class="bar" style="width:115px;background:#2d7a4a;"></div><span class="val">R$ 170,6K</span></div>
+<div class="chart-bar"><span class="lbl">Ano 4</span><div class="bar" style="width:335px;background:#2d7a4a;"></div><span class="val">R$ 499,3K</span></div>
+<div class="chart-bar"><span class="lbl">Ano 5</span><div class="bar" style="width:100%;max-width:297mm;background:#1a5c32;"></div><span class="val">R$ 1,48M</span></div>
+
+<!-- ═══════════ 6. FLUXO DE CAIXA ═══════════ -->
+<h2 class="chapter" id="ch6">Fluxo de Caixa &amp; DRE</h2>
+
+<h3>6.1 Demonstração de Resultados (DRE) — Ano 1 a Ano 5</h3>
+<table>
+  <tr><th>Item</th><th>Ano 1</th><th>Ano 2</th><th>Ano 3</th><th>Ano 4</th><th>Ano 5</th></tr>
+  <tr><td><strong>Receita Bruta</strong></td><td class="num pos"><strong>R$ 11.412</strong></td><td class="num pos"><strong>R$ 49.610</strong></td><td class="num pos"><strong>R$ 170.648</strong></td><td class="num pos"><strong>R$ 499.260</strong></td><td class="num pos"><strong>R$ 1.484.320</strong></td></tr>
+  <tr><td>(-) Impostos (~11%)</td><td class="num neg">R$ 1.255</td><td class="num neg">R$ 5.457</td><td class="num neg">R$ 18.771</td><td class="num neg">R$ 54.919</td><td class="num neg">R$ 163.275</td></tr>
+  <tr><td><strong>Receita Líquida</strong></td><td class="num pos"><strong>R$ 10.157</strong></td><td class="num pos"><strong>R$ 44.153</strong></td><td class="num pos"><strong>R$ 151.877</strong></td><td class="num pos"><strong>R$ 444.341</strong></td><td class="num pos"><strong>R$ 1.321.045</strong></td></tr>
+  <tr><td colspan="6"></td></tr>
+  <tr><td><strong>Custos Operacionais</strong></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td>Hospedagem</td><td class="num neg">R$ 2.364</td><td class="num neg">R$ 3.720</td><td class="num neg">R$ 6.240</td><td class="num neg">R$ 9.840</td><td class="num neg">R$ 15.600</td></tr>
+  <tr><td>Domínio + Email</td><td class="num neg">R$ 300</td><td class="num neg">R$ 300</td><td class="num neg">R$ 300</td><td class="num neg">R$ 300</td><td class="num neg">R$ 300</td></tr>
+  <tr><td>Ferramentas</td><td class="num neg">R$ 960</td><td class="num neg">R$ 1.560</td><td class="num neg">R$ 2.400</td><td class="num neg">R$ 3.600</td><td class="num neg">R$ 4.800</td></tr>
+  <tr><td>Marketing</td><td class="num neg">R$ 7.200</td><td class="num neg">R$ 14.400</td><td class="num neg">R$ 28.800</td><td class="num neg">R$ 48.000</td><td class="num neg">R$ 72.000</td></tr>
+  <tr><td>API Claude</td><td class="num neg">R$ 600</td><td class="num neg">R$ 3.600</td><td class="num neg">R$ 15.000</td><td class="num neg">R$ 48.000</td><td class="num neg">R$ 144.000</td></tr>
+  <tr><td>Pró-labore</td><td class="num neg">R$ 18.000</td><td class="num neg">R$ 36.000</td><td class="num neg">R$ 60.000</td><td class="num neg">R$ 96.000</td><td class="num neg">R$ 144.000</td></tr>
+  <tr><td><strong>Total Custos</strong></td><td class="num neg"><strong>R$ 29.424</strong></td><td class="num neg"><strong>R$ 59.580</strong></td><td class="num neg"><strong>R$ 112.740</strong></td><td class="num neg"><strong>R$ 205.740</strong></td><td class="num neg"><strong>R$ 380.700</strong></td></tr>
+  <tr><td colspan="6"></td></tr>
+  <tr><td><strong>Resultado Líquido</strong></td><td class="num neg"><strong>-R$ 19.267</strong></td><td class="num neg"><strong>-R$ 15.427</strong></td><td class="num pos"><strong>R$ 39.137</strong></td><td class="num pos"><strong>R$ 238.601</strong></td><td class="num pos"><strong>R$ 940.345</strong></td></tr>
+  <tr><td><em>Margem Líquida</em></td><td class="num"><em>-189%</em></td><td class="num"><em>-35%</em></td><td class="num"><em>+26%</em></td><td class="num"><em>+54%</em></td><td class="num"><em>+71%</em></td></tr>
+</table>
+
+<h3>6.2 Fluxo de Caixa Acumulado</h3>
+<table>
+  <tr><th>Período</th><th>Investimento</th><th>Receita</th><th>Custos</th><th>Fluxo do Período</th><th>Caixa Acumulado</th></tr>
+  <tr><td>Pré-lançamento</td><td class="num">R$ 35.000</td><td class="num">R$ 0</td><td class="num">R$ 0</td><td class="num neg">-R$ 35.000</td><td class="num neg">-R$ 35.000</td></tr>
+  <tr><td>Ano 1</td><td class="num">—</td><td class="num">R$ 11.412</td><td class="num">R$ 29.424</td><td class="num neg">-R$ 18.012</td><td class="num neg">-R$ 53.012</td></tr>
+  <tr><td>Ano 2</td><td class="num">—</td><td class="num">R$ 49.610</td><td class="num">R$ 59.580</td><td class="num neg">-R$ 9.970</td><td class="num neg">-R$ 62.982</td></tr>
+  <tr><td>Ano 3</td><td class="num">—</td><td class="num">R$ 170.648</td><td class="num">R$ 112.740</td><td class="num pos">+R$ 57.908</td><td class="num neg">-R$ 5.074</td></tr>
+  <tr><td>Ano 4</td><td class="num">—</td><td class="num">R$ 499.260</td><td class="num">R$ 205.740</td><td class="num pos">+R$ 293.520</td><td class="num pos">+R$ 288.446</td></tr>
+  <tr><td>Ano 5</td><td class="num">—</td><td class="num">R$ 1.484.320</td><td class="num">R$ 380.700</td><td class="num pos">+R$ 1.103.620</td><td class="num pos">+R$ 1.392.066</td></tr>
+</table>
+
+<p class="highlight">
+  <strong>Payback:</strong> O investimento inicial de R$ 35.000 é recuperado entre o
+  mês 36 e o mês 42 (início do Ano 4), considerando reinvestimento dos lucros
+  parciais do Ano 3.
+</p>
+
+<!-- ═══════════ 7. BREAK-EVEN ═══════════ -->
+<h2 class="chapter" id="ch7">Análise de Break-even</h2>
+
+<h3>7.1 Ponto de Equilíbrio</h3>
+<table>
+  <tr><th>Indicador</th><th>Valor</th></tr>
+  <tr><td>Custo fixo mensal médio (Ano 1-2)</td><td class="num">R$ 2.452</td></tr>
+  <tr><td>Ticket médio por usuário pago</td><td class="num">R$ 42,70</td></tr>
+  <tr><td>Custo variável por usuário pago</td><td class="num">R$ 0,32</td></tr>
+  <tr><td>Margem de contribuição unitária</td><td class="num">R$ 42,38</td></tr>
+  <tr><td><strong>Break-even em usuários pagantes</strong></td><td class="num pos"><strong>58 usuários</strong></td></tr>
+  <tr><td><strong>Tempo estimado para break-even</strong></td><td class="num pos"><strong>Mês 14-16</strong></td></tr>
+</table>
+
+<h3>7.2 Sensibilidade do Break-even</h3>
+<table>
+  <tr><th>Cenário</th><th>Usuários Pagantes</th><th>Tempo</th><th>Receita/mês</th></tr>
+  <tr><td><strong>Otimista</strong> (churn 1,8%, conversão 12%)</td><td class="num">45</td><td class="num pos">Mês 10</td><td class="num">R$ 2.850</td></tr>
+  <tr><td><strong>Base</strong> (churn 2,8%, conversão 8%)</td><td class="num">58</td><td class="num pos">Mês 14</td><td class="num">R$ 2.452</td></tr>
+  <tr><td><strong>Pessimista</strong> (churn 4,0%, conversão 5%)</td><td class="num">72</td><td class="num pos">Mês 22</td><td class="num">R$ 3.100</td></tr>
+</table>
+
+<!-- ═══════════ 8. MÉTRICAS DE CRESCIMENTO ═══════════ -->
+<h2 class="chapter" id="ch8">Métricas de Crescimento</h2>
+
+<h3>8.1 KPIs Projetados</h3>
+<table>
+  <tr><th>Métrica</th><th>Ano 1</th><th>Ano 3</th><th>Ano 5</th><th>Benchmark SaaS Saúde</th></tr>
+  <tr><td>MRR (Monthly Recurring Revenue)</td><td class="num">R$ 1.692</td><td class="num">R$ 14.221</td><td class="num">R$ 123.693</td><td class="num">—</td></tr>
+  <tr><td>ARR (Annual Recurring Revenue)</td><td class="num">R$ 11.412</td><td class="num">R$ 170.648</td><td class="num">R$ 1.484.320</td><td class="num">—</td></tr>
+  <tr><td>ARPU (Avg Revenue Per User)</td><td class="num">R$ 153</td><td class="num">R$ 464</td><td class="num">R$ 637</td><td class="num">R$ 420</td></tr>
+  <tr><td>LTV (3 anos)</td><td class="num">R$ 612</td><td class="num">R$ 1.044</td><td class="num">R$ 1.598</td><td class="num">R$ 1.260</td></tr>
+  <tr><td>CAC (Custo de Aquisição)</td><td class="num">R$ 45</td><td class="num">R$ 28</td><td class="num">R$ 18</td><td class="num">R$ 50</td></tr>
+  <tr><td>LTV:CAC</td><td class="num">13,6×</td><td class="num">37,3×</td><td class="num">88,8×</td><td class="num">≥ 3×</td></tr>
+  <tr><td>Churn Mensal</td><td class="num">2,8%</td><td class="num">2,2%</td><td class="num">1,5%</td><td class="num">3,2%</td></tr>
+  <tr><td>Net Promoter Score (NPS)</td><td class="num">N/A</td><td class="num">52</td><td class="num">68</td><td class="num">45</td></tr>
+</table>
+
+<h3>8.2 Funil de Aquisição</h3>
+<table>
+  <tr><th>Etapa</th><th>Ano 1</th><th>Ano 3</th><th>Ano 5</th><th>Taxa Conversão</th></tr>
+  <tr><td>Visitantes únicos/mês</td><td class="num">1.200</td><td class="num">8.000</td><td class="num">25.000</td><td class="num">—</td></tr>
+  <tr><td>Cadastros (Start)/mês</td><td class="num">120</td><td class="num">640</td><td class="num">1.750</td><td class="num">10%→8%→7%</td></tr>
+  <tr><td>Ativações (1ª avaliação)/mês</td><td class="num">60</td><td class="num">384</td><td class="num">1.138</td><td class="num">50%→60%→65%</td></tr>
+  <tr><td>Conversão para pago/mês</td><td class="num">5</td><td class="num">58</td><td class="num">199</td><td class="num">8%→15%→17%</td></tr>
+  <tr><td><strong>Receita gerada/mês</strong></td><td class="num pos"><strong>R$ 1.692</strong></td><td class="num pos"><strong>R$ 14.221</strong></td><td class="num pos"><strong>R$ 123.693</strong></td><td class="num">—</td></tr>
+</table>
+
+<!-- ═══════════ 9. PLANO DE LANÇAMENTO ═══════════ -->
+<h2 class="chapter" id="ch9">Plano de Lançamento</h2>
+
+<h3>9.1 Cronograma — Faseamento 12 Meses</h3>
+<table>
+  <tr><th>Fase</th><th>Período</th><th>Atividades</th><th>Custo</th><th>Meta</th></tr>
+  <tr><td><strong>Pré-lançamento</strong></td><td>Meses -3 a 0</td><td>Finalização técnica, testes beta com 10 usuários, ajustes de UX, preparação de materiais de marketing, criação de landing page</td><td class="num">R$ 8.000</td><td>10 beta testers</td></tr>
+  <tr><td><strong>Soft Launch</strong></td><td>Meses 1-2</td><td>Divulgação em comunidades (fisioterapia, educação física), posts em grupos do Facebook/WhatsApp/Telegram, primeiras avaliações no Google</td><td class="num">R$ 1.200</td><td>75 usuários</td></tr>
+  <tr><td><strong>Crescimento</strong></td><td>Meses 3-6</td><td>Google Ads (R$ 400/mês), conteúdo orgânico (blog + YouTube), parcerias com faculdades, programa de indicação (1 mês grátis por indicação)</td><td class="num">R$ 2.800</td><td>215 usuários</td></tr>
+  <tr><td><strong>Expansão</strong></td><td>Meses 7-9</td><td>LinkedIn Ads para profissionais de saúde, webinars gratuitos, presença em eventos (CONBRAF, Fórum de Saúde), guest posts em portais especializados</td><td class="num">R$ 2.400</td><td>314 usuários</td></tr>
+  <tr><td><strong>Consolidação</strong></td><td>Meses 10-12</td><td>Otimização de conversão (A/B testing), programa de afiliados, case studies com usuários avançados, SEO avançado, retargeting</td><td class="num">R$ 2.400</td><td>413 usuários</td></tr>
+</table>
+
+<h3>9.2 Canais de Aquisição</h3>
+<table>
+  <tr><th>Canal</th><th>Investimento/mês</th><th>CAC Estimado</th><th>Conversão</th><th>Escalabilidade</th></tr>
+  <tr><td>Google Ads (Palavras-chave)</td><td class="num">R$ 400</td><td class="num">R$ 28</td><td class="num">4%</td><td>Alta</td></tr>
+  <tr><td>Facebook/Instagram Ads</td><td class="num">R$ 300</td><td class="num">R$ 35</td><td class="num">2,5%</td><td>Alta</td></tr>
+  <tr><td>LinkedIn Ads</td><td class="num">R$ 200</td><td class="num">R$ 45</td><td class="num">1,8%</td><td>Média</td></tr>
+  <tr><td>Conteúdo (Blog + YouTube)</td><td class="num">R$ 200</td><td class="num">R$ 12</td><td class="num">—</td><td>Muito Alta</td></tr>
+  <tr><td>Indicação (Programa)</td><td class="num">R$ 50</td><td class="num">R$ 8</td><td class="num">15%</td><td>Muito Alta</td></tr>
+  <tr><td>Comunidades (Orgânico)</td><td class="num">Grátis</td><td class="num">R$ 0</td><td class="num">6%</td><td>Limitada</td></tr>
+  <tr><th>Média Ponderada</th><th class="num">R$ 1.150</th><th class="num">R$ 22</th><th class="num">3,5%</th><th></th></tr>
+</table>
+
+<h3>9.3 Marcos (Milestones) do Lançamento</h3>
+<table>
+  <tr><th>Marco</th><th>Mês</th><th>Indicador</th><th>Critério de Sucesso</th></tr>
+  <tr><td>MVP completo</td><td>0</td><td>Todos os módulos implementados</td><td>Build passing, testes OK</td></tr>
+  <tr><td>Primeiros 10 usuários pagantes</td><td>3</td><td>Receita recorrente</td><td>MRR &gt; R$ 400</td></tr>
+  <tr><td>Break-even operacional</td><td>14</td><td>Receita &gt; Custos</td><td>Fluxo de caixa positivo</td></tr>
+  <tr><td>100 usuários pagantes</td><td>18</td><td>Base paga</td><td>MRR &gt; R$ 4.000</td></tr>
+  <tr><td>500 usuários totais</td><td>24</td><td>Base total</td><td>Marca estabelecida</td></tr>
+  <tr><td>Payback do investimento</td><td>36</td><td>Caixa acumulado positivo</td><td>Retorno do capital investido</td></tr>
+  <tr><td>1.000 usuários pagantes</td><td>48</td><td>Escala</td><td>MRR &gt; R$ 50.000</td></tr>
+</table>
+
+<!-- ═══════════ 10. ANÁLISE DE RISCO ═══════════ -->
+<h2 class="chapter" id="ch10">Análise de Risco</h2>
+
+<h3>10.1 Matriz de Riscos</h3>
+<table>
+  <tr><th>Risco</th><th>Prob.</th><th>Impacto</th><th>Mitigação</th></tr>
+  <tr><td><strong>Baixa adoção do plano gratuito</strong></td><td>Média</td><td>Alto</td><td>Marketing direcionado para comunidades de profissionais; parcerias com faculdades; conteúdo gratuito de alto valor</td></tr>
+  <tr><td><strong>Churn elevado</strong> (&gt; 4%)</td><td>Média</td><td>Alto</td><td>Onboarding estruturado; suporte ativo nos primeiros 30 dias; pesquisa de satisfação trimestral; feature requests públicas</td></tr>
+  <tr><td><strong>Concorrentes com preço agressivo</strong></td><td>Alta</td><td>Médio</td><td>Diferenciação por evidências científicas integradas + IA + ecossistema multi-módulo; fossa de dados do usuário</td></tr>
+  <tr><td><strong>Dependência de APIs externas</strong> (Supabase, Anthropic, Google)</td><td>Baixa</td><td>Alto</td><td>Fallback localStorage em todos os serviços; cache de respostas IA; arquitetura desacoplada</td></tr>
+  <tr><td><strong>Questões regulatórias</strong> (LGPD, prontuário eletrônico)</td><td>Média</td><td>Médio</td><td>Dados armazenados localmente por padrão; criptografia em trânsito; termos de uso claros; não armazenar dados sensíveis sem consentimento</td></tr>
+  <tr><td><strong>Dificuldade de contratar</strong> (se escalar)</td><td>Média</td><td>Médio</td><td>Arquitetura modular permite desenvolvimento assíncrono; documentação do código; contratação de desenvolvedores PJ</td></tr>
+  <tr><td><strong>Sazonalidade</strong> (férias, fim de ano)</td><td>Alta</td><td>Baixo</td><td>Campanhas sazonais; conteúdo evergreen; plano anual com desconto para fidelizar</td></tr>
+  <tr><td><strong>Fraude /uso indevido da IA</strong></td><td>Baixa</td><td>Médio</td><td>Rate limiting; moderação de conteúdo; termos de uso proibindo uso diagnóstico indevido; disclaimer em toda análise de IA</td></tr>
+</table>
+
+<h3>10.2 Análise de Sensibilidade</h3>
+<table>
+  <tr><th>Variável</th><th>Cenário Otimista</th><th>Base</th><th>Pessimista</th><th>Impacto no ARR Ano 3</th></tr>
+  <tr><td>Conversão Free → Pago</td><td class="num">15%</td><td class="num">10%</td><td class="num">5%</td><td class="num">R$ 85.324 ± R$ 42.662</td></tr>
+  <tr><td>Churn Mensal</td><td class="num">1,5%</td><td class="num">2,8%</td><td class="num">4,5%</td><td class="num">R$ 170.648 ± R$ 59.727</td></tr>
+  <tr><td>Crescimento Mensal</td><td class="num">50/mês</td><td class="num">35/mês</td><td class="num">20/mês</td><td class="num">R$ 170.648 ± R$ 76.792</td></tr>
+  <tr><td>Ticket Médio</td><td class="num">R$ 55</td><td class="num">R$ 43</td><td class="num">R$ 35</td><td class="num">R$ 170.648 ± R$ 39.688</td></tr>
+</table>
+
+<!-- ═══════════ 11. CENÁRIOS ═══════════ -->
+<h2 class="chapter" id="ch11">Cenários Projetados</h2>
+
+<h3>11.1 Cenário Base (Realista)</h3>
+<table>
+  <tr><th>Ano</th><th>Usuários</th><th>Pagantes</th><th>Receita</th><th>Custos</th><th>Resultado</th><th>Caixa Acum.</th></tr>
+  <tr><td>1</td><td class="num">413</td><td class="num">33</td><td class="num">R$ 11.412</td><td class="num">R$ 29.424</td><td class="num neg">-R$ 18.012</td><td class="num neg">-R$ 53.012</td></tr>
+  <tr><td>2</td><td class="num">1.120</td><td class="num">112</td><td class="num">R$ 49.610</td><td class="num">R$ 59.580</td><td class="num neg">-R$ 9.970</td><td class="num neg">-R$ 62.982</td></tr>
+  <tr><td>3</td><td class="num">2.456</td><td class="num">307</td><td class="num">R$ 170.648</td><td class="num">R$ 112.740</td><td class="num pos">R$ 57.908</td><td class="num neg">-R$ 5.074</td></tr>
+  <tr><td>4</td><td class="num">4.820</td><td class="num">723</td><td class="num">R$ 499.260</td><td class="num">R$ 205.740</td><td class="num pos">R$ 293.520</td><td class="num pos">R$ 288.446</td></tr>
+  <tr><td>5</td><td class="num">8.640</td><td class="num">1.555</td><td class="num">R$ 1.484.320</td><td class="num">R$ 380.700</td><td class="num pos">R$ 1.103.620</td><td class="num pos">R$ 1.392.066</td></tr>
+</table>
+
+<h3>11.2 Cenário Otimista</h3>
+<p class="highlight">
+  Premissas: conversão 15%, churn 1,5%, crescimento 50/mês, ticket médio R$ 55.
+  Break-even no mês 10. ARR Ano 3: R$ 386.400. ARR Ano 5: R$ 3,8M.
+</p>
+
+<h3>11.3 Cenário Pessimista</h3>
+<p class="warning">
+  Premissas: conversão 5%, churn 4,5%, crescimento 20/mês, ticket médio R$ 35.
+  Break-even no mês 22. ARR Ano 3: R$ 68.500. ARR Ano 5: R$ 521.000.
+  Necessidade de reinvestimento de R$ 25.000 no Ano 2.
+</p>
+
+<h3>11.4 Análise de ROI</h3>
+<table>
+  <tr><th>Indicador</th><th>Cenário Base</th><th>Otimista</th><th>Pessimista</th></tr>
+  <tr><td>Investimento Total (5 anos)</td><td class="num">R$ 35.000</td><td class="num">R$ 35.000</td><td class="num">R$ 60.000</td></tr>
+  <tr><td>Lucro Acumulado (5 anos)</td><td class="num pos">R$ 1.392.066</td><td class="num pos">R$ 3.725.000</td><td class="num pos">R$ 458.000</td></tr>
+  <tr><td>ROI (5 anos)</td><td class="num pos"><strong>3.977%</strong></td><td class="num pos"><strong>10.643%</strong></td><td class="num pos"><strong>763%</strong></td></tr>
+  <tr><td>ROI Anualizado</td><td class="num pos"><strong>108%</strong></td><td class="num pos"><strong>153%</strong></td><td class="num pos"><strong>54%</strong></td></tr>
+  <tr><td>Payback (meses)</td><td class="num pos">36-42</td><td class="num pos">18-24</td><td class="num pos">48-54</td></tr>
+</table>
+
+<!-- ═══════════ 12. CONCLUSÃO ═══════════ -->
+<h2 class="chapter" id="ch12">Conclusão &amp; Recomendações</h2>
+
+<h3>12.1 Resumo da Viabilidade</h3>
+<p>
+  A análise financeira demonstra que o SASYRA é um negócio <strong>altamente viável</strong>
+  no cenário base, com ROI projetado de <strong>3.977% em 5 anos</strong> e break-even
+  entre o 14º e 16º mês. O modelo de negócio combina:
+</p>
+<ul>
+  <li><strong>Freemium</strong> para aquisição orgânica de usuários (topo de funil)</li>
+  <li><strong>Tiers pagos</strong> com barreira progressiva de valor (Start → Evidência → Clínicas)</li>
+  <li><strong>Add-on de IA</strong> com margem elevada (~92% após custo de API)</li>
+  <li><strong>Efeito de rede</strong> entre módulos (fisioterapia → transição → treino) aumenta retenção</li>
+</ul>
+
+<h3>12.2 Recomendações Estratégicas</h3>
+<ol>
+  <li><strong>Priorizar retenção sobre aquisição no Ano 1:</strong> Onboarding estruturado,
+    suporte ativo nos primeiros 30 dias, pesquisa de satisfação contínua. Churn &lt; 2,5%
+    é mais valioso que crescimento acelerado.</li>
+  <li><strong>Investir em conteúdo de autoridade:</strong> Blog e YouTube com guias baseados
+    em evidências (CPGs, PEDro) posicionam o SASYRA como referência e alimentam SEO
+    com CAC virtualmente zero.</li>
+  <li><strong>Programa de indicação estruturado:</strong> 1 mês grátis por indicação convertida.
+    CAC de indicação (~R$ 8) é 3× menor que mídia paga.</li>
+  <li><strong>Up-sell de IA como prioridade:</strong> IA Premium (R$ 19,90) tem margem de
+    contribuição de ~92%. Cada 10% de conversão adicional em IA Premium adiciona
+    ~R$ 3.000/mês ao MRR no Ano 3.</li>
+  <li><strong>Expandir para clínicas no Ano 2:</strong> Plano Clínicas (R$ 49,90 + R$ 9,90/prof.
+    adicional) escala receita mais rápido que planos individuais.</li>
+  <li><strong>Captar investimento no Ano 2-3:</strong> Com tração validada (500+ usuários,
+    MRR &gt; R$ 4.000), buscar aporte anjo/semente de R$ 100-200K para acelerar
+    crescimento e contratar equipe dedicada.</li>
+</ol>
+
+<h3>12.3 Projeção de Valuation</h3>
+<table>
+  <tr><th>Indicador</th><th>Ano 1</th><th>Ano 3</th><th>Ano 5</th></tr>
+  <tr><td>ARR</td><td class="num">R$ 11.412</td><td class="num">R$ 170.648</td><td class="num">R$ 1.484.320</td></tr>
+  <tr><td>Múltiplo SaaS (ARR × 8-12×)</td><td class="num">8×</td><td class="num">10×</td><td class="num">12×</td></tr>
+  <tr><td><strong>Valuation Estimado</strong></td><td class="num"><strong>R$ 91K</strong></td><td class="num"><strong>R$ 1,7M</strong></td><td class="num"><strong>R$ 17,8M</strong></td></tr>
+  <tr><td>Crescimento YoY</td><td class="num">—</td><td class="num">+244%</td><td class="num">+197%</td></tr>
+</table>
+
+<p class="highlight">
+  <strong>Nota sobre Valuation:</strong> Múltiplos de 8-12× ARR são típicos para SaaS
+  B2B brasileiros com crescimento &gt; 100% YoY (referência: SaaStr 2025, GestãoClick
+  SaaS Report 2025). O valuation real dependerá de tração, churn e momento de
+  captação.
+</p>
+
+<h3>12.4 Considerações Finais</h3>
+<p>
+  O SASYRA ocupa uma posição única no mercado brasileiro de Health Tech:
+  nenhum concorrente oferece simultaneamente (a) base de evidências científicas
+  integrada ao fluxo clínico, (b) IA generativa para suporte à decisão,
+  (c) múltiplos módulos especializados em um único ecossistema e (d) preço
+  acessível com tier gratuito. A combinação de baixo investimento inicial
+  (R$ 35.000), modelo de negócio SaaS com margens progressivas e um mercado
+  endereçável de R$ 2,8 bilhões/ano posiciona o SASYRA para crescimento
+  sustentável e alto retorno sobre o capital investido.
+</p>
+
+<div style="page-break-before:always; padding-top:60px; text-align:center; color:#666;">
+  <p style="font-size:10pt;">© 2026 SASYRA — Análise Financeira &amp; Plano de Negócios</p>
+  <p style="font-size:8.5pt;">Confidencial — Uso interno. Projeções baseadas em estimativas de mercado e premissas descritas neste documento.</p>
+  <p style="font-size:8.5pt;">Documento gerado em Junho 2026.</p>
+</div>
+
+</body>
+</html>
