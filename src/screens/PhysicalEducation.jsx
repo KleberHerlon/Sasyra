@@ -224,9 +224,12 @@ function Section({ title, icon, children }) {
   );
 }
 
-export default function PhysicalEducation({ student, students, onSelectStudent, onAddStudent, onUpdateStudent }) {
+export default function PhysicalEducation({ student, students, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById }) {
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteStep, setDeleteStep] = useState(1);
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [editTarget, setEditTarget] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
   const [tab, setTab] = useState("anamnese");
@@ -295,6 +298,11 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
 
   const [cintura, setCintura] = useState("");
   const [quadril, setQuadril] = useState("");
+  const [pesoImc, setPesoImc] = useState(student?.peso || "");
+  const [alturaImc, setAlturaImc] = useState(student?.altura || "");
+  const [sexoRcq, setSexoRcq] = useState(student?.sexo || "");
+  const [pesoBia, setPesoBia] = useState(student?.peso || "");
+  const [alturaBia, setAlturaBia] = useState(student?.altura || "");
 
   useEffect(() => {
     if (student?.id || student?.nome) {
@@ -305,6 +313,84 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
       setPseSessoes(loadPseSessions(sid));
     }
   }, [student?.id, student?.nome]);
+
+  const idade = calcIdade(student?.dataNasc);
+
+  // Auto-calculação IMC
+  useEffect(() => {
+    const p = parseFloat(pesoImc);
+    const a = parseFloat(alturaImc);
+    if (p && a) setImcVal(calcIMC(p, a));
+    else setImcVal(null);
+  }, [pesoImc, alturaImc]);
+
+  // Sincroniza sexoRcq quando troca de aluno
+  useEffect(() => { if (student?.sexo) setSexoRcq(student.sexo); }, [student?.sexo]);
+
+  // Auto-calculação RCQ
+  useEffect(() => {
+    const c = parseFloat(cintura);
+    const q = parseFloat(quadril);
+    const s = student?.sexo || sexoRcq;
+    if (c && q && s) setRcqVal(calcRCQ(c, q, s));
+    else setRcqVal(null);
+  }, [cintura, quadril, sexoRcq, student?.sexo]);
+
+  // Auto-calculação Pollock
+  useEffect(() => {
+    const vals = {};
+    const hasAny = Object.values(dobras).some(v => parseFloat(v));
+    if (!hasAny || !student.sexo) { setPollockResult(null); return; }
+    Object.entries(dobras).forEach(([k, v]) => { vals[k] = parseFloat(v) || 0; });
+    if (protocoloDobras === "7") setPollockResult(calcPollock7Dobras(vals, student.sexo, idade));
+    else setPollockResult(calcPollock3Dobras(vals, student.sexo, idade));
+  }, [dobras, protocoloDobras, student.sexo, idade]);
+
+  // Auto-calculação ISAK
+  useEffect(() => {
+    const hasDobra = Object.values(isakDobras).some(v => parseFloat(v));
+    const p = parseFloat(pesoIsak);
+    if (!hasDobra || !p || !student.sexo) { setIsakResult(null); return; }
+    const vals = {};
+    Object.entries(isakDobras).forEach(([k, v]) => { vals[k] = parseFloat(v) || 0; });
+    setIsakResult(calcISAK6Dobras(vals, student.sexo, idade, p));
+  }, [isakDobras, pesoIsak, student.sexo, idade]);
+
+  // Auto-calculação BIA
+  useEffect(() => {
+    const r = parseFloat(biaResistencia), xc = parseFloat(biaReactancia);
+    const p = parseFloat(pesoBia), alt = parseFloat(alturaBia);
+    if (!r || !xc || !p || !alt || !student.sexo) { setBiaResult(null); return; }
+    setBiaResult(calcBioimpedancia(r, xc, student.sexo, idade, p, alt));
+  }, [biaResistencia, biaReactancia, pesoBia, alturaBia, student.sexo, idade]);
+
+  // Auto-calculação Cooper
+  useEffect(() => {
+    const dist = parseFloat(cooperDistancia);
+    if (!dist || !student.sexo) { setCooperResult(null); return; }
+    setCooperResult(calcVO2maxCooper(dist, student.sexo, idade));
+  }, [cooperDistancia, student.sexo, idade]);
+
+  // Auto-calculação Rockport
+  useEffect(() => {
+    const p = parseFloat(rockportPeso), i = parseInt(rockportIdade), t = parseFloat(rockportTempo), fc = parseInt(rockportFC);
+    if (!p || !rockportSexo || !i || !t || !fc) { setRockportResult(null); return; }
+    setRockportResult(calcVO2maxRockport(p, rockportSexo, i, t, fc));
+  }, [rockportPeso, rockportSexo, rockportIdade, rockportTempo, rockportFC]);
+
+  // Auto-calculação 1RM
+  useEffect(() => {
+    const carga = parseFloat(rmCarga), reps = parseInt(rmRepeticoes);
+    if (!carga || !reps) { setRmResult(null); return; }
+    setRmResult(calc1RMPreditivo(carga, reps));
+  }, [rmCarga, rmRepeticoes]);
+
+  // Auto-calculação FC Karvonen
+  useEffect(() => {
+    const fc = parseInt(fcRepousoInput);
+    if (!fc || !student.sexo) { setFcZonas(null); return; }
+    setFcZonas(calcFCRegistro(fc, idade, student.sexo));
+  }, [fcRepousoInput, student.sexo, idade]);
 
   const handleSaveAssessment = (assessmentData) => {
     const sid = student.id || student.nome;
@@ -356,34 +442,6 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
     else if (t.toLowerCase().includes("cardio") || t.toLowerCase().includes("aeróbico") || t.toLowerCase().includes("aerobico")) setObjetivo("aerobico_saude");
   };
 
-  const calcPollock = () => {
-    const vals = {};
-    Object.entries(dobras).forEach(([k, v]) => { vals[k] = parseFloat(v) || 0; });
-    if (protocoloDobras === "7") {
-      setPollockResult(calcPollock7Dobras(vals, student.sexo, calcIdade(student.dataNasc)));
-    } else {
-      setPollockResult(calcPollock3Dobras(vals, student.sexo, calcIdade(student.dataNasc)));
-    }
-  };
-
-  const calcCooper = () => {
-    const dist = parseFloat(cooperDistancia);
-    if (!dist) return;
-    setCooperResult(calcVO2maxCooper(dist, student.sexo, calcIdade(student.dataNasc)));
-  };
-
-  const calcRockport = () => {
-    const p = parseFloat(rockportPeso), idade = parseInt(rockportIdade), t = parseFloat(rockportTempo), fc = parseInt(rockportFC);
-    if (!p || !idade || !t || !fc) return;
-    setRockportResult(calcVO2maxRockport(p, rockportSexo, idade, t, fc));
-  };
-
-  const calcRM = () => {
-    const carga = parseFloat(rmCarga), reps = parseInt(rmRepeticoes);
-    if (!carga || !reps) return;
-    setRmResult(calc1RMPreditivo(carga, reps));
-  };
-
   const gerarTreino = () => {
     if (!objetivo) return;
     const estrutura = montarEstruturaTreino(divisao, objetivo, nivel);
@@ -393,6 +451,17 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
       grupo.exercicios = [];
     });
     setEstruturaTreino(estrutura);
+  };
+
+  const calcCarga = (exercise) => {
+    if (!rmResult?.rm) return "";
+    const diretriz = getDiretriz(objetivo);
+    if (!diretriz.intensidade) return "";
+    const mid = (diretriz.intensidade.min + diretriz.intensidade.max) / 2;
+    const fatorTipo = exercise.tipo === "Isolamento" ? 0.65 : exercise.tipo === "Funcional" ? 0.75 : 1.0;
+    const cargaBruta = sugerirCarga(rmResult.rm, mid * fatorTipo);
+    if (!cargaBruta) return "";
+    return String(Math.round(cargaBruta / 2.5) * 2.5);
   };
 
   const addExercicio = (grupoKey, exercise) => {
@@ -406,6 +475,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
           id: `${exercise.id}-${Date.now()}`,
           series: String(diretriz.series?.min || 3),
           repeticoes: diretriz.repeticoes ? `${diretriz.repeticoes.min}-${diretriz.repeticoes.max}` : "",
+          carga: calcCarga(exercise),
           descanso: diretriz.descanso ? `${diretriz.descanso.min}-${diretriz.descanso.max}s` : "",
         }],
       };
@@ -437,13 +507,16 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
 
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
           <span style={{ fontSize:15, fontWeight:700, color:C.text }}>Alunos {(students||[]).length > 0 && <span style={{ color:C.textMuted, fontWeight:400, fontSize:13 }}>({(students||[]).length})</span>}</span>
-          <button onClick={() => setShowForm(!showForm)} style={primaryBtn({ padding:"9px 18px", fontSize:13 })}>
-            {showForm ? "Cancelar" : "+ Novo Aluno"}
+          <button onClick={() => { setShowForm(!showForm); setEditingStudent(null); if (!showForm) setF({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" }); }} style={primaryBtn({ padding:"9px 18px", fontSize:13 })}>
+            {showForm ? "Cancelar" : editingStudent ? "✏️ Editando" : "+ Novo Aluno"}
           </button>
         </div>
 
         {showForm && (
           <div style={{ ...card(), marginBottom:16, border:`1px solid ${C.green}50` }}>
+            <div style={{ fontSize:14, fontWeight:700, color:C.green, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
+              {editingStudent ? "✏️ Editar Aluno" : "➕ Novo Aluno"}
+            </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
               {[
                 {k:"nome",l:"Nome completo",pl:"Nome do aluno"},
@@ -469,10 +542,17 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
             </div>
             <button onClick={() => {
               if (!f.nome.trim()) return;
-              onAddStudent({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10) });
+              if (editingStudent) {
+                const id = editingStudent.id || editingStudent.nome;
+                onUpdateStudentById(id, f);
+                Object.entries(f).forEach(([k, v]) => onUpdateStudent(k, v));
+                setEditingStudent(null);
+              } else {
+                onAddStudent({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10) });
+              }
               setF({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
               setShowForm(false);
-            }} disabled={!f.nome.trim()} style={{...primaryBtn({width:"100%",justifyContent:"center",padding:"11px",fontSize:14}),opacity:f.nome.trim()?1:0.4,cursor:f.nome.trim()?"pointer":"not-allowed"}}>Cadastrar Aluno</button>
+            }} disabled={!f.nome.trim()} style={{...primaryBtn({width:"100%",justifyContent:"center",padding:"11px",fontSize:14}),opacity:f.nome.trim()?1:0.4,cursor:f.nome.trim()?"pointer":"not-allowed"}}>{editingStudent ? "Salvar Alterações" : "Cadastrar Aluno"}</button>
           </div>
         )}
 
@@ -500,32 +580,98 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                 </div>
                 <span style={{ color:C.green, fontSize:16 }}>→</span>
               </button>
-              <button onClick={() => setDeleteTarget(p)}
-                style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:12, cursor:"pointer", width:48, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, color:C.textDim, fontFamily:F, flexShrink:0, transition:"all 0.12s" }}
-                title="Excluir aluno">🗑</button>
+              <div style={{ display:"flex", gap:4 }}>
+                <button onClick={() => { setEditTarget(p); }}
+                  style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:12, cursor:"pointer", width:40, height:48, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:C.textDim, fontFamily:F, flexShrink:0, transition:"all 0.12s" }}
+                  title="Editar aluno">✏️</button>
+                <button onClick={() => { setDeleteTarget(p); setDeleteStep(1); }}
+                  style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:12, cursor:"pointer", width:40, height:48, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:C.textDim, fontFamily:F, flexShrink:0, transition:"all 0.12s" }}
+                  title="Excluir aluno">🗑</button>
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {deleteTarget && (
+      {deleteTarget && deleteStep === 1 && (
         <div style={{
           position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.6)",
           display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000,
-        }} onClick={() => setDeleteTarget(null)}>
+        }} onClick={() => { setDeleteTarget(null); setDeleteStep(1); }}>
           <div onClick={e => e.stopPropagation()} style={{
-            background:"var(--surface)", border:"1px solid var(--red)", borderRadius:16, padding:"24px 28px",
+            background:C.surface, border:`1px solid ${C.red}`, borderRadius:16, padding:"24px 28px",
             maxWidth:420, width:"90%", textAlign:"center", fontFamily:F,
           }}>
             <div style={{ fontSize:40, marginBottom:12 }}>⚠️</div>
-            <div style={{ fontSize:16, fontWeight:800, color:"var(--red)", marginBottom:8 }}>Excluir aluno</div>
-            <div style={{ fontSize:13, color:"var(--textSub)", marginBottom:4, lineHeight:1.6 }}>Tem certeza que deseja excluir permanentemente o aluno?</div>
-            <div style={{ fontSize:15, fontWeight:700, color:"var(--text)", marginBottom:16, padding:"8px 12px", background:"var(--card)", borderRadius:8, border:"1px solid var(--border)" }}>{deleteTarget.nome}</div>
+            <div style={{ fontSize:16, fontWeight:800, color:C.red, marginBottom:8 }}>Excluir aluno</div>
+            <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:16, padding:"8px 12px", background:C.card, borderRadius:8, border:`1px solid ${C.border}` }}>{deleteTarget.nome}</div>
+            <div style={{ fontSize:13, color:C.textSub, marginBottom:18, lineHeight:1.6 }}>Deseja realmente excluir <strong>{deleteTarget.nome}</strong>?</div>
             <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
-              <button onClick={() => setDeleteTarget(null)}
-                style={{ background:"transparent", border:"1px solid var(--border)", borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:700, color:"var(--textSub)", cursor:"pointer", fontFamily:F }}>Cancelar</button>
-              <button onClick={() => { const p = [...(students||[])]; const idx = p.findIndex(x => (x.id||x.nome) === (deleteTarget.id||deleteTarget.nome)); if(idx>=0){p.splice(idx,1);} setDeleteTarget(null); }}
-                style={{ background:"var(--red)", border:"none", borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:F }}>Sim, excluir</button>
+              <button onClick={() => { setDeleteTarget(null); setDeleteStep(1); }}
+                style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:700, color:C.textSub, cursor:"pointer", fontFamily:F }}>Cancelar</button>
+              <button onClick={() => setDeleteStep(2)}
+                style={{ background:C.red, border:"none", borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:F }}>Continuar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && deleteStep === 2 && (
+        <div style={{
+          position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.6)",
+          display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000,
+        }} onClick={() => { setDeleteTarget(null); setDeleteStep(1); }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background:C.surface, border:`1px solid ${C.red}`, borderRadius:16, padding:"24px 28px",
+            maxWidth:420, width:"90%", textAlign:"center", fontFamily:F,
+          }}>
+            <div style={{ fontSize:40, marginBottom:12 }}>🔴</div>
+            <div style={{ fontSize:16, fontWeight:800, color:C.red, marginBottom:8 }}>Confirmação final</div>
+            <div style={{ fontSize:13, color:C.textSub, marginBottom:16, lineHeight:1.6 }}>
+              Todos os dados de avaliação e treinos de <strong>{deleteTarget.nome}</strong> serão perdidos permanentemente. Esta operação <strong style={{color:C.red}}>não pode ser desfeita</strong>.
+            </div>
+            <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+              <button onClick={() => { setDeleteTarget(null); setDeleteStep(1); }}
+                style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:700, color:C.textSub, cursor:"pointer", fontFamily:F }}>Cancelar</button>
+              <button onClick={() => { onDeleteStudent(deleteTarget); setDeleteTarget(null); setDeleteStep(1); }}
+                style={{ background:C.red, border:"none", borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:F }}>Sim, excluir permanentemente</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editTarget && (
+        <div style={{
+          position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.6)",
+          display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000,
+        }} onClick={() => setEditTarget(null)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background:C.surface, border:`1px solid ${C.green}`, borderRadius:16, padding:"24px 28px",
+            maxWidth:420, width:"90%", textAlign:"center", fontFamily:F,
+          }}>
+            <div style={{ fontSize:40, marginBottom:12 }}>✏️</div>
+            <div style={{ fontSize:16, fontWeight:800, color:C.green, marginBottom:8 }}>Editar dados do aluno</div>
+            <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:16, padding:"8px 12px", background:C.card, borderRadius:8, border:`1px solid ${C.border}` }}>{editTarget.nome}</div>
+            <div style={{ fontSize:13, color:C.textSub, marginBottom:18, lineHeight:1.6 }}>Deseja editar os dados cadastrais de <strong>{editTarget.nome}</strong>?</div>
+            <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+              <button onClick={() => setEditTarget(null)}
+                style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:700, color:C.textSub, cursor:"pointer", fontFamily:F }}>Cancelar</button>
+              <button onClick={() => {
+                setF({
+                  nome: editTarget.nome || "",
+                  dataNasc: editTarget.dataNasc || "",
+                  sexo: editTarget.sexo || "",
+                  profissao: editTarget.profissao || "",
+                  convenio: editTarget.convenio || "",
+                  telefone: editTarget.telefone || "",
+                  peso: editTarget.peso || "",
+                  altura: editTarget.altura || "",
+                });
+                setEditingStudent(editTarget);
+                setEditTarget(null);
+                setShowForm(true);
+              }}
+                style={{ background:C.green, border:"none", borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:800, color:"#061A0C", cursor:"pointer", fontFamily:F }}>Continuar</button>
             </div>
           </div>
         </div>
@@ -688,7 +834,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
               {(protocoloDobras === "7" ? DOBRAS_LOCATIONS : DOBRAS_LOCATIONS.filter(d => ["peitoral","abdominal","coxa"].includes(d.id))).map(d => (
                 <div key={`desc-${d.id}`} style={{ fontSize:10, color:C.textDim, marginTop:2, marginBottom:4 }}>{d.desc}</div>
               ))}
-              <button onClick={calcPollock} style={{ ...primaryBtn(), marginTop:12 }}>Calcular % de Gordura</button>
+
               {pollockResult && (
                 <div style={{ marginTop:12, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:10, padding:"14px 16px" }}>
                   <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:12 }}>
@@ -732,12 +878,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                   </div>
                 ))}
               </div>
-              <button onClick={() => {
-                const vals = {};
-                Object.entries(isakDobras).forEach(([k, v]) => { vals[k] = parseFloat(v) || 0; });
-                const p = parseFloat(pesoIsak) || 0;
-                if (p) setIsakResult(calcISAK6Dobras(vals, student.sexo, calcIdade(student.dataNasc), p));
-              }} style={{ ...primaryBtn(), marginTop:12 }}>Calcular % Gordura (ISAK)</button>
+
               {isakResult && (
                 <div style={{ marginTop:12, background:C.blueBg, border:`1px solid ${C.blue}40`, borderRadius:10, padding:"14px 16px" }}>
                   <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:10 }}>
@@ -765,18 +906,15 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
 
             <Accordion title="Composição Corporal — Bioimpedância (BIA)" icon="⚡">
               <div style={{ fontSize:12, color:C.textMuted, marginBottom:12, lineHeight:1.6 }}>
-                Valores obtidos do aparelho de bioimpedância. Preencha resistência (R) e reactância (Xc) em ohms.
+                Valores obtidos do aparelho de bioimpedância. Preencha peso, altura, resistência (R) e reactância (Xc).
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                <NumericField label="Peso (kg)" value={pesoBia} onChange={setPesoBia} unit="kg" min={20} max={300} step={0.1} />
+                <NumericField label="Altura (cm)" value={alturaBia} onChange={setAlturaBia} unit="cm" min={50} max={250} step={0.5} />
                 <NumericField label="Resistência (R)" value={biaResistencia} onChange={setBiaResistencia} unit="Ω" min={200} max={900} step={1} />
                 <NumericField label="Reactância (Xc)" value={biaReactancia} onChange={setBiaReactancia} unit="Ω" min={10} max={200} step={1} />
               </div>
-              <button onClick={() => {
-                const r = parseFloat(biaResistencia), xc = parseFloat(biaReactancia);
-                const p = parseFloat(student.peso) || 0;
-                const alt = parseFloat(student.altura) || 0;
-                if (r && xc && p && alt) setBiaResult(calcBioimpedancia(r, xc, student.sexo, calcIdade(student.dataNasc), p, alt));
-              }} style={{ ...primaryBtn(), marginTop:12 }}>Calcular Composição (BIA)</button>
+
               {biaResult && (
                 <div style={{ marginTop:12, background:C.purpleBg, border:`1px solid ${C.purple}40`, borderRadius:10, padding:"14px 16px" }}>
                   <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:10 }}>
@@ -869,7 +1007,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                 <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:8 }}>Teste de Cooper (12 minutos)</div>
                 <div style={{ fontSize:12, color:C.textMuted, marginBottom:10 }}>Correr a máxima distância possível em 12 minutos em superfície plana.</div>
                 <NumericField label="Distância percorrida" value={cooperDistancia} onChange={setCooperDistancia} unit="metros" min={0} max={6000} step={10} />
-                <button onClick={calcCooper} style={{ ...primaryBtn(), marginTop:8 }}>Calcular VO₂ Máx</button>
+
                 {cooperResult && (
                   <div style={{ marginTop:10, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:10, padding:"12px 14px" }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
@@ -906,7 +1044,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                   <NumericField label="Tempo (min)" value={rockportTempo} onChange={setRockportTempo} unit="min" min={5} max={60} step={0.1} />
                   <NumericField label="FC Final (bpm)" value={rockportFC} onChange={setRockportFC} unit="bpm" min={60} max={220} />
                 </div>
-                <button onClick={calcRockport} style={{ ...primaryBtn(), marginTop:8 }}>Calcular VO₂ Máx (Rockport)</button>
+
                 {rockportResult && (
                   <div style={{ marginTop:10, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:10, padding:"12px 14px" }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
@@ -937,7 +1075,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                 <NumericField label="Carga utilizada" value={rmCarga} onChange={setRmCarga} unit="kg" min={0} max={500} step={1} />
                 <NumericField label="Repetições máximas" value={rmRepeticoes} onChange={setRmRepeticoes} unit="reps" min={1} max={15} />
               </div>
-              <button onClick={calcRM} style={{ ...primaryBtn(), marginTop:8 }}>Calcular 1RM Estimado</button>
+
               {rmResult && (
                 <div style={{ marginTop:12, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:10, padding:"14px 16px" }}>
                   <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:12, marginBottom:12 }}>
@@ -969,21 +1107,23 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
 
             <Accordion title="Avaliação Antropométrica — IMC e RCQ" icon="📐">
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
+                <NumericField label="Peso (kg)" value={pesoImc} onChange={setPesoImc} unit="kg" min={20} max={300} step={0.1} />
+                <NumericField label="Altura (cm)" value={alturaImc} onChange={setAlturaImc} unit="cm" min={50} max={250} step={0.5} />
                 <NumericField label="Cintura (cm)" value={cintura} onChange={setCintura} unit="cm" min={40} max={200} step={0.5} />
                 <NumericField label="Quadril (cm)" value={quadril} onChange={setQuadril} unit="cm" min={40} max={200} step={0.5} />
+                {!student?.sexo && (
+                  <div>
+                    <span style={lbl()}>Sexo (para RCQ)</span>
+                    <select value={sexoRcq} onChange={e => { setSexoRcq(e.target.value); onUpdateStudent("sexo", e.target.value); }} style={sel()}>
+                      <option value="">Selecionar…</option>
+                      <option value="Feminino">Feminino</option>
+                      <option value="Masculino">Masculino</option>
+                      <option value="Outro">Outro</option>
+                    </select>
+                  </div>
+                )}
               </div>
-              <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:14 }}>
-                <button onClick={() => {
-                  const p = parseFloat(student.peso || 0);
-                  const a = parseFloat(student.altura || 0);
-                  if (p && a) setImcVal(calcIMC(p, a));
-                }} style={{ ...primaryBtn({ fontSize:11 }) }}>Calcular IMC</button>
-                <button onClick={() => {
-                  const c = parseFloat(cintura);
-                  const q = parseFloat(quadril);
-                  if (c && q) setRcqVal(calcRCQ(c, q, student.sexo));
-                }} style={{ ...ghostBtn({ fontSize:11 }) }}>Calcular RCQ</button>
-              </div>
+
               {imcVal && (
                 <div style={{ background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:10, padding:"12px 14px", marginBottom:10 }}>
                   <div style={{ fontSize:10, fontWeight:800, color:C.green, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:6 }}>IMC</div>
@@ -1010,10 +1150,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
 
             <Accordion title="Zonas de FC — Karvonen" icon="❤️">
               <NumericField label="FC Repouso (bpm)" value={fcRepousoInput} onChange={setFcRepousoInput} unit="bpm" min={30} max={120} />
-              <button onClick={() => {
-                const fc = parseInt(fcRepousoInput);
-                if (fc) setFcZonas(calcFCRegistro(fc, calcIdade(student.dataNasc), student.sexo));
-              }} style={{ ...primaryBtn({ fontSize:11, marginTop:8 }) }}>Calcular Zonas de FC</button>
+
               {fcZonas && (
                 <div style={{ marginTop:12 }}>
                   <div style={{ display:"flex", justifyContent:"space-around", marginBottom:10 }}>

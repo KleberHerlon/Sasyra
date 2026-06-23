@@ -12,6 +12,8 @@ import ExpressAssessment from "./components/ExpressAssessment";
 import EvidencePanel from "./components/EvidencePanel";
 import { detectKB, detectMultipleKB } from "./utils/clinicalDetection";
 import PhysicalEducation from "./screens/PhysicalEducation";
+import OccupationalTherapy from "./screens/OccupationalTherapy";
+import Nutrition from "./screens/Nutrition";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -920,7 +922,7 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
     { value:"fisio", label:"Fisioterapeuta", icon:"🦵" },
     { value:"to", label:"Terapeuta Ocupacional", icon:"🤲" },
     { value:"educFisico", label:"Educador Físico", icon:"🏃" },
-    { value:"outro", label:"Outro profissional da saúde", icon:"💚" },
+    { value:"nutricionista", label:"Nutricionista", icon:"🥗" },
   ];
 
   const handleEnter = () => {
@@ -1010,12 +1012,14 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
   );
 }
 
-const PROF_LABELS = { fisio:"Fisioterapeuta", to:"Terapeuta Ocupacional", educFisico:"Educador Físico", outro:"Profissional da Saúde" };
+const PROF_LABELS = { fisio:"Fisioterapeuta", to:"Terapeuta Ocupacional", educFisico:"Educador Físico", nutricionista:"Nutricionista" };
 
 function ModuleSelector({ user, onSelect, onLogout }) {
   const [selectedModule, setSelectedModule] = useState(() => {
-    if (user.prof === "fisio" || user.prof === "to") return "fisioterapia";
+    if (user.prof === "fisio") return "fisioterapia";
+    if (user.prof === "to") return "terapiaOcupacional";
     if (user.prof === "educFisico") return "educacaoFisica";
+    if (user.prof === "nutricionista") return "nutricao";
     return null;
   });
   return (
@@ -1040,7 +1044,9 @@ function ModuleSelector({ user, onSelect, onLogout }) {
         <p style={{ color:C.textMuted, fontSize:14, marginBottom:24, lineHeight:1.6 }}>Selecione o módulo de atendimento:</p>
         {[
           { id:"fisioterapia", icon:"🦵", title:"Fisioterapia", desc:"Avaliação ortopédica, escalas funcionais, CIF, diário de evolução e prescrição baseada em evidências", color:C.green },
+          { id:"terapiaOcupacional", icon:"🤲", title:"Terapia Ocupacional", desc:"Avaliação de AVDs/AIVDs, COPM, MIF, função manual, cognição e reabilitação baseada em evidências", color:C.purple },
           { id:"educacaoFisica", icon:"🏋️", title:"Educação Física / Performance", desc:"Avaliação física (Pollock, VO₂máx, 1RM), prescrição automatizada de treino e periodização baseada no ACSM", color:C.blue },
+          { id:"nutricao", icon:"🥗", title:"Nutrição Clínica", desc:"Avaliação antropométrica, BIA, recordatório alimentar, gasto energético, exames bioquímicos e plano alimentar baseado em evidências", color:C.amber },
         ].map(m => (
           <button key={m.id} onClick={() => setSelectedModule(m.id)}
             style={{
@@ -1311,6 +1317,11 @@ export default function Sasyra() {
     setPatients(ps => [...ps, p]);
   };
 
+  const updatePatientById = (id, updates) =>
+    setPatients(ps => ps.map(p =>
+      (p.id || p.nome) === id ? { ...p, ...updates } : p
+    ));
+
   const deletePatient = (p) => {
     const pid = p.id || p.nome;
     setPatients(ps => ps.filter(x => (x.id || x.nome) !== pid));
@@ -1321,12 +1332,14 @@ export default function Sasyra() {
   const handleLogin = (userObj) => {
     setUser(userObj);
     let m = null;
-    if (userObj.prof === "fisio" || userObj.prof === "to") m = "fisioterapia";
+    if (userObj.prof === "fisio") m = "fisioterapia";
+    else if (userObj.prof === "to") m = "terapiaOcupacional";
     else if (userObj.prof === "educFisico") m = "educacaoFisica";
+    else if (userObj.prof === "nutricionista") m = "nutricao";
     else m = "em_desenvolvimento";
     localStorage.setItem("sasyra_module", m);
     setModule(m);
-    setPatientView(true);
+    setPatientView(m === "fisioterapia");
   };
 
   const changeModule = () => {
@@ -1618,6 +1631,32 @@ Responda em tópicos claros e objetivos. Seja preciso, clínico e baseado em evi
       onSelectStudent={selectPatient}
       onAddStudent={addPatient}
       onUpdateStudent={up}
+      onDeleteStudent={deletePatient}
+      onUpdateStudentById={updatePatientById}
+    />
+  );
+
+  if (module === "terapiaOcupacional") return (
+    <OccupationalTherapy
+      students={patients}
+      student={pt}
+      onSelectStudent={selectPatient}
+      onAddStudent={addPatient}
+      onUpdateStudent={up}
+      onDeleteStudent={deletePatient}
+      onUpdateStudentById={updatePatientById}
+    />
+  );
+
+  if (module === "nutricao") return (
+    <Nutrition
+      students={patients}
+      student={pt}
+      onSelectStudent={selectPatient}
+      onAddStudent={addPatient}
+      onUpdateStudent={up}
+      onDeleteStudent={deletePatient}
+      onUpdateStudentById={updatePatientById}
     />
   );
 
