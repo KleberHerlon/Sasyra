@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import YouTube from "react-youtube";
 import Accordion from "../components/Accordion";
 import { calcPollock7Dobras, calcPollock3Dobras, calcVO2maxCooper, calcVO2maxRockport, calc1RMPreditivo, calcPercentual1RM, DOBRAS_LOCATIONS, RM_TABLE, calcISAK6Dobras, calcBioimpedancia, savePhysicalAssessment, loadPhysicalAssessments, getBFEvolution, saveTreino, loadTreinos, calcVolumeLoad, calcWeeklyVolume, calcProgression, suggestNextCycle } from "../data/physicalAssessment";
 import { getDiretriz, OBJETIVOS, DIVISOES_TREINO, montarEstruturaTreino, sugerirCarga, EVIDENCIA_CARDS, getRestricoesClinicas } from "../data/exercisePrescription";
@@ -138,6 +139,10 @@ function ExerciseSearch({ onSelect, foco }) {
 
 function ExerciseRow({ exercise, index, onRemove, onUpdate }) {
   const [showInstrucoes, setShowInstrucoes] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
+  const playerRef = useRef(null);
+  const videoId = exercise.videoUrl ? exercise.videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/)?.[1] : null;
+  useEffect(()=>()=>{try{playerRef.current?.pauseVideo?.()}catch{}},[playerRef]);
   return (
     <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:"12px 14px", marginBottom:8 }}>
       <div style={{ display:"flex", alignItems:"center", gap:10 }}>
@@ -147,9 +152,9 @@ function ExerciseRow({ exercise, index, onRemove, onUpdate }) {
           <div style={{ fontSize:10, color:C.textMuted, marginTop:1 }}>{exercise.musculoPrimario} · {exercise.equipamento}</div>
         </div>
         <div style={{ display:"flex", gap:4, alignItems:"center" }}>
-          {exercise.videoUrl && (
-            <a href={exercise.videoUrl} target="_blank" rel="noopener noreferrer" title="Ver vídeo do exercício"
-              style={{ background:"none", border:"none", color:C.red, fontSize:14, cursor:"pointer", padding:"0 4px", textDecoration:"none" }}>▶</a>
+          {videoId && (
+            <button onClick={() => setShowVideo(s=>!s)} title={showVideo?"Fechar vídeo":"Ver vídeo do exercício"}
+              style={{ background:"none", border:"none", color:C.red, fontSize:14, cursor:"pointer", padding:"0 4px" }}>{showVideo ? "▽" : "▶"}</button>
           )}
           {exercise.instrucoes?.length > 0 && (
             <button onClick={() => setShowInstrucoes(!showInstrucoes)} title="Ver instruções"
@@ -158,6 +163,14 @@ function ExerciseRow({ exercise, index, onRemove, onUpdate }) {
           {onRemove && <button onClick={onRemove} style={{ background:"none", border:"none", color:C.red, fontSize:16, cursor:"pointer", padding:"0 4px" }}>×</button>}
         </div>
       </div>
+      {showVideo && videoId && (
+        <div onClick={e=>e.stopPropagation()} style={{ marginTop:10, display:"flex", justifyContent:"center" }}>
+          <div style={{ aspectRatio:"16/9", maxWidth:360, width:"100%" }}>
+            <YouTube videoId={videoId} opts={{ height:"100%", width:"100%", playerVars:{ rel:0, modestbranding:1 } }}
+              onReady={e=>{playerRef.current=e.target}} />
+          </div>
+        </div>
+      )}
       {showInstrucoes && exercise.instrucoes?.length > 0 && (
         <div style={{ marginTop:8, background:C.cardAlt, borderRadius:8, padding:"10px 12px", fontSize:11, color:C.textSub, lineHeight:1.7 }}>
           <div style={{ fontSize:9, fontWeight:800, color:C.blue, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>📋 Instruções</div>
