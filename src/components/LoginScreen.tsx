@@ -10,6 +10,10 @@ const PROF_LABELS: Record<string, string> = {
   fisio: "Fisioterapeuta",
   to: "Terapeuta Ocupacional",
   educFisico: "Educador Físico",
+  nutricionista: "Nutricionista",
+  pediatria: "Fisioterapeuta Pediátrico",
+  crossfit: "Treinador CrossFit",
+  neurofuncional: "Fisioterapeuta Neurofuncional",
   outro: "Profissional da Saúde",
 };
 
@@ -22,6 +26,10 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     { value: "fisio", label: "Fisioterapeuta", icon: "🦵" },
     { value: "to", label: "Terapeuta Ocupacional", icon: "🤲" },
     { value: "educFisico", label: "Educador Físico", icon: "🏃" },
+    { value: "nutricionista", label: "Nutricionista", icon: "🥗" },
+    { value: "pediatria", label: "Fisioterapeuta Pediátrico", icon: "👶" },
+    { value: "crossfit", label: "Treinador CrossFit", icon: "💪" },
+    { value: "neurofuncional", label: "Fisioterapeuta Neurofuncional", icon: "🧠" },
     { value: "outro", label: "Outro profissional da saúde", icon: "💚" },
   ];
 
