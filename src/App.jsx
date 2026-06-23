@@ -11,6 +11,7 @@ import { useSubscription } from "./hooks/useSubscription";
 import ExpressAssessment from "./components/ExpressAssessment";
 import EvidencePanel from "./components/EvidencePanel";
 import { detectKB, detectMultipleKB } from "./utils/clinicalDetection";
+import PhysicalEducation from "./screens/PhysicalEducation";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -1011,8 +1012,65 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
 
 const PROF_LABELS = { fisio:"Fisioterapeuta", to:"Terapeuta Ocupacional", educFisico:"Educador Físico", outro:"Profissional da Saúde" };
 
+function ModuleSelector({ user, onSelect, onLogout }) {
+  const [selectedModule, setSelectedModule] = useState(() => {
+    if (user.prof === "fisio" || user.prof === "to") return "fisioterapia";
+    if (user.prof === "educFisico") return "educacaoFisica";
+    return null;
+  });
+  return (
+    <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:F, padding:24 }}>
+      <div style={{ maxWidth:500, width:"100%", textAlign:"center" }}>
+        <div style={{ marginBottom:8 }}>
+          <svg viewBox="0 0 400 70" width="280" height="54" style={{ display:"block", margin:"0 auto" }}>
+            <g transform="translate(78,36)">
+              <line x1="0" y1="-28" x2="0" y2="28" stroke={C.textDim} strokeWidth="1.5" strokeDasharray="2 5"/>
+              <path d="M -20 14 C -10 4,0 0,20 -14" fill="none" stroke={C.green} strokeWidth="5" strokeLinecap="round"/>
+              <path d="M -20 -5 C -5 0,5 4,20 15" fill="none" stroke={C.greenDim} strokeWidth="3.5" strokeLinecap="round"/>
+              <path d="M -12 24 C -4 13,4 -6,15 -24" fill="none" stroke={C.greenDeep} strokeWidth="3" strokeLinecap="round"/>
+              <circle cx="0" cy="0" r="6" fill={C.amber}/>
+            </g>
+            <text x="200" y="50" fill={C.text} fontSize="32" fontWeight="900" letterSpacing="8" fontFamily={F} textAnchor="middle">SASYRA</text>
+          </svg>
+        </div>
+        <div style={{ marginBottom:28 }}>
+          <div style={{ fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>Olá, {user.nome}</div>
+          <div style={{ fontSize:13, color:C.textMuted }}>{PROF_LABELS[user.prof] || user.prof}{user.crefito ? ` · ${user.crefito}` : ""}</div>
+        </div>
+        <p style={{ color:C.textMuted, fontSize:14, marginBottom:24, lineHeight:1.6 }}>Selecione o módulo de atendimento:</p>
+        {[
+          { id:"fisioterapia", icon:"🦵", title:"Fisioterapia", desc:"Avaliação ortopédica, escalas funcionais, CIF, diário de evolução e prescrição baseada em evidências", color:C.green },
+          { id:"educacaoFisica", icon:"🏋️", title:"Educação Física / Performance", desc:"Avaliação física (Pollock, VO₂máx, 1RM), prescrição automatizada de treino e periodização baseada no ACSM", color:C.blue },
+        ].map(m => (
+          <button key={m.id} onClick={() => setSelectedModule(m.id)}
+            style={{
+              width:"100%", display:"flex", alignItems:"center", gap:16, textAlign:"left", padding:"18px 20px", marginBottom:12,
+              background: selectedModule === m.id ? `${m.color}18` : C.card,
+              border: selectedModule === m.id ? `2px solid ${m.color}70` : `1px solid ${C.border}`,
+              borderRadius:14, cursor:"pointer", fontFamily:F, color:C.text, transition:"all 0.12s",
+            }}>
+            <div style={{ fontSize:28, flexShrink:0 }}>{m.icon}</div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:16, fontWeight:700, color: selectedModule === m.id ? m.color : C.text, marginBottom:3 }}>{m.title}</div>
+              <div style={{ fontSize:12, color:C.textMuted, lineHeight:1.5 }}>{m.desc}</div>
+            </div>
+            {selectedModule === m.id && <span style={{ fontSize:18, color:m.color }}>✓</span>}
+          </button>
+        ))}
+        <div style={{ display:"flex", gap:10, marginTop:8 }}>
+          <button onClick={onLogout} style={{ ...ghostBtn(), flex:1, justifyContent:"center", padding:"12px" }}>Sair</button>
+          <button onClick={() => selectedModule && onSelect(selectedModule)} disabled={!selectedModule}
+            style={{ ...primaryBtn({ flex:1, justifyContent:"center", padding:"12px", fontSize:14, opacity: !selectedModule ? 0.4 : 1, cursor: !selectedModule ? "not-allowed" : "pointer" }) }}>
+            Acessar Módulo →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Patient List ──────────────────────────────────────────────────────────────
-function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChange, user, assessmentHistory, onDelete }) {
+function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChange, user, assessmentHistory, onDelete, onChangeModule }) {
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -1201,6 +1259,10 @@ export default function Sasyra() {
   const [regiao, setRegiao] = useState("Centro-Oeste");
   const [assessmentHistory, setAssessmentHistory] = useState(() => { try { const d = localStorage.getItem("sasyra_assessments"); return d ? JSON.parse(d) : []; } catch { return []; } });
   const [appView, setAppView] = useState("patients");
+  const [module, setModule] = useState(() => {
+    const saved = localStorage.getItem("sasyra_module");
+    return (saved === "fisioterapia" || saved === "educacaoFisica" || saved === "em_desenvolvimento") ? saved : null;
+  });
 
   // Patient
   const [pt, setPt] = useState({ nome:"", dataNasc:"", sexo:"", lateralidade:"", estadoCivil:"", profissao:"", convenio:"", sessoesAuth:"", telefone:"", peso:"", altura:"", data:new Date().toISOString().slice(0,10) });
@@ -1256,7 +1318,24 @@ export default function Sasyra() {
     setLogs(l => l.filter(x => x.patientId !== pid));
   };
 
-  const handleLogout = () => { setUser(null); setPatientView(true); setPatients([]); setAssessmentHistory([]); setAppView("patients"); };
+  const handleLogin = (userObj) => {
+    setUser(userObj);
+    let m = null;
+    if (userObj.prof === "fisio" || userObj.prof === "to") m = "fisioterapia";
+    else if (userObj.prof === "educFisico") m = "educacaoFisica";
+    else m = "em_desenvolvimento";
+    localStorage.setItem("sasyra_module", m);
+    setModule(m);
+    setPatientView(true);
+  };
+
+  const changeModule = () => {
+    localStorage.removeItem("sasyra_module");
+    setModule(null);
+    setPatientView(true);
+  };
+
+  const handleLogout = () => { setUser(null); setModule(null); setPatientView(true); setPatients([]); setAssessmentHistory([]); setAppView("patients"); };
 
   const navigateToPatientFromAgenda = useCallback((patient, targetTab) => {
     setPt(prev => ({ ...prev, ...patient }));
@@ -1522,7 +1601,42 @@ Responda em tópicos claros e objetivos. Seja preciso, clínico e baseado em evi
   const MRC_LABELS = useMemo(() => [{id:"quadricepsD",l:"Quadríceps D"},{id:"quadricepsE",l:"Quadríceps E"},{id:"isquiotibialD",l:"Isquiotibiais D"},{id:"isquiotibialE",l:"Isquiotibiais E"},{id:"gluteoD",l:"Glúteo D"},{id:"gluteoE",l:"Glúteo E"},{id:"manguitoD",l:"Manguito Rotador D"},{id:"manguitoE",l:"Manguito Rotador E"},{id:"tibialAnterior",l:"Tibial Anterior"},{id:"gastrocnemio",l:"Gastrocnêmio"},{id:"bicepsD",l:"Bíceps Braquial D"},{id:"bicepsE",l:"Bíceps Braquial E"}], []);
 
   // ── Render ────────────────────────────────────────────────────────────────
-  if (!user) return <LoginScreen onLogin={setUser} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} />;
+  if (!user) return <LoginScreen onLogin={handleLogin} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} />;
+
+  if (!module) return (
+    <ModuleSelector
+      user={user}
+      onSelect={(m) => { setModule(m); setPatientView(m === "fisioterapia"); localStorage.setItem("sasyra_module", m); }}
+      onLogout={handleLogout}
+    />
+  );
+
+  if (module === "educacaoFisica") return (
+    <PhysicalEducation
+      students={patients}
+      student={pt}
+      onSelectStudent={selectPatient}
+      onAddStudent={addPatient}
+      onUpdateStudent={up}
+    />
+  );
+
+  if (module === "em_desenvolvimento") return (
+    <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:F, padding:24 }}>
+      <div style={{ maxWidth:460, textAlign:"center" }}>
+        <div style={{ fontSize:56, marginBottom:16 }}>🚧</div>
+        <h2 style={{ fontSize:22, fontWeight:800, color:C.text, margin:0, marginBottom:8 }}>Módulo em Desenvolvimento</h2>
+        <p style={{ color:C.textMuted, fontSize:14, lineHeight:1.7, marginBottom:24 }}>
+          O módulo para <strong>{PROF_LABELS[user.prof] || user.prof}</strong> está em fase de desenvolvimento.
+          Em breve você terá acesso a ferramentas específicas para sua prática clínica.
+        </p>
+        <button onClick={handleLogout} style={ghostBtn({ padding:"10px 24px", fontSize:13 })}>
+          Sair
+        </button>
+      </div>
+    </div>
+  );
+
   if (appView === "agenda") return (
     <Agenda patients={patients} onNavigateToPatient={navigateToPatientFromAgenda} onNavigate={(v) => setAppView(v)} />
   );
@@ -1532,7 +1646,7 @@ Responda em tópicos claros e objetivos. Seja preciso, clínico e baseado em evi
   if (appView === "plans") return <Plans onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} />;
   if (appView === "subscription") return <SubscriptionSettings onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} />;
   if (patientView) return <>
-    <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} onAgenda={() => setAppView("agenda")} onViewChange={(v) => setAppView(v)} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} />
+    <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} onAgenda={() => setAppView("agenda")} onViewChange={(v) => setAppView(v)} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} onChangeModule={changeModule} />
     <PaywallModal open={paywallOpen} onClose={() => setPaywallOpen(false)}
       featureName={paywallFeature.name} featureDesc={paywallFeature.desc}
       onUpgrade={() => { setPaywallOpen(false); setAppView("plans"); }} />
