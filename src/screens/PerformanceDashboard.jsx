@@ -46,15 +46,67 @@ export default function PerformanceDashboard({ student, bfEvolution, savedAssess
 
   const hasData = (bfEvolution?.length || 0) > 0 || (vo2Evolution?.length || 0) > 0 || (rmEvolution?.length || 0) > 0 || (pseSessoes?.length || 0) > 0;
 
+  const goals = [
+    { label: "% Gordura", current: bfEvolution?.[bfEvolution?.length - 1]?.percentualGordura, target: "target_bf", unit: "%", invert: true },
+    { label: "VO₂máx", current: ultimaAvaliacao?.cooper?.vo2max || cooperResult?.vo2max, target: "target_vo2", unit: "ml/kg/min" },
+    { label: "1RM", current: ultimaAvaliacao?.rm?.rm || rmResult?.rm, target: "target_rm", unit: "kg" },
+  ].map(g => {
+    const stored = localStorage.getItem("sasyra_" + g.target);
+    const target = stored ? parseFloat(stored) : null;
+    const progress = target && g.current ? Math.min(100, g.invert ? Math.max(0, ((target - g.current) / target) * 100) : (g.current / target) * 100) : null;
+    const achieved = target && g.current ? (g.invert ? g.current <= target : g.current >= target) : null;
+    return { ...g, target, progress: progress ? Math.round(progress) : null, achieved };
+  });
+
+  const plateauAlerts = [];
+  if (bfEvolution?.length >= 3) {
+    const last3 = bfEvolution.slice(-3);
+    const stable = last3.every((v, i, a) => i === 0 || Math.abs(v.percentualGordura - a[i - 1].percentualGordura) < 0.5);
+    if (stable) plateauAlerts.push("📊 % Gordura estabilizado nas últimas 3 avaliações. Considere ajustar o protocolo.");
+  }
+  if (rmEvolution?.length >= 3) {
+    const last3 = rmEvolution.slice(-3);
+    const stable = last3.every((v, i, a) => i === 0 || Math.abs(v.rm - a[i - 1].rm) < 2);
+    if (stable) plateauAlerts.push("💪 1RM estagnado nas últimas 3 avaliações. Talvez seja hora de periodizar.");
+  }
+  if (pseSessoes?.length >= 4) {
+    const last4 = pseSessoes.slice(-4);
+    const pseTrend = last4.map(s => s.pse);
+    const allHigh = pseTrend.every(p => p >= 7);
+    const allLow = pseTrend.every(p => p <= 3);
+    if (allHigh) plateauAlerts.push("🔥 PSE consistentemente alto (≥7). Pode indicar acúmulo de fadiga — considere deload.");
+    if (allLow) plateauAlerts.push("💤 PSE consistentemente baixo (≤3). Talvez os estímulos estejam sub-ótimos.");
+  }
+
+  const interpretacoes = [];
+  if (bfEvolution?.length >= 2) {
+    const delta = bfEvolution[bfEvolution.length - 1].percentualGordura - bfEvolution[0].percentualGordura;
+    if (delta < -1) interpretacoes.push({ text: `% Gordura reduziu ${Math.abs(delta).toFixed(1)} p.p. — ótima evolução!`, color: C.green });
+    else if (delta > 1) interpretacoes.push({ text: `% Gordura aumentou ${delta.toFixed(1)} p.p. — atenção à dieta e treino.`, color: C.red });
+    else interpretacoes.push({ text: `% Gordura estável (Δ ${delta.toFixed(1)} p.p.).`, color: C.amber });
+  }
+  if (rmEvolution?.length >= 2) {
+    const delta = rmEvolution[rmEvolution.length - 1].rm - rmEvolution[0].rm;
+    if (delta > 5) interpretacoes.push({ text: `1RM evoluiu ${delta.toFixed(0)} kg — força aumentando bem!`, color: C.green });
+    else if (delta > 0) interpretacoes.push({ text: `1RM evoluiu ${delta.toFixed(0)} kg — progresso lento mas positivo.`, color: C.amber });
+    else if (delta < 0) interpretacoes.push({ text: `1RM reduziu ${Math.abs(delta).toFixed(0)} kg — verificar periodização.`, color: C.red });
+  }
+  if (vo2Evolution?.length >= 2) {
+    const delta = vo2Evolution[vo2Evolution.length - 1].vo2max - vo2Evolution[0].vo2max;
+    if (delta > 3) interpretacoes.push({ text: `VO₂máx subiu ${delta.toFixed(1)} ml/kg/min — capacidade aeróbia melhorando!`, color: C.green });
+    else if (delta > 0) interpretacoes.push({ text: `VO₂máx subiu ${delta.toFixed(1)} ml/kg/min.`, color: C.amber });
+    else if (delta < 0) interpretacoes.push({ text: `VO₂máx caiu ${Math.abs(delta).toFixed(1)} ml/kg/min — atenção ao condicionamento.`, color: C.red });
+  }
+
   return (
     <div>
       {/* Summary Cards */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(150px, 1fr))", gap:10, marginBottom:16 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:8, marginBottom:16 }} className="dashboard-summary-grid">
         {[
           { label:"% Gordura Atual", val: bfEvolution?.length > 0 ? `${bfEvolution[bfEvolution.length - 1].percentualGordura}%` : "—", delta: bfEvolution?.length >= 2 ? `${(bfEvolution[bfEvolution.length - 1].percentualGordura - bfEvolution[0].percentualGordura).toFixed(1)} pp` : null, color: C.green },
-          { label:"VO₂ Máx", val: ultimaAvaliacao?.cooper?.vo2max ? `${ultimaAvaliacao.cooper.vo2max}` : cooperResult?.vo2max || "—", sub: "ml/kg/min", color: C.blue },
-          { label:"1RM Estimado", val: ultimaAvaliacao?.rm?.rm ? `${ultimaAvaliacao.rm.rm} kg` : rmResult?.rm ? `${rmResult.rm} kg` : "—", color: C.purple },
-          { label:"PSE Médio", val: pseMedio, sub: "/10 CR-10", color: pseMedio !== "—" && parseFloat(pseMedio) > 7 ? C.red : C.amber },
+          { label:"VO₂ Máx", val: ultimaAvaliacao?.cooper?.vo2max ? `${ultimaAvaliacao.cooper.vo2max}` : cooperResult?.vo2max || "—", sub: "ml/kg/min", color: C.blue, delta: vo2Evolution?.length >= 2 ? `${(vo2Evolution[vo2Evolution.length - 1].vo2max - vo2Evolution[0].vo2max).toFixed(1)}` : null },
+          { label:"1RM Estimado", val: ultimaAvaliacao?.rm?.rm ? `${ultimaAvaliacao.rm.rm} kg` : rmResult?.rm ? `${rmResult.rm} kg` : "—", color: C.purple, delta: rmEvolution?.length >= 2 ? `${(rmEvolution[rmEvolution.length - 1].rm - rmEvolution[0].rm).toFixed(0)} kg` : null },
+          { label:"PSE Médio", val: pseMedio, sub: "/10", color: pseMedio !== "—" && parseFloat(pseMedio) > 7 ? C.red : C.amber },
           { label:"Volume Semanal", val: volTotal > 0 ? `${(volTotal / 1000).toFixed(1)}k` : "—", sub: "kg·rep", color: C.text },
         ].map((c, i) => (
           <div key={i} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"14px 16px", textAlign:"center" }}>
@@ -73,6 +125,59 @@ export default function PerformanceDashboard({ student, bfEvolution, savedAssess
         <div style={{ textAlign:"center", padding:"48px 24px", color:C.textDim, fontSize:13 }}>
           Nenhum dado disponível. Realize avaliações e registre sessões PSE para ver o dashboard.
         </div>
+      )}
+
+      {/* Metas / Goals */}
+      {goals.some(g => g.target) && (
+        <Accordion title="🎯 Metas e Progresso" icon="🎯" defaultOpen>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(160px, 1fr))", gap:8 }}>
+            {goals.map((g, i) => (
+              <div key={i} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px" }}>
+                <div style={{ fontSize:9, fontWeight:700, color:C.textMuted, textTransform:"uppercase", marginBottom:2 }}>{g.label}</div>
+                <div style={{ fontSize:16, fontWeight:800, color:C.text }}>{g.current ?? "—"} <span style={{ fontSize:9, color:C.textMuted }}>{g.unit}</span></div>
+                {g.target ? (
+                  <>
+                    <div style={{ fontSize:10, color:C.textMuted, marginBottom:4 }}>Meta: {g.target}{g.unit}</div>
+                    <div style={{ height:4, background:C.border, borderRadius:99, overflow:"hidden", marginBottom:2 }}>
+                      <div style={{ height:"100%", width:`${g.progress}%`, background: g.achieved ? C.green : C.amber, borderRadius:99, minWidth:4 }} />
+                    </div>
+                    <div style={{ fontSize:9, color: g.achieved ? C.green : C.amber }}>
+                      {g.achieved ? "✓ Meta atingida!" : `${g.progress}% da meta`}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ fontSize:9, color:C.textDim, marginTop:4 }}>Defina uma meta no diário</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </Accordion>
+      )}
+
+      {/* Plateau Alerts */}
+      {plateauAlerts.length > 0 && (
+        <Accordion title={`⚠️ Alertas de Platô (${plateauAlerts.length})`} icon="⚠️" defaultOpen accent={C.amber}>
+          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+            {plateauAlerts.map((alert, i) => (
+              <div key={i} style={{ background:C.amberBg, border:`1px solid ${C.amber}30`, borderRadius:8, padding:"8px 12px", fontSize:11, color:C.textSub, lineHeight:1.5 }}>
+                {alert}
+              </div>
+            ))}
+          </div>
+        </Accordion>
+      )}
+
+      {/* Interpretação Automática */}
+      {interpretacoes.length > 0 && (
+        <Accordion title={`💡 Análise de Evolução (${interpretacoes.length} indicadores)`} icon="💡" defaultOpen accent={C.blue}>
+          <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+            {interpretacoes.map((item, i) => (
+              <div key={i} style={{ fontSize:11, color:item.color, fontWeight:600, padding:"3px 0" }}>
+                {item.text}
+              </div>
+            ))}
+          </div>
+        </Accordion>
       )}
 
       {/* Charts */}

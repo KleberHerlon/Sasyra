@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import Accordion from "../components/Accordion";
-import { calcBioimpedancia, calcPollock7Dobras, calcISAK6Dobras } from "../data/physicalAssessment";
+import { calcBioimpedancia, calcPollock7Dobras, calcPollock3Dobras } from "../data/physicalAssessment";
 import { calcIMC, calcRCQ } from "../data/peScales";
 
 const C = {
@@ -70,10 +70,10 @@ function Section({ title, icon, children }) {
 
 // ── SAVE / LOAD ──────────────────────────────────────────────────────────────
 function saveNutriData(studentId, data) {
-  try { localStorage.setItem(`nutri_data_${studentId}`, JSON.stringify(data)); } catch {}
+  try { localStorage.setItem(`nutri_data_${studentId}`, JSON.stringify(data)); } catch { /* empty */ }
 }
 function loadNutriData(studentId) {
-  try { const d = localStorage.getItem(`nutri_data_${studentId}`); return d ? JSON.parse(d) : null; } catch { return null; }
+  try { const d = localStorage.getItem(`nutri_data_${studentId}`); return d ? JSON.parse(d) : null; } catch { /* empty */ return null; }
 }
 
 // ── BMR EQUATIONS ────────────────────────────────────────────────────────────
@@ -99,11 +99,6 @@ const FAO_PAL = [
 ];
 
 // ── MUST ─────────────────────────────────────────────────────────────────────
-const MUST_FIELDS = [
-  { id:"bmi", label:"IMC (kg/m²)", scoreLabel: s => s >= 30 ? "0" : s >= 25 ? "1" : s >= 20 ? "2" : "3", score: v => v >= 30 ? 0 : v >= 25 ? 1 : v >= 20 ? 2 : 3 },
-  { id:"perdaPeso", label:"Perda de peso involuntária nos últimos 3-6 meses", score: v => v === ">10" ? 3 : v === "5-10" ? 2 : v === "0-5" ? 1 : 0 },
-  { id:"doencaAguda", label:"Doença aguda com ingestão reduzida > 5 dias", score: v => v === "sim" ? 2 : 0 },
-];
 
 function calcMUST(scores) {
   const total = Object.values(scores).reduce((a, b) => a + (Number(b) || 0), 0);
@@ -215,10 +210,8 @@ export default function Nutrition({ student, students, onSelectStudent, onAddStu
 
   // Dobras
   const [dobras, setDobras] = useState({ peitoral:"", abdominal:"", coxa:"", suprailiaca:"", subescapular:"", tricipital:"", axilarMedia:"" });
-  const [isakDobras, setIsakDobras] = useState({ tricipital:"", subescapular:"", suprailiaca:"", abdominal:"", coxa:"", panturrilha:"" });
   const [protocoloDobras, setProtocoloDobras] = useState("7");
   const [pollockResult, setPollockResult] = useState(null);
-  const [isakResult, setIsakResult] = useState(null);
 
   // BMR
   const [formulaBmr, setFormulaBmr] = useState("mifflin");
@@ -335,17 +328,6 @@ export default function Nutrition({ student, students, onSelectStudent, onAddStu
     if (protocoloDobras === "7") setPollockResult(calcPollock7Dobras(vals, student.sexo, idade));
     else setPollockResult(calcPollock3Dobras(vals, student.sexo, idade));
   }, [dobras, protocoloDobras, student?.sexo, student?.dataNasc]);
-
-  // Auto ISAK
-  useEffect(() => {
-    const hasDobra = Object.values(isakDobras).some(v => parseFloat(v));
-    const p = parseFloat(pesoBia);
-    if (!hasDobra || !p || !student?.sexo) { setIsakResult(null); return; }
-    const vals = {};
-    Object.entries(isakDobras).forEach(([k, v]) => { vals[k] = parseFloat(v) || 0; });
-    const idade = student?.dataNasc ? Math.floor((Date.now() - new Date(student.dataNasc).getTime()) / 31557600000) : null;
-    setIsakResult(calcISAK6Dobras(vals, student.sexo, idade, p));
-  }, [isakDobras, pesoBia, student?.sexo, student?.dataNasc]);
 
   const handleSave = () => {
     if (!student?.id && !student?.nome) return;

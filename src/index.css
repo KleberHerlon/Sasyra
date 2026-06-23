@@ -97,3 +97,8 @@ input[type=number] { -moz-appearance: textfield; }
   body { background: #fff !important; }
   #root > div > div:first-child { display: none !important; }
 }
+
+/* Mobile */
+@media (max-width: 767px) {
+  .dashboard-summary-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}

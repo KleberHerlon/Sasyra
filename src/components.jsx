@@ -841,3 +841,85 @@ export function PlanCard({ plan, isAnnual, onSelect, isCurrent }) {
     </div>
   );
 }
+
+export function Tooltip({ text, children, position = "top" }) {
+  const [show, setShow] = useState(false);
+  const positions = {
+    top: { bottom: "100%", left: "50%", transform: "translateX(-50%)", marginBottom: 6 },
+    bottom: { top: "100%", left: "50%", transform: "translateX(-50%)", marginTop: 6 },
+    left: { right: "100%", top: "50%", transform: "translateY(-50%)", marginRight: 6 },
+    right: { left: "100%", top: "50%", transform: "translateY(-50%)", marginLeft: 6 },
+  };
+  return (
+    <div style={{ position: "relative", display: "inline-flex" }}
+      onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      {children}
+      {show && (
+        <div style={{
+          position: "absolute", ...positions[position], zIndex: 9999,
+          background: C.textSub, color: C.bg, fontSize: 11, fontWeight: 600,
+          padding: "4px 10px", borderRadius: 6, whiteSpace: "nowrap",
+          pointerEvents: "none", fontFamily: F, lineHeight: 1.4,
+        }}>
+          {text}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function HelpHint({ text, icon = "💡" }) {
+  const [show, setShow] = useState(false);
+  return (
+    <span style={{ position: "relative", display: "inline-flex", cursor: "pointer" }}
+      onClick={() => setShow(s => !s)}>
+      <span style={{ fontSize: 11, opacity: 0.6 }}>{icon}</span>
+      {show && (
+        <div style={{
+          position: "absolute", top: "100%", left: 0, zIndex: 9999, marginTop: 4,
+          background: C.card, border: `1px solid ${C.border}`, borderRadius: 8,
+          padding: "8px 12px", fontSize: 11, color: C.textSub, lineHeight: 1.5,
+          minWidth: 200, maxWidth: 280, fontWeight: 400,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.3)", fontFamily: F,
+        }} onClick={(e) => e.stopPropagation()}>
+          {text}
+        </div>
+      )}
+    </span>
+  );
+}
+
+export function OnboardingDica({ dicas, storageKey }) {
+  const [step, setStep] = useState(() => {
+    const done = localStorage.getItem("sasyra_onboarding_" + storageKey);
+    return done ? -1 : 0;
+  });
+  if (step < 0 || step >= dicas.length) return null;
+  const dica = dicas[step];
+  return (
+    <div style={{
+      background: `linear-gradient(135deg, ${C.greenBg}, ${C.blueBg})`,
+      border: `1px solid ${C.green}30`, borderRadius: 10,
+      padding: "10px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8, fontSize: 12,
+    }}>
+      <span style={{ fontSize: 16 }}>{dica.icon || "💡"}</span>
+      <div style={{ flex: 1, color: C.textSub, lineHeight: 1.5 }}>
+        <strong style={{ color: C.text }}>{dica.titulo}</strong>: {dica.texto}
+      </div>
+      <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+        {step < dicas.length - 1 ? (
+          <button onClick={() => setStep(s => s + 1)}
+            style={{ background: C.green, border: "none", color: "#061A0C", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+            Próximo →</button>
+        ) : (
+          <button onClick={() => { localStorage.setItem("sasyra_onboarding_" + storageKey, "1"); setStep(-1); }}
+            style={{ background: C.green, border: "none", color: "#061A0C", borderRadius: 6, padding: "4px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+            ✓ Entendi</button>
+        )}
+        <button onClick={() => { localStorage.setItem("sasyra_onboarding_" + storageKey, "1"); setStep(-1); }}
+          style={{ background: "none", border: "none", color: C.textMuted, fontSize: 10, cursor: "pointer", padding: "4px 6px" }}>
+          Fechar ×</button>
+      </div>
+    </div>
+  );
+}

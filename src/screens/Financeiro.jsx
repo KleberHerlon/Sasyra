@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { OnboardingDica } from "../components";
 
 const C = {
   bg: "var(--bg)", surface: "var(--surface)", card: "var(--card)", cardAlt: "var(--cardAlt)",
@@ -131,12 +132,57 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
   const totalDespesas = despesasNoPeriodo.reduce((acc, d) => acc + Number(d.valor || 0), 0);
   const saldoLiquido = totalRecebido - totalDespesas;
 
-  const togglePagamento = (logId) => setPagamentos({ ...pagamentos, [String(logId)]: !pagamentos[String(logId)] });
+  const togglePagamento = (logId) => {
+    const wasPaid = pagamentos[String(logId)];
+    if (wasPaid) {
+      if (!window.confirm("Estornar este pagamento? O status voltará para \"a receber\".")) return;
+    }
+    setPagamentos({ ...pagamentos, [String(logId)]: !wasPaid });
+  };
   const marcarTodas = (pago) => {
     const next = { ...pagamentos };
     logsInPeriod.forEach(l => { next[String(l.id)] = pago; });
     setPagamentos(next);
   };
+
+  const exportCSV = () => {
+    const rows = [["Paciente", "Convênio", "Sessões", "Valor Unitário", "Total", "Recebido", "Pendente"]];
+    patientSummary.forEach(p => {
+      const valor = calcSessionValue(p.convenio, p.patientId);
+      const total = p.sessions * valor;
+      const recebido = p.logIds.reduce((acc, id) => acc + (pagamentos[String(id)] ? valor : 0), 0);
+      rows.push([p.nome, p.convenio || "—", p.sessions, valor.toFixed(2), total.toFixed(2), recebido.toFixed(2), (total - recebido).toFixed(2)]);
+    });
+    rows.push([]);
+    rows.push(["Resumo", "", "", "", "", "", ""]);
+    rows.push(["Faturamento Bruto", "", "", "", totalFaturado.toFixed(2), "", ""]);
+    rows.push(["Total Recebido", "", "", "", totalRecebido.toFixed(2), "", ""]);
+    rows.push(["Total Despesas", "", "", "", totalDespesas.toFixed(2), "", ""]);
+    rows.push(["Saldo Líquido", "", "", "", saldoLiquido.toFixed(2), "", ""]);
+    despesasNoPeriodo.forEach(d => {
+      rows.push(["Despesa: " + d.descricao, d.categoria, "", "", d.valor, "", ""]);
+    });
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `sasyra_financeiro_${period}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  };
+
+  const comissaoProfissionais = useMemo(() => {
+    const map = {};
+    logsInPeriod.forEach(l => {
+      const pid = l.patientId;
+      const nome = patients.find(p => p.id === pid)?.nome || `ID ${pid}`;
+      const valor = calcSessionValue(l.convenio, pid);
+      const recebido = pagamentos[String(l.id)] ? valor : 0;
+      if (!map[pid]) map[pid] = { nome, sessions: 0, total: 0, recebido: 0 };
+      map[pid].sessions++;
+      map[pid].total += valor;
+      map[pid].recebido += recebido;
+    });
+    return Object.values(map).sort((a, b) => b.total - a.total);
+  }, [logsInPeriod, pagamentos]);
 
   const handleAddDespesa = () => {
     if (!editDespesa?.descricao?.trim() || !editDespesa?.valor) return;
@@ -187,17 +233,30 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
       </div>
 
       <div style={{ maxWidth: 800, margin: "0 auto", padding: "12px 16px" }}>
-        <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
-          {[
-            { k: "resumo", l: "📊 Resumo" },
-            { k: "pacientes", l: "👥 Pacientes" },
-            { k: "despesas", l: "💸 Despesas" },
-          ].map(({ k, l }) => (
-            <button key={k} onClick={() => setTab(k)} style={{
-              ...smallBtn(tab === k, C.green), flex: 1, textAlign: "center", padding: "7px 8px", fontSize: 12,
-            }}>{l}</button>
-          ))}
+          <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 4, flex: 1 }}>
+              {[
+                { k: "resumo", l: "📊 Resumo" },
+                { k: "pacientes", l: "👥 Pacientes" },
+                { k: "despesas", l: "💸 Despesas" },
+                { k: "comissao", l: "🤝 Comissão" },
+              ].map(({ k, l }) => (
+                <button key={k} onClick={() => setTab(k)} style={{
+                  ...smallBtn(tab === k, C.green), flex: 1, textAlign: "center", padding: "7px 8px", fontSize: 12,
+                }}>{l}</button>
+              ))}
+            </div>
+            <button onClick={exportCSV} style={{ ...ghostBtn({ padding: "5px 12px", fontSize: 10 }), color: C.blue }}>
+              📥 Exportar CSV
+            </button>
         </div>
+
+        <OnboardingDica storageKey="financeiro" dicas={[
+          { icon: "💰", titulo: "Bem-vindo ao Financeiro", texto: "Acompanhe recebimentos, despesas e comissões. Use as abas acima para navegar entre resumo, pacientes, despesas e comissão." },
+          { icon: "📥", titulo: "Registrando Recebimentos", texto: "Na aba Pacientes, clique em cada sessão para marcar como recebida. Clique novamente para estornar (com confirmação)." },
+          { icon: "📤", titulo: "Exportando Dados", texto: "Use o botão 'Exportar CSV' para baixar relatório financeiro em planilha. Ideal para contabilidade e análise." },
+          { icon: "🤝", titulo: "Comissão Automática", texto: "A aba Comissão calcula automaticamente 40% sobre os recebimentos de cada profissional." },
+        ]} />
 
         {tab === "resumo" && (
           <>
@@ -307,6 +366,49 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
           </>
         )}
 
+        {tab === "comissao" && (
+          <>
+            <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>🤝 Comissão por Profissional</div>
+              {comissaoProfissionais.length === 0 ? (
+                <div style={{ fontSize: 12, color: C.textMuted, textAlign: "center", padding: 16 }}>Nenhuma sessão no período.</div>
+              ) : (
+                comissaoProfissionais.map((prof, i) => {
+                  const pctP = prof.total > 0 ? (prof.recebido / prof.total) * 100 : 0;
+                  return (
+                    <div key={i} style={{ marginBottom: 10, padding: "8px 0", borderBottom: `1px solid ${C.borderLight}` }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <div style={{ width: 26, height: 26, background: C.greenBg, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, color: C.green }}>
+                            {prof.nome[0]?.toUpperCase()}
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{prof.nome}</span>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: C.green }}>R$ {prof.recebido.toFixed(2)}</div>
+                          <div style={{ fontSize: 10, color: C.textMuted }}>{prof.sessions} sessões · R$ {prof.total.toFixed(2)}</div>
+                        </div>
+                      </div>
+                      <div style={{ height: 3, background: C.surface, borderRadius: 99, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${pctP}%`, background: `linear-gradient(90deg, ${C.green}, ${C.greenDim})`, borderRadius: 99, transition: "width 0.3s" }} />
+                      </div>
+                      <div style={{ fontSize: 10, color: C.textMuted, marginTop: 2 }}>
+                        Recebimento: {pctP.toFixed(0)}% · Comissão estimada (40%): <strong style={{ color: C.amber }}>R$ {(prof.recebido * 0.4).toFixed(2)}</strong>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            <div style={{ background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px" }}>
+              <div style={{ fontSize: 10, color: C.textMuted, lineHeight: 1.6 }}>
+                A comissão é calculada com base no valor recebido por profissional. A porcentagem padrão sugerida é 40% (configurável).<br />
+                <strong style={{ color: C.amber }}>Total em comissões: R$ {(comissaoProfissionais.reduce((a, p) => a + p.recebido * 0.4, 0)).toFixed(2)}</strong>
+              </div>
+            </div>
+          </>
+        )}
+
         {tab === "despesas" && (
           <>
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
@@ -393,8 +495,10 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
         )}
 
         <div style={{ marginTop: 16, fontSize: 10, color: C.textDim, textAlign: "center", lineHeight: 1.6 }}>
-          Dados salvos automaticamente no navegador.
-          {tab === "pacientes" && <><br />Clique no valor em <strong style={{ color: C.purple }}>roxo</strong> para personalizar o valor por sessão do paciente.</>}
+          Dados salvos automaticamente · <button onClick={exportCSV} style={{ background: "none", border: "none", color: C.blue, cursor: "pointer", fontSize: 10, textDecoration: "underline", padding: 0 }}>📥 Exportar CSV</button>
+          {tab === "pacientes" && <><br />Clique no valor em <strong style={{ color: C.purple }}>roxo</strong> para personalizar o valor por sessão do paciente. Clique em uma sessão para estornar.</>}
+          {tab === "comissao" && <><br />A comissão é calculada automaticamente com base nos recebimentos. Use a aba "Pacientes" para marcar recebimentos.</>}
+          {tab === "despesas" && <><br />Despesas fixas (aluguel, contas) podem ser registradas mensalmente. Categorias ajudam na organização fiscal.</>}
         </div>
       </div>
 

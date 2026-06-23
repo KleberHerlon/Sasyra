@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import Accordion from "../components/Accordion";
 import { calcBioimpedancia } from "../data/physicalAssessment";
-import { calcIMC } from "../data/peScales";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -73,7 +72,7 @@ function saveTOData(studentId, data) {
   try {
     const key = `to_data_${studentId}`;
     localStorage.setItem(key, JSON.stringify(data));
-  } catch {}
+  } catch { /* empty */ }
 }
 function loadTOData(studentId) {
   try {
@@ -206,7 +205,6 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
 
   // COPM-style goals
   const [copmGoals, setCopmGoals] = useState([]);
-  const [copmNewGoal, setCopmNewGoal] = useState("");
 
   // Barthel
   const [barthelAnswers, setBarthelAnswers] = useState({});

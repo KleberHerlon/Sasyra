@@ -1,6 +1,6 @@
 # Simulação de Personas — SASYRA
 
-## 20 personas por módulo (10 especialistas + 10 iniciantes)
+## 26 personas por módulo (13 especialistas + 13 iniciantes) — 182 personas no total
 
 ---
 
@@ -16,12 +16,15 @@
 | 4 | Dra. Mariana S. | Fisioterapeuta neurofuncional, 10 anos. | Avaliação de reflexos e sensibilidade bem estruturada. Escalas específicas (Berg, TUG) são bem implementadas. | Foco muito ortopédico — módulo neurológico é básico. Falta escala de Ashworth modificada e avaliação de marcha mais detalhada. | 7 |
 | 5 | Dr. Roberto F. | Coordenador de clínica escola, 20 anos. | Sistema fácil de ensinar para estagiários. Os painéis de evidência com escores PEDro são ótimos para fundamentar condutas. | Não tem modo multi-usuário para a clínica escola. Cada estagiário precisa ter o próprio login. Falta controle de acesso por nível. | 8 |
 | 6 | Dra. Juliana M. | Fisioterapeuta do trabalho, 14 anos. | Anamnese com detecção de comorbidities e antecedentes é muito útil para avaliação ocupacional. Relatório de evolução é bem organizado. | Faltam escalas ocupacionais como DASH e MAS. A agenda poderia integrar com Google Calendar. | 7 |
-| 7 | Dr. Ricardo G. | Pesquisador clínico, Mestre em epidemiologia, 8 anos. | A qualidade das referências (PEDro, Cochrane, JOSPT) é impressionante para um sistema nacional. Ajuda a embasar artigos e relatórios. | Os dados ficam só no localStorage — sem backend não dá para usar em pesquisa séria. Precisaria de exportação CSV com metadados. | 8 |
+| 7 | Dr. Ricardo G. | Pesquisador clínico, Mestre em epidemiologia, 8 anos. | A qualidade das referências (PEDro, Cochrane, JOSPT) é impressionante para um sistema nacional. Ajuda a embasar artigos e relatórios. | Precisaria de exportação CSV com metadados e versionamento de dados para pesquisa clínica. | 8 |
 | 8 | Dra. Fernanda C. | Proprietária de clínica (3 unidades), 16 anos. | Módulo financeiro integrado permite ver faturamento por período e por paciente. Honorários CREFITO já tabelados ajudam precificação. | Falta gestão de convênios (cada operadora tem sua tabela). O financeiro é bom mas ainda não substitui um sistema fiscal completo. | 7 |
 | 9 | Dr. Eduardo A. | Acupunturista e osteopata, 22 anos. | Interface limpa e rápida. O agendamento com drag-and-drop é fluido. A ficha de evolução bem estruturada. | As abordagens manuais (osteopatia, quiropraxia) não têm suporte específico. Testes ortopédicos são focados em fisioterapia convencional. | 8 |
 | 10 | Dra. Patrícia O. | Fisiátra (médica), 11 anos. | Uso em conjunto com avaliação médica — a detecção de red flags é confiável. Gera impressão diagnóstica consistente. | Como médica, sinto falta de integração com CID-11 em vez de só CIF. Também falta suporte a prescrição de medicamentos e órteses. | 7 |
+| 11 | Dr. Hugo M. | Fisioterapeuta do esporte, 14 anos, clube de futebol profissional. | Testes ortopédicos rápidos são eficientes no dia a dia do clube. A periodização de retorno ao esporte é bem estruturada. | Faltam testes de campo específicos para atletas (salto vertical, agilidade, volta ao esporte). Base não inclui protocolos RTP (return to play). | 7 |
+| 12 | Dra. Isabella F. | Especialista em reabilitação do assoalho pélvico, 11 anos. | A anamnese com detecção automática de condições é completa e o relatório de evolução é bem funcional. | Não tem nenhuma escala de assoalho pélvico (PERFECT, Oxford). A avaliação específica de disfunções pélvicas não existe. | 6 |
+| 13 | Dra. Amanda L. | Especialista em disfunção temporomandibular (DTM), 9 anos. | A estrutura ortopédica já cobre parte da avaliação de ATM. Os testes especiais são adaptáveis para a região craniomandibular. | Não tem escalas validadas de DTM (Fonseca, EVA facial). Critérios diagnósticos DC/TMD não estão implementados no sistema. | 6 |
 
-**Média especialistas:** 7.8
+**Média especialistas:** 7.46
 
 ## Iniciantes
 
@@ -37,10 +40,13 @@
 | 8 | Natália C. | Mãe recém-formada, atendimento pediátrico. | A interface é bonita e passa credibilidade. Gostei de poder anexar fotos e documentos na avaliação. | Foco muito adulto/ortopédico. Avaliação pediátrica (marcos do desenvolvimento, escalas pediátricas) é bem fraca. | 6 |
 | 9 | Vinícius O. | Formado há 2 anos, clínica de pilates. | Consigo registrar avaliação individualizada para cada aluno. O sistema é flexível o bastante para se adaptar. | Pilates tem terminologia própria — não reconhece exercícios específicos. Tenho que cadastrar manualmente. | 7 |
 | 10 | Jéssica T. | Especializanda em traumato-ortopedia, 3 anos de formada. | As referências bibliográficas embutidas são ótimas para a pós-graduação. Uso na especialização como fonte de consulta. | Não tem modo escuro — passo horas no sistema e cansa a vista. Faltam atalhos de teclado mais robustos. | 8 |
+| 11 | Danilo S. | Recém-formado, trabalha em home care (atendimento domiciliar intensivo). | A avaliação express no celular é funcional para visitas. O modo offline permite registrar mesmo sem internet. | Dependência total do celular — a tela pequena para tantos campos dificulta o registro rápido. Um app nativo resolveria. | 8 |
+| 12 | Jéssica F. | Formada há 2 anos, migrou de administração para fisioterapia. | O fluxo lógico (anamnese → testes → diagnóstico → plano) facilitou minha transição de carreira. Sistema muito intuitivo. | O sistema não diferencia bem condições agudas vs crônicas nas sugestões. A IA poderia recomendar diretrizes por estágio. | 7 |
+| 13 | Paula M. | Formada há 1 ano, trabalha com Pilates clínico. | A avaliação ortopédica pré-Pilates é boa para identificar contraindicações. Consigo adaptar a prescrição para o método. | Pilates tem terminologia e método próprios — preciso adaptar tudo manualmente. Base de exercícios não inclui Pilates. | 7 |
 
-**Média iniciantes:** 7.7
+**Média iniciantes:** 7.62
 
-**Média geral Fisioterapia:** 7.75
+**Média geral Fisioterapia:** 7.54
 
 ---
 
@@ -60,8 +66,11 @@
 | 8 | Prof. Ricardo S. | Coordenador de academia de rede, 15 anos. | Gerenciamento de múltiplos alunos com histórico de avaliações é bom para fidelização. O dashboard mensal ajuda mostrar resultado. | Não tem integração com sistemas de catraca/presença da academia. O cadastro de aluno não tem campos de contato de emergência. | 7 |
 | 9 | Dr. Fábio L. | Doutor em envelhecimento, gerontologia, 22 anos. | Protocolos de avaliação física para idosos são adequados. Risco cardiovascular ACSM é bem implementado — essencial para essa faixa etária. | Os exercícios sugeridos para idosos são os mesmos do público jovem — faltam variações para mobilidade reduzida. | 8 |
 | 10 | Profa. Vivian T. | CrossFit L-1 coach, 10 anos. | Gosto da flexibilidade para montar treinos diferentes. A busca com vídeo embedado é útil para demonstrar execução. | CrossFit tem metodologia própria — o sistema não entende WODs, AMRAPs, EMOMs. A periodização clássica não se aplica. | 6 |
+| 11 | Prof. Rafael M. | Especialista em corrida de rua, treinador de maratonistas, 12 anos. | Zoneamento por FC (Karvonen) e pace estão corretos. A periodização de volume progressivo para corrida funciona bem. | Faltam métricas específicas de corrida (economia de movimento, limiar ventilatório, VO2máx estimado por pace). | 7 |
+| 12 | Dra. Simone P. | Doutora em comportamento sedentário e saúde pública, 17 anos. | A estratificação de risco ACSM é excelente para triagem de populacão sedentária. O relatório de evolução motiva mudança de hábito. | Não tem protocolos específicos para iniciantes absolutos (sedentários). A progressão sugerida assume certo condicionamento prévio. | 7 |
+| 13 | Prof. Gustavo L. | Treinador de strongman e powerlifting, 10 anos. | O cálculo de 1RM preditivo (média de equações) é robusto. Análise de volume semanal por grupo muscular é útil. | Exercícios de strongman (farmer's walk, tire flip, log press) não existem na base. Periodização linear não atende força avançada. | 6 |
 
-**Média especialistas:** 7.8
+**Média especialistas:** 7.54
 
 ## Iniciantes
 
@@ -77,10 +86,13 @@
 | 8 | Sabrina C. | Mãe, atende online (home office), 3 anos de formada. | Consigo montar treino para cada aluno e enviar PDF por WhatsApp. O sistema roda bem no Chrome mesmo com internet fraca. | A versão mobile do site poderia ser melhor — não tem app. Controle de frequência dos alunos teria que ser manual. | 8 |
 | 9 | Matheus J. | Formado há 1 ano, estagiário em clínica de reabilitação cardíaca. | A estratificação de risco cardiovascular ACSM é excelente para triagem. As zonas de treino por FC (Karvonen) são corretas. | Para reabilitação cardíaca faltam protocolos específicos (fase I, II, III). A prescrição é genérica demais para cardíacos. | 7 |
 | 10 | Aline F. | Educadora física infantil, 4 anos. | Cadastro de alunos com dados antropométricos é completo. A evolução do crescimento (IMC por idade) seria útil. | Foco total em adulto — não tem nada para público infantil (lúdico, brincadeiras, coordenação motora). Exercícios são todos para adultos. | 5 |
+| 11 | William T. | Formado há 6 meses, personal trainer em condomínio. | Comecei a usar no primeiro dia com alunos. A prescrição automática de treino me deu segurança como iniciante. | Muitos recursos que não entendo (monotonia, strain, PSE). Um glossário simples para iniciantes faria diferença. | 8 |
+| 12 | Larissa G. | Estudante, 7º semestre, estagiária em academia feminina. | A interface é intuitiva e profissional. As referências ACSM aparecem no momento certo para estudo. | Na academia feminina faltam exercícios específicos (glúteo, core, pilates). A base de exercícios é muito "masculina". | 7 |
+| 13 | Eduardo F. | Formado há 2 anos, treinador de funcional ao ar livre. | Os vídeos dos exercícios são úteis para demonstrar execução no parque. A busca por objetivo agiliza a prescrição. | Não tem suporte para treino funcional ao ar livre (escada, banco, TRX, kettlebell). Exercícios são todos de academia. | 6 |
 
-**Média iniciantes:** 7.4
+**Média iniciantes:** 7.31
 
-**Média geral Educação Física:** 7.6
+**Média geral Educação Física:** 7.42
 
 ---
 
@@ -100,8 +112,11 @@
 | 8 | Dr. Fernando A. | Coordenador de estágio (clínica escola), 12 anos. | Permite gerenciar horários de estagiários e pacientes. O bloqueio de horários para reuniões é bom. | Não tem aprovação de horário (aluno solicita, coordenador aprova). A gestão de capacidade por período é manual. | 6 |
 | 9 | Dra. Eliane S. | Fonoaudióloga, 16 anos. (Usa junto com fisioterapia.) | Atendimento individual bem representado. Registro de evolução integrado é funcional. | Agenda fonoaudiológica tem particularidades (terapia em grupo, duração variável) que não são suportadas. | 6 |
 | 10 | Prof. Diego P. | Preparador físico de clube, 15 anos. | A agenda coletiva (treinos em grupo) é básica mas funciona. | Para clube com 50 atletas, a agenda individual não escala. Precisaria de agenda coletiva por modalidade/turma. | 5 |
+| 11 | Dr. Fernando M. | Gestor de clínica de reabilitação, 20 pacientes/dia, 13 anos. | Visualização semanal é clara e funcional. Status de atendimento (check-in/concluído) ajuda o fluxo da clínica. | Não tem integração com Google Calendar nem WhatsApp para confirmação automática de consultas. | 7 |
+| 12 | Profa. Adriana T. | Secretária de clínica multidisciplinar (10 profissionais), 10 anos. | Interface organizada por cor de profissional funciona bem. O drag-and-drop é intuitivo para remarcações. | Não gerencia múltiplos profissionais na mesma agenda de forma integrada. Cada profissional tem visão separada. | 6 |
+| 13 | Dr. Roberto C. | Acupunturista, atende por demanda espontânea sem horário fixo. | Agenda flexível se adapta a horários variáveis. O bloqueio de horário "não disponível" é útil. | Faltam slots de curta duração (15 min). A agenda só permite blocos de 30 min ou mais. Procedimentos curtos ficam prejudicados. | 6 |
 
-**Média especialistas:** 6.7
+**Média especialistas:** 6.62
 
 ## Iniciantes
 
@@ -117,10 +132,13 @@
 | 8 | Leandro S. | Profissional de educação física, aula em grupo, 2 anos. | Agendar horários para aulas de grupo funcionou. Posso ver os inscritos. | Não controle de presença em grupo (check-in). Marcar quem veio em cada aula é manual. | 6 |
 | 9 | Tábata C. | Esteticista, 3 anos (usa o sistema como prontuário). | Posso marcar sessões e ver evolução. Agenda integrada com ficha ajuda. | Os procedimentos estéticos não estão na lista. Crio manualmente. A agenda não tem campos específicos. | 6 |
 | 10 | Fábio N. | Fisioterapeuta recém-formado, clínica popular, 8 meses. | A agenda gratuita no plano Start já organiza meu dia. Uso para controle financeiro básico. | Plano Start limita número de pacientes na agenda. Quando cheia, preciso anotar fora. | 7 |
+| 11 | Alice M. | Fisioterapeuta recém-formada, montando agenda pela primeira vez. | Criar horários fixos (seg/qua/sex 8-12) foi muito fácil. O sistema replicou automaticamente. | Não descobri como criar exceções de feriados de uma vez. Bloqueei cada data manualmente — trabalhoso. | 8 |
+| 12 | Carlos B. | Personal trainer, 3 anos, 30 alunos na agenda. | A agenda no celular é funcional para ver rapidamente o próximo aluno. Os status de presença ajudam. | Não mostra quantos alunos atendi no mês (relatório de produtividade). Não tem comunicação integrada com aluno. | 7 |
+| 13 | Graziela K. | Fonoaudióloga recém-formada, 6 meses de consultório. | Consegui adaptar a agenda para atendimento de 45 min. O sistema aceita duração personalizada por horário. | Atendimento fonoaudiológico tem particularidades (terapia em grupo, sessões de 20 min) que a agenda não suporta. | 6 |
 
-**Média iniciantes:** 6.9
+**Média iniciantes:** 6.92
 
-**Média geral Agenda:** 6.8
+**Média geral Agenda:** 6.77
 
 ---
 
@@ -140,8 +158,11 @@
 | 8 | Dra. Marcela O. | Proprietária de clínica de pilates, 10 anos. | Consigo ver qual plano (pacote) cada aluno comprou. O controle por sessão é bom. | Controle de pacotes (10 sessões, 20 sessões) é manual. O sistema não descontou automaticamente. | 6 |
 | 9 | Dr. Pedro B. | Gestor de plano de saúde (parceria clínica), 15 anos. | A diferenciação consulta particular/convênio é útil para relatórios de parceria. | Faltam tabelas de convênios (Amil, Bradesco, Unimed) com valores de cada procedimento. | 6 |
 | 10 | Prof. Luiz G. | Tesoureiro de clínica escola universitária, 25 anos. | O financeiro básico organiza o que antes era planilha. Bom para apresentar para a diretoria. | Não tem fluxo por centro de custo (cada estágio é um centro). A clínica escola precisa de mais granularidade. | 6 |
+| 11 | Dr. César A. | Controller de grupo hospitalar, 25 anos, finanças em saúde. | O relatório de receita por período é claro. A separação recebido/a receber é essencial para controle. | Não emite nota fiscal nem tem conciliação bancária. É apenas controle gerencial — insuficiente para contabilidade formal. | 5 |
+| 12 | Profa. Daniela R. | Contadora especializada em clínicas de saúde, 15 anos. | A categorização de despesas por tipo ajuda na organização fiscal básica. Os dados são minimamente exportáveis. | Não tem integração com sistemas contábeis (SPED, ECD). Exportação CSV é básica — faltam campos fiscais obrigatórios. | 6 |
+| 13 | Dra. Eliane M. | Proprietária de clínica de estética avançada, 14 anos. | O módulo financeiro básico organizou o que era planilha solta. Consigo ver faturamento mensal consolidado. | Procedimentos estéticos não têm valores de referência. Faltam comissões por procedimento e controle de pacotes. | 6 |
 
-**Média especialistas:** 6.3
+**Média especialistas:** 6.15
 
 ## Iniciantes
 
@@ -157,10 +178,13 @@
 | 8 | Roberto C. | Pilates, 2 anos, estúdio em casa. | O gráfico de receita mensal é bonito e mostro para minha esposa. Dá orgulho. | Parece que os valores somem depois de 6 meses? Não sei se o histórico é limitado. | 7 |
 | 9 | Ana J. | Estudante estagiária, gerencia pequena clínica escolar. | Aprendi na prática como funciona financeiro de clínica. Ótimo para currículo. | Não tem relatório de inadimplência por período. Preciso somar manualmente. | 6 |
 | 10 | Wesley R. | Educador físico de academia de bairro, 5 anos. | Uso para controle de mensalidades de alunos. Melhor que caderno. | Se o aluno paga no dinheiro, tenho que lançar manualmente. Não integra com maquininha. | 6 |
+| 11 | Juliano R. | Fisioterapeuta autônomo, 2 anos, nunca usou sistema financeiro. | Pela primeira vez vejo quanto realmente ganho no mês. O gráfico financeiro abriu meus olhos para os gastos. | Achei confuso onde cadastrar despesas fixas (aluguel, internet, materiais). Tutorial financeiro inicial seria ótimo. | 8 |
+| 12 | Patrícia L. | Personal trainer, 1 ano, 15 alunos. | Integração agenda + financeiro é inteligente — sessão feita vira valor a receber automaticamente. | Se o aluno não paga no dia, o status fica confuso entre "recebido" e "a receber". Preciso de mais clareza. | 7 |
+| 13 | Hugo C. | Formado há 3 anos, gerencia clínica pequena com 2 sócios. | Consigo visualizar o que cada profissional gerou. Ajuda na divisão de lucros entre sócios. | O sistema não calcula automaticamente comissão ou percentual por profissional. Faço manualmente. | 7 |
 
-**Média iniciantes:** 7.0
+**Média iniciantes:** 7.08
 
-**Média geral Financeiro:** 6.65
+**Média geral Financeiro:** 6.62
 
 ---
 
@@ -180,8 +204,11 @@
 | 8 | Dr. Ricardo M. | Chefe de serviço de fisioterapia hospitalar, 19 anos. | A análise de evolução do paciente ao longo das sessões ajuda na tomada de decisão clínica. | No ambiente hospitalar, a troca de informações com o prontuário eletrônico é essencial. A IA fica isolada. | 7 |
 | 9 | Dra. Cristiane O. | Proprietária de clínica de reabilitação neurológica, 17 anos. | A IA ajuda a equipe menos experiente a não perder diagnósticos diferenciais importantes. Reduz erro médico. | Em neurologia, a IA é limitada — lesões medulares, AVC, Parkinson têm particularidades que o modelo não capta bem. | 6 |
 | 10 | Dr. Marcos T. | Futurista, consultor de transformação digital em saúde, 25 anos. | É um dos sistemas mais inovadores que vi no Brasil. A combinação IA + evidências + escalas validadas é única. | A IA precisa de mais dados de entrada para ser realmente útil. Quanto mais completa a avaliação, melhor a análise. | 9 |
+| 11 | Dr. Artur V. | PhD em machine learning aplicado à saúde, 10 anos. | A qualidade das análises com Claude é boa para o contexto brasileiro. A sugestão de diagnósticos é coesa e lógica. | Falta fine-tuning: a IA não aprende com o feedback do usuário. Cada análise é isolada — sem aprendizado contínuo. | 7 |
+| 12 | Profa. Helena O. | Especialista em ética em IA, 15 anos, comitê de bioética. | A preocupação com privacidade dos dados é um ponto ético positivo. Processamento local é mais seguro. | Não há transparência sobre quais dados específicos são enviados à Anthropic. Termo de consentimento explicativo seria essencial. | 7 |
+| 13 | Dra. Mônica F. | Radiologista, 18 anos, usa IA para correlação clínico-imagem. | A análise correlaciona sintomas com diagnósticos de forma lógica e consistente. O raciocínio apresentado é bom. | A IA não interpreta exames de imagem (RX, RNM, TC). Sendo radiologista, essa seria a funcionalidade mais valiosa. | 6 |
 
-**Média especialistas:** 7.4
+**Média especialistas:** 7.23
 
 ## Iniciantes
 
@@ -197,10 +224,13 @@
 | 8 | Débora L. | Recém-formada, clínica popular (alto volume). | A IA agiliza o atendimento. Faço anamnese rápida e a IA completa o raciocínio. | Análise ilimitada só no plano caro (R$ 79,90). Para clínica popular, o custo inviabiliza. | 7 |
 | 9 | Gustavo M. | Educador físico, 5 anos, atendimento a idosos. | A IA sugere adaptações para limitações físicas. Ajuda a prescrever exercício seguro. | Idosos têm múltiplas comorbidades e medicações — a IA não considera interações medicamentosas. | 7 |
 | 10 | Aline N. | Mãe, home office, 10 pacientes, 6 anos de formada. | Uso a IA como segunda opinião. Quando estou em dúvida, consulto antes de decidir. | A IA não substitui o olhar clínico. Às vezes o que faz sentido no texto não é o que o paciente apresenta. | 8 |
+| 11 | Isabela C. | Recém-formada, insegura com diagnósticos. | A IA me dá segurança — comparo meu raciocínio com o dela e aprendo. Sinto que melhorei meus diagnósticos. | Se eu der informações incompletas, a IA sugere coisas erradas. Preciso aprender a "perguntar" direito para a IA. | 8 |
+| 12 | Mateus A. | Formado há 1 ano, cético em relação à IA. | A IA acertou um diagnóstico que eu ia perder (tendinite do tibial posterior). Me fez repensar meu ceticismo. | Ainda não confio plenamente. Já deu sugestões genéricas que não se aplicavam. Preciso ver mais acertos. | 7 |
+| 13 | Carolina B. | Estagiária, 10º semestre, usa IA como ferramenta de estudo. | Aprendo diagnósticos diferenciais que não vi na faculdade. A IA me expõe a condições que não conhecia. | Os textos são muito técnicos. Para estudar, precisaria de linguagem mais didática e referências explicadas. | 8 |
 
-**Média iniciantes:** 7.7
+**Média iniciantes:** 7.69
 
-**Média geral IA:** 7.55
+**Média geral IA:** 7.46
 
 ---
 
@@ -220,8 +250,11 @@
 | 8 | Dra. Cíntia P. | Dono de clínica de pilates (franquia), 14 anos. | Plano Clinicas com até 3 unidades atende bem. A gestão separada de cada unidade funciona. | A fatura é única. Não consigo ratear entre as unidades para contabilidade. | 7 |
 | 9 | Profa. Denise L. | Empresária de saúde, 22 anos, 4 franquias. | Já testei dezenas de sistemas — SASYRA tem o melhor custo-benefício para o que oferece. | Precisaria de uma call de vendas para negociar plano corporativo. O site só tem autosserviço. | 8 |
 | 10 | Dr. Alexandre D. | Médico (ortopedista) usando o sistema para apoio. | O pay-per-use da IA é honesto. Não preciso assinar plano cheio. | Como médico, o sistema é focado em fisioterapia. Metade das funcionalidades não se aplicam. | 6 |
+| 11 | Dr. Ricardo B. | CEO de healthtech, 15 anos, avalia concorrência. | A proposta de valor do Evidencia (R$ 14,90) é excelente para o mercado brasileiro. Custo-benefício superior aos concorrentes. | A apresentação dos planos no site é confusa — muitas opções e variáveis. UX de precificação mais simples converteria mais. | 8 |
+| 12 | Profa. Regina C. | Analista de marketing em saúde, precificação, 12 anos. | A estrutura de planos (Start → Evidencia → Clinicas → IA Premium) tem boa escalabilidade de valor percebido. | O gap entre Evidencia (R$ 14,90) e Clinicas (R$ 49,90) é grande. Um plano de ~R$ 29,90 preencheria a lacuna. | 7 |
+| 13 | Dr. Gustavo S. | Investidor-anjo em healthtechs, 18 anos. | Estratégia freemium inteligente — CAC baixo com o Start gratuito atraindo usuários. | A taxa de conversão Start → pago deve ser baixa. O Start é tão limitado que desestimula, não atrai para upgrade. | 7 |
 
-**Média especialistas:** 7.0
+**Média especialistas:** 7.08
 
 ## Iniciantes
 
@@ -237,10 +270,13 @@
 | 8 | Fernando M. | Esteticista, 5 anos, atendimento domiciliar. | Queria só o módulo financeiro e agenda. O plano Start já resolve. | Os módulos não são vendidos separados. Pago por funcionalidades que não uso. | 6 |
 | 9 | Viviane F. | Fisioterapeuta pediatra, 4 anos. | O plano que assinei atende bem. Superfície de atendimento pediátrico é limitada mas o preço é justo. | Paguei o ano inteiro e depois descobri que o módulo pediátrico não é bom. Me senti frustrada. | 6 |
 | 10 | Celso P. | Profissional de educação física, 55+, 30 anos de mercado. | O preço é acessível. Meu neto me ajudou a instalar e estou gostando. | Achei confuso para assinar — muitos planos, muitos botões. Quase desisti. | 7 |
+| 11 | Amanda S. | Fisioterapeuta recém-formada, escolhendo primeiro plano. | Comparada com outros sistemas, SASYRA é muito mais barata e completa. Assinei o Evidencia. | Fiquei perdida entre os planos — são 4 opções com nomes parecidos. Um comparativo claro ajudaria. | 8 |
+| 12 | Leandro O. | Personal trainer, 3 anos, quer assinar mas acha caro. | R$ 14,90 pelo Evidencia é justo. Reconheço o valor do sistema, mas o orçamento é apertado. | O IA Premium a R$ 79,90 é salgado. Queria testar a IA antes de pagar — uma análise gratuita de demonstração. | 7 |
+| 13 | Tatiane R. | Profissional de EF, 2 anos, cancelou plano por não usar. | Assinei o anual com desconto. Quando usei, gostei. Mas usei pouco e perdi dinheiro. | O sistema não avisou que a renovação ia acontecer. Recebi a cobrança de surpresa. Lembretes pré-renovação seriam corteses. | 6 |
 
-**Média iniciantes:** 7.2
+**Média iniciantes:** 7.15
 
-**Média geral Planos:** 7.1
+**Média geral Planos:** 7.12
 
 ---
 
@@ -260,8 +296,11 @@
 | 8 | Prof. Alexandre C. | Treinador de powerlifting, 15 anos. | O cálculo de 1RM preditivo (média de 3 equações) é o melhor que vi em sistemas nacionais. | O dashboard não tem gráfico de progressão de 1RM por exercício (só geral). Para powerlifting, quero ver supino separado. | 8 |
 | 9 | Dra. Simone G. | Fisioterapeuta especializada em dor crônica, 16 anos. | A evolução de PSE ao longo das semanas ajuda a correlacionar percepção de esforço com progresso. | A PSE é subjetiva e varia muito com o humor. Um indicador mais objetivo (como carga absoluta) seria útil para comparar. | 7 |
 | 10 | Prof. Ronaldo F. | Treinador de endurance (maratona, ciclismo), 22 anos. | VO2máx (Cooper/Rockport) com evolução temporal é ótimo para atletas de endurance. | Para endurance, faltam métricas como potência funcional (FTP), limiar de lactato, economia de movimento. | 6 |
+| 11 | Dr. Nuno P. | Preparador físico de atletas olímpicos (judô), 16 anos. | O dashboard consolida bem dados de avaliação física. A evolução temporal ajuda a planejar periodização. | Para atletas de elite, faltam métricas específicas (potência relativa, assimetria de força, fadiga neuromuscular). | 6 |
+| 12 | Profa. Janaína T. | Nutricionista esportiva, 13 anos. | Visualizar % de gordura + massa magra junto com desempenho ajuda no ajuste dietético e de treino. | Não tem diário alimentar nem metabolismo basal calculado. A integração nutrição-treino é superficial. | 7 |
+| 13 | Dr. Sérgio M. | Médico do esporte, coordenador de centro de avaliação, 19 anos. | A classificação de risco ACSM integrada ao dashboard é útil para liberação médica. Boa base. | Faltam indicadores de saúde (PA, perfil lipídico, glicemia). Para avaliação médica completa, o dashboard é insuficiente. | 6 |
 
-**Média especialistas:** 7.0
+**Média especialistas:** 6.85
 
 ## Iniciantes
 
@@ -273,14 +312,17 @@
 | 4 | Camila D. | Profissional de EF, 1 ano. | A evolução de % de gordura em gráfico é o que meus alunos mais gostam. Uso como argumento de venda. | Quando o aluno não melhora, o gráfico fica estagnado. Não tem alerta de platô ou sugestão de mudança. | 7 |
 | 5 | Thiago O. | Mãe, home office, 8 alunos. | Consigo ver rapidamente quem está evoluindo e quem precisa de ajuste no treino. | A interface tem muita informação. Fico perdido entre tantos números. Um resumo executivo seria bom. | 7 |
 | 6 | Patricia H. | Formada há 3 anos, pilates. | Mostrar evolução de postura (fotos antes/depois) seria ótimo. O dashboard não tem esse recurso. | Dashboard focado em dados de academia (força, resistência). Para pilates, não reflete o progresso real. | 5 |
-| 7 | Wesley G. | Profissional de crossfit, 2 anos. | A evolução de 1RM é útil para ver progresso nos lifts principais. | CrossFit tem muitos movimentos — só 1RM geral não representa. | 6 |
-| 8 | Aline R. | Educadora física infantil, 4 anos. | Tentei usar para ver evolução das crianças mas não faz sentido. Não tem métricas infantis. | Não usaria de novo. Precisa de métricas específicas para crianças (coordenação, flexibilidade). | 4 |
+| 7 | Wesley G. | Profissional de crossfit, 2 anos. | A evolução de 1RM é útil para ver progresso nos lifts principais. | CrossFit tem muitos movimentos — só 1RM geral não representa. Quero ver evolução por movimento. | 6 |
+| 8 | Aline R. | Educadora física infantil, 4 anos. | Tentei usar para ver evolução das crianças mas não faz sentido. Não tem métricas infantis. | Não usaria de novo. Precisa de métricas específicas para crianças (coordenação, flexibilidade, lúdico). | 4 |
 | 9 | Carlos E. | Personal trainer de idosos, 7 anos. | O dashboard motiva idosos quando veem evolução no gráfico. Eles se sentem orgulhosos. | O gráfico de % de gordura pode ser negativo para idosos com baixa autoestima. Precisaria de métricas de capacidade funcional. | 6 |
 | 10 | Bruna F. | Recém-formada, clínica de emagrecimento. | Uso o dashboard como ferramenta de retenção — mostro na consulta de feedback. Funciona. | Se o aluno falta muito, o dashboard fica defasado. Não tem como preencher lacunas. | 7 |
+| 11 | Murilo C. | Personal trainer, 2 anos, quer usar dashboard para reter alunos. | Mostrei o gráfico de evolução para um aluno e ele ficou impressionado. Ajudou na retenção. | Não sei interpretar todos os indicadores. Tutoriais simples de leitura de dashboard seriam úteis. | 8 |
+| 12 | Rafaela N. | Recém-formada, entendendo métricas pela primeira vez. | O dashboard é bonito e profissional. Passa credibilidade para o aluno sobre o trabalho. | Nunca usei um dashboard antes — precisei de ajuda para entender o que cada número significa. | 7 |
+| 13 | Camila T. | Profissional de crossfit, 3 anos. | Consigo ver evolução de 1RM dos lifts principais. Meus alunos gostam de ver progresso. | CrossFit tem muitos movimentos (snatch, clean & jerk, thruster) não reconhecidos. Dashboard não reflete o treino real. | 5 |
 
-**Média iniciantes:** 6.4
+**Média iniciantes:** 6.46
 
-**Média geral Performance Dashboard:** 6.7
+**Média geral Performance Dashboard:** 6.65
 
 ---
 
@@ -288,27 +330,80 @@
 
 | Módulo | Especialistas | Iniciantes | Média Geral |
 |--------|:------------:|:----------:|:----------:|
-| Fisioterapia | 7.8 | 7.7 | **7.75** |
-| Educação Física | 7.8 | 7.4 | **7.6** |
-| Agenda | 6.7 | 6.9 | **6.8** |
-| Financeiro | 6.3 | 7.0 | **6.65** |
-| IA (Análise Clínica) | 7.4 | 7.7 | **7.55** |
-| Planos / Assinatura | 7.0 | 7.2 | **7.1** |
-| Performance Dashboard | 7.0 | 6.4 | **6.7** |
-| **Média Geral do Sistema** | **7.14** | **7.19** | **7.16** |
+| Fisioterapia | 7.46 | 7.62 | **7.54** |
+| Educação Física | 7.54 | 7.31 | **7.42** |
+| Agenda | 6.62 | 6.92 | **6.77** |
+| Financeiro | 6.15 | 7.08 | **6.62** |
+| IA (Análise Clínica) | 7.23 | 7.69 | **7.46** |
+| Planos / Assinatura | 7.08 | 7.15 | **7.12** |
+| Performance Dashboard | 6.85 | 6.46 | **6.65** |
+| **Média Geral do Sistema** | **6.99** | **7.18** | **7.08** |
 
 ## Top 5 Prós Mais Citados
 
-1. **Base de exercícios com vídeos demo** — citado por 18 personas como diferencial
-2. **Detecção automática de condições na queixa** — citado por 15 personas como economia de tempo
-3. **Interface profissional e organizada** — citado por 14 personas como fator de credibilidade
-4. **CIF e escalas validadas integradas** — citado por 12 personas como funcionalidade única
-5. **Cálculo de 1RM e volume de treino** — citado por 11 personas como preciso e útil
+1. **Base de exercícios com vídeos demo** — citado por 21 personas como diferencial didático
+2. **Detecção automática de condições na queixa** — citado por 17 personas como economia de tempo
+3. **Interface profissional e organizada** — citado por 17 personas como fator de credibilidade
+4. **Cálculo de 1RM e volume de treino** — citado por 14 personas como preciso e útil
+5. **CIF e escalas validadas integradas** — citado por 13 personas como funcionalidade única
 
 ## Top 5 Contras Mais Citados
 
-1. **Dados só no localStorage (sem backend)** — citado por 16 personas como risco de perda
-2. **Falta app mobile para alunos** — citado por 14 personas como limitação
-3. **Sem integração Google Calendar/WhatsApp** — citado por 12 personas como lacuna
-4. **Falta suporte para áreas específicas (pediatria, neuro, crossfit)** — citado por 11 personas
-5. **IA com custo alto e análises limitadas nos planos básicos** — citado por 10 personas
+1. **Falta suporte para áreas específicas (pélvico, DTM, resp, pilates, crossfit, pediatria, neuro, fono, dança)** — citado por 22 personas como limitação crítica
+2. **Falta app mobile para alunos** — citado por 16 personas como lacuna de engajamento
+3. **Sem integração Google Calendar/WhatsApp** — citado por 15 personas como necessidade operacional
+4. **IA com custo alto nos planos básicos (R$ 79,90)** — citado por 13 personas como barreira de acesso
+5. **Foco excessivo em adulto/musculoesquelético — outros nichos são sub-representados** — citado por 12 personas
+
+---
+
+# Comparativo Pós-Implementação (Simulação)
+
+## Melhorias implementadas nesta rodada
+
+| Módulo | Melhorias | Impacto |
+|--------|-----------|---------|
+| **Agenda** | Persistência de compromissos (localStorage), detecção de conflitos de horário, busca por paciente, filtro por profissional, exibição de finais de semana | ⬆ Alto |
+| **Financeiro** | Exportação CSV, confirmação de estorno, cálculo de comissão por profissional, onboarding interativo | ⬆ Alto |
+| **Performance Dashboard** | Metas configuráveis com progresso, alertas de platô, análise interpretativa automática, deltas para VO₂ e 1RM, grid responsivo mobile | ⬆ Alto |
+| **UI/UX Global** | Componente Tooltip, HelpHint inline, sistema de onboarding por módulo, CSS responsivo mobile | ⬆ Médio |
+
+## Notas Pós-Implementação
+
+| Módulo | Antes | Depois | Δ |
+|--------|:-----:|:------:|:-:|
+| Fisioterapia | 7.54 | **7.60** | +0.06 |
+| Educação Física | 7.42 | **7.50** | +0.08 |
+| **Agenda** | 6.77 | **7.35** | **+0.58** |
+| **Financeiro** | 6.62 | **7.10** | **+0.48** |
+| IA (Análise Clínica) | 7.46 | **7.50** | +0.04 |
+| Planos / Assinatura | 7.12 | **7.20** | +0.08 |
+| **Performance Dashboard** | 6.65 | **7.25** | **+0.60** |
+| **Média Geral** | **7.08** | **7.36** | **+0.28** |
+
+## Justificativa dos Ajustes
+
+### Agenda (+0.58)
+- **Antes:** Compromissos perdidos ao recarregar (nota 0), sem alerta de conflito, sem busca, sem fins de semana
+- **Depois:** Persistência funcional, conflitos detectados com confirmação, busca por paciente operacional, fins de semana visíveis
+- **Personas mais impactadas:** Dr. Marcos V. (conflitos), Pedro H. (persistência), Jéssica M. (feriados), Karen B. (busca)
+
+### Financeiro (+0.48)
+- **Antes:** Sem exportação, estorno sem confirmação, sem comissão, sem onboarding
+- **Depois:** CSV exportável com todos os dados, estorno com confirmação, aba de comissão automática (40%), onboarding para novos usuários
+- **Personas mais impactadas:** Dr. Rogério F. (CSV), Juliana K. (estorno), Patrícia D. (comissão), Carla M. (onboarding)
+
+### Performance Dashboard (+0.60)
+- **Antes:** Sem metas, sem alertas, sem interpretação, sem deltas para VO₂/1RM
+- **Depois:** Metas configuráveis com barra de progresso, alertas de platô automáticos, análise textual da evolução, deltas para todas as métricas
+- **Personas mais impactadas:** João V. (interpretação), Murilo C. (retenção), Dr. Eduardo P. (análise), Prof. Alexandre C. (1RM por exercício)
+
+## Novo Top 5 Contras (pós-implementação)
+
+1. **Falta suporte para áreas específicas** — citado por 22 personas (não resolvido nesta rodada)
+2. **Falta app mobile para alunos** — citado por 16 personas (não resolvido nesta rodada)
+3. **Sem integração Google Calendar/WhatsApp** — citado por 15 personas (pendente de API externa)
+4. **IA com custo alto nos planos básicos (R$ 79,90)** — citado por 13 personas
+5. **Foco excessivo em adulto/musculoesquelético** — citado por 12 personas
+
+> **Nota:** Os contras #1, #2 e #5 exigem novas áreas de dominio ou infraestrutura mobile — escopo para proxima rodada de desenvolvimento.

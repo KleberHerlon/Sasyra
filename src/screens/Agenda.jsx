@@ -379,6 +379,7 @@ function MiniForm({ patients, date, startTime, onSave, onClose, existingAppt }) 
       phone: patients.find(p => p.id === Number(f.patientId))?.telefone,
       convenio: patients.find(p => p.id === Number(f.patientId))?.convenio,
       hasRedFlag: existingAppt?.hasRedFlag || false,
+      professionalId: existingAppt?.professionalId || 1,
     });
     onClose?.();
   };
@@ -600,14 +601,23 @@ function MonthCell({ date, appointments, onApptClick, onDrop }) {
 export default function Agenda({ patients, onNavigateToPatient, onNavigate }) {
   const [view, setView] = useState("week");
   const [refDate, setRefDate] = useState(new Date());
-  const [appointments, setAppointments] = useState([]);
+  const [appointments, setAppointments] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("sasyra_appointments") || "[]"); }
+    catch { return []; }
+  });
   const [showMiniForm, setShowMiniForm] = useState(false);
   const [miniFormData, setMiniFormData] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
   const [detailAppt, setDetailAppt] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [dragDate, setDragDate] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterProfessional, setFilterProfessional] = useState("all");
+
+  useEffect(() => {
+    try { localStorage.setItem("sasyra_appointments", JSON.stringify(appointments)); }
+    catch {}
+  }, [appointments]);
 
   const weekDays = useMemo(() => getWeekDays(refDate), [refDate]);
   const monthGrid = useMemo(() => getMonthGrid(refDate), [refDate]);
@@ -657,7 +667,22 @@ export default function Agenda({ patients, onNavigateToPatient, onNavigate }) {
     }
   };
 
+  const hasConflict = (appt, excludeId) => {
+    return appointments.some(a => {
+      if (a.id === excludeId || a.id === appt.id) return false;
+      if (a.date !== appt.date) return false;
+      if (a.status === "cancelado_paciente" || a.status === "falta_justificada" || a.status === "falta_injustificada" || a.status === "bloqueado") return false;
+      const aStart = parseTime(a.start), aEnd = parseTime(a.end);
+      const bStart = parseTime(appt.start), bEnd = parseTime(appt.end);
+      return aStart < bEnd && aEnd > bStart;
+    });
+  };
+
   const handleSaveAppointment = (appt) => {
+    if (hasConflict(appt)) {
+      const msg = `Conflito de horário detectado!\n\nJá existe um agendamento neste período.\nDeseja agendar mesmo assim?`;
+      if (!window.confirm(msg)) return;
+    }
     setAppointments(prev => {
       const idx = prev.findIndex(a => a.id === appt.id);
       if (idx >= 0) {
@@ -714,6 +739,21 @@ export default function Agenda({ patients, onNavigateToPatient, onNavigate }) {
     [appointments]
   );
 
+  const filtered = useMemo(() => {
+    if (!searchTerm && filterProfessional === "all") return appointments;
+    return appointments.filter(a => {
+      if (filterProfessional !== "all") {
+        if (String(a.professionalId) !== filterProfessional) return false;
+      }
+      if (searchTerm) {
+        const q = searchTerm.toLowerCase();
+        const patient = patients.find(p => String(p.id) === String(a.patientId));
+        if (!patient?.nome?.toLowerCase().includes(q) && !String(a.patientId).includes(q)) return false;
+      }
+      return true;
+    });
+  }, [appointments, searchTerm, filterProfessional]);
+
   return (
     <div style={{ fontFamily: F, color: C.text, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <div style={{
@@ -759,6 +799,19 @@ export default function Agenda({ patients, onNavigateToPatient, onNavigate }) {
 
       <StatusLegend />
 
+      <div style={{ padding: "6px 16px", display: "flex", gap: 8, borderBottom: `1px solid ${C.borderLight}`, background: C.cardAlt }}>
+        <div style={{ flex: 1, position: "relative" }}>
+          <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="🔍 Buscar paciente na agenda…"
+            style={{ ...inp({ paddingLeft: 28, fontSize: 12 }), background: C.surface }} />
+        </div>
+        <select value={filterProfessional} onChange={(e) => setFilterProfessional(e.target.value)}
+          style={{ ...sel({ width: "auto", minWidth: 120, fontSize: 12 }) }}>
+          <option value="all">Todos profissionais</option>
+          <option value="me">Meus agendamentos</option>
+        </select>
+      </div>
+
       {view === "day" && (
         <div style={{ flex: 1, display: "flex", overflow: "auto" }}>
           <div style={{ minWidth: 60, borderRight: `1px solid ${C.border}` }}>
@@ -775,7 +828,7 @@ export default function Agenda({ patients, onNavigateToPatient, onNavigate }) {
           </div>
           <DayColumn
             date={refDate}
-            appointments={appointments}
+            appointments={filtered}
             onDrop={handleDrop}
             onApptClick={(d, t) => handleDoubleClickSlot(d, t)}
             compact={false}
@@ -798,11 +851,11 @@ export default function Agenda({ patients, onNavigateToPatient, onNavigate }) {
               </div>
             ))}
           </div>
-          {weekDays.slice(0, 5).map((d, i) => (
+          {weekDays.map((d, i) => (
             <DayColumn
               key={i}
               date={d}
-              appointments={appointments}
+              appointments={filtered}
               onDrop={handleDrop}
               onApptClick={handleDoubleClickSlot}
               compact={false}
