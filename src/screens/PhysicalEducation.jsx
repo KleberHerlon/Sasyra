@@ -13,6 +13,9 @@ import { calcIMC, calcRCQ, calcFCRegistro, FC_ZONA_CORES } from "../data/peScale
 import { savePseSessions, loadPseSessions } from "../data/physicalAssessment";
 import PerformanceDashboard from "./PerformanceDashboard";
 import { gerarPDFPerformance } from "../utils/pdfGenerator";
+import { readFisioterapiaRestrictions, getBlockedExercises, getRestrictionWarning, isAvaliacaoDesatualizada } from "../data/transitionBridge";
+import { generatePatientCode, getPatientCode, getPatientAppData, getPatientPlanStatus, activatePatientPlan } from "../data/patientApp";
+import PatientView from "./PatientView";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -96,7 +99,7 @@ function AudioField({ value, onChange, placeholder, rows }) {
   );
 }
 
-function ExerciseSearch({ onSelect, foco }) {
+function ExerciseSearch({ onSelect, foco, blockedExercises }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const focoParsed = foco ? parseFoco(foco) : [];
@@ -118,16 +121,18 @@ function ExerciseSearch({ onSelect, foco }) {
               ex.musculoPrimario.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(f.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")) ||
               ex.grupo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(f.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""))
             );
+            const isBlocked = blockedExercises?.has(ex.id);
             return (
-              <button key={ex.id} onClick={() => { onSelect(ex); setQuery(""); setResults([]); }}
-                style={{ width:"100%", background:"none", border:"none", borderBottom:`1px solid ${C.border}`, padding:"10px 14px", cursor:"pointer", textAlign:"left", color:C.text, fontFamily:F, display:"flex", alignItems:"center", gap:8 }}>
+              <button key={ex.id} onClick={() => { if (!isBlocked) { onSelect(ex); setQuery(""); setResults([]); }}}
+                style={{ width:"100%", background:"none", border:"none", borderBottom:`1px solid ${C.border}`, padding:"10px 14px", cursor: isBlocked ? "not-allowed" : "pointer", textAlign:"left", color: isBlocked ? C.textMuted : C.text, fontFamily:F, display:"flex", alignItems:"center", gap:8, opacity: isBlocked ? 0.5 : 1 }}>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:13, fontWeight:700 }}>{ex.nome}</div>
                   <div style={{ fontSize:11, color:C.textMuted }}>{ex.musculoPrimario} · {ex.equipamento}</div>
                 </div>
-                {ex.videoUrl && <span style={{ fontSize:11, color:C.red }}>▶</span>}
-                {ex.instrucoes?.length > 0 && <span style={{ fontSize:9, color:C.blue }}>📋</span>}
-                <span style={{ fontSize:10, color: matchFoco ? C.green : C.textMuted, background: matchFoco ? C.greenBg : "transparent", border:`1px solid ${matchFoco ? C.green+"30" : C.border}`, borderRadius:6, padding:"2px 8px" }}>{ex.grupo}</span>
+                {isBlocked && <span style={{ fontSize:10, color:C.red, fontWeight:700 }}>🚫</span>}
+                {!isBlocked && ex.videoUrl && <span style={{ fontSize:11, color:C.red }}>▶</span>}
+                {!isBlocked && ex.instrucoes?.length > 0 && <span style={{ fontSize:9, color:C.blue }}>📋</span>}
+                <span style={{ fontSize:10, color: isBlocked ? C.red : (matchFoco ? C.green : C.textMuted), background: isBlocked ? C.redBg : (matchFoco ? C.greenBg : "transparent"), border:`1px solid ${isBlocked ? C.red+"50" : (matchFoco ? C.green+"30" : C.border)}`, borderRadius:6, padding:"2px 8px" }}>{isBlocked ? "🚫 Restrito" : ex.grupo}</span>
               </button>
             );
           })}
@@ -137,7 +142,7 @@ function ExerciseSearch({ onSelect, foco }) {
   );
 }
 
-function ExerciseRow({ exercise, index, onRemove, onUpdate }) {
+function ExerciseRow({ exercise, index, onRemove, onUpdate, blockedExercises }) {
   const [showInstrucoes, setShowInstrucoes] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
   const playerRef = useRef(null);
@@ -203,6 +208,11 @@ function ExerciseRow({ exercise, index, onRemove, onUpdate }) {
             style={{ ...inp({ padding:"6px 8px", fontSize:12 }), textAlign:"center" }} placeholder="seg" />
         </div>
       </div>
+      {blockedExercises?.has(exercise.id?.split("-")[0]) && (
+        <div style={{ marginTop:6, fontSize:11, color:C.red, background:C.redBg, border:`1px solid ${C.red}40`, borderRadius:6, padding:"4px 8px" }}>
+          🚫 Restrito pela Fisioterapia — contraindicação ativa
+        </div>
+      )}
       {exercise.restricao && (
         <div style={{ marginTop:6, fontSize:11, color:C.amber, background:C.amberBg, border:`1px solid ${C.amber}30`, borderRadius:6, padding:"4px 8px" }}>
           ⚠ {exercise.restricao}
@@ -296,6 +306,9 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
   const [fcZonas, setFcZonas] = useState(null);
   const [fcRepousoInput, setFcRepousoInput] = useState("");
 
+  const [bridgeRestricoes, setBridgeRestricoes] = useState([]);
+  const [blockedExercises, setBlockedExercises] = useState(new Set());
+
   const [cintura, setCintura] = useState("");
   const [quadril, setQuadril] = useState("");
   const [pesoImc, setPesoImc] = useState(student?.peso || "");
@@ -311,8 +324,18 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
       setSavedTreinos(loadTreinos(sid));
       setBfEvolution(getBFEvolution(sid));
       setPseSessoes(loadPseSessions(sid));
+      const br = readFisioterapiaRestrictions(sid);
+      setBridgeRestricoes(br);
+      setBlockedExercises(getBlockedExercises(br));
     }
   }, [student?.id, student?.nome]);
+
+  const [patientShareOpen, setPatientShareOpen] = useState(false);
+
+  // Deduplica restrições da ponte com as já detectadas na anamnese
+  const bridgeExibidas = bridgeRestricoes.filter(b =>
+    !restricoes.some(r => r.local === b.local && r.tipo === b.tipo)
+  );
 
   const idade = calcIdade(student?.dataNasc);
 
@@ -689,14 +712,21 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
           </span>
         </div>
         <div style={{ display:"flex", gap:4 }}>
-          {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação Física"],["prescricao","📝","Prescrição"],["dashboard","📊","Dashboard"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
+          {[["anamnese","📋","Anamnese",bridgeExibidas.length],["avaliacao","🔬","Avaliação Física"],["prescricao","📝","Prescrição"],["dashboard","📊","Dashboard"],["evidencias","🔬","Evidências"]].map(([k,ic,lb,badge]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               background: tab === k ? C.greenBg : "transparent",
               border: `1px solid ${tab === k ? C.green + "50" : "transparent"}`,
               borderRadius: 8, padding: "7px 14px", fontSize: 12,
               fontWeight: tab === k ? 700 : 400,
               color: tab === k ? C.green : C.textMuted, cursor: "pointer", fontFamily: F,
-            }}>{ic} {lb}</button>
+              position:"relative",
+            }}>{ic} {lb}{badge > 0 && (
+              <span style={{
+                position:"absolute", top:-4, right:-4, background:C.amber, color:"#061A0C",
+                fontSize:9, fontWeight:800, borderRadius:"50%", width:18, height:18,
+                display:"flex", alignItems:"center", justifyContent:"center",
+              }}>{badge}</span>
+            )}</button>
           ))}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
@@ -718,6 +748,9 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
             pseSessoes,
             macrociclo,
           })} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>📄 Gerar PDF</button>
+          {student?.nome && (
+            <button onClick={() => { generatePatientCode(student.id || student.nome); setPatientShareOpen(true); }} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>📱 Compartilhar</button>
+          )}
           {student?.nome && (
             <>
               <div style={{ width:30, height:30, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.green }}>
@@ -793,6 +826,56 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {bridgeExibidas.length > 0 && (
+              <div style={{ marginTop:16, border:`1px solid ${C.amber}50`, borderRadius:12, overflow:"hidden" }}>
+                <div style={{ background:C.amberBg, padding:"10px 14px", borderBottom:`1px solid ${C.amber}30`, display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontSize:14 }}>🔗</span>
+                  <span style={{ fontSize:11, fontWeight:800, color:C.amber, textTransform:"uppercase", letterSpacing:"0.08em", flex:1 }}>
+                    Ponte de Transição — Dados da Fisioterapia ({bridgeExibidas.length} {bridgeExibidas.length === 1 ? "restrição" : "restrições"})
+                  </span>
+                  <span style={{ fontSize:9, color:C.textMuted }}>sasyra_assessments</span>
+                </div>
+                <div style={{ padding:"10px 14px", background:C.card }}>
+                  {bridgeExibidas.map((r, i) => {
+                    const desatualizada = isAvaliacaoDesatualizada(r.dataAvaliacao);
+                    return (
+                    <div key={i} style={{
+                      background: r.tipo === "alerta" ? C.redBg : r.tipo === "modificacao" ? C.amberBg : C.blueBg,
+                      border:`1px solid ${r.tipo === "alerta" ? C.red : r.tipo === "modificacao" ? C.amber : C.blue}30`,
+                      borderRadius:8, padding:"10px 12px", marginBottom:6,
+                      opacity: desatualizada ? 0.7 : 1,
+                    }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                        <span style={{ fontSize:13 }}>{r.tipo === "alerta" ? "🚫" : r.tipo === "modificacao" ? "⚠️" : "ℹ️"}</span>
+                        <span style={{ fontSize:11, fontWeight:700, color: r.tipo === "alerta" ? C.red : r.tipo === "modificacao" ? C.amber : C.blue }}>
+                          {r.local}{r.dataAvaliacao ? ` · ${r.dataAvaliacao}` : ""}
+                        </span>
+                        {desatualizada && (
+                          <span style={{ fontSize:9, background:C.amberBg, color:C.amber, border:`1px solid ${C.amber}40`, borderRadius:4, padding:"1px 6px", fontWeight:700 }}>
+                            +90 dias
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize:11, color:C.textSub, lineHeight:1.5, marginBottom:4 }}>{r.descricao}</div>
+                      {r.alternativa && (
+                        <div style={{ fontSize:10, color:C.amber, background:C.amberBg, borderRadius:4, padding:"4px 8px", marginTop:4 }}>
+                          💡 {r.alternativa}
+                        </div>
+                      )}
+                      <div style={{ fontSize:9, color:C.textMuted, marginTop:4, fontStyle:"italic" }}>{r.evidencia}</div>
+                      <div style={{ fontSize:8, color:C.textDim, marginTop:3 }}>Origem: {r.origem}</div>
+                      {desatualizada && (
+                        <div style={{ marginTop:6, fontSize:10, color:C.amber, fontStyle:"italic" }}>
+                          📅 Avaliação com mais de 90 dias — reavaliar antes de prescrever.
+                        </div>
+                      )}
+                    </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -1076,7 +1159,24 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                 <NumericField label="Repetições máximas" value={rmRepeticoes} onChange={setRmRepeticoes} unit="reps" min={1} max={15} />
               </div>
 
-              {rmResult && (
+              {rmResult && rmResult.bloqueio && (
+                <div style={{ marginTop:12, background:C.redBg, border:`1px solid ${C.red}50`, borderRadius:10, padding:"14px 16px" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                    <span style={{ fontSize:20 }}>🚫</span>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:800, color:C.red, marginBottom:4 }}>Teste não válido — {rmResult.repeticoes} repetições</div>
+                      <div style={{ fontSize:12, color:C.textSub, lineHeight:1.5 }}>{rmResult.bloqueio.mensagem}</div>
+                    </div>
+                  </div>
+                  <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:8, padding:"10px 12px", marginTop:8 }}>
+                    <div style={{ fontSize:10, fontWeight:700, color:C.amber, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>Alternativa recomendada</div>
+                    <div style={{ fontSize:12, color:C.textSub, lineHeight:1.5 }}>{rmResult.bloqueio.alternativa}</div>
+                    <div style={{ fontSize:10, color:C.textMuted, marginTop:6, fontStyle:"italic" }}>{rmResult.bloqueio.referencia}</div>
+                  </div>
+                </div>
+              )}
+
+              {rmResult && !rmResult.bloqueio && rmResult.rm && (
                 <div style={{ marginTop:12, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:10, padding:"14px 16px" }}>
                   <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:12, marginBottom:12 }}>
                     <div style={{ textAlign:"center" }}>
@@ -1487,7 +1587,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                   </div>
                 )}
 
-                <ExerciseSearch onSelect={(ex) => addExercicio(grupo.key, ex)} foco={grupo.foco} />
+                <ExerciseSearch onSelect={(ex) => addExercicio(grupo.key, ex)} foco={grupo.foco} blockedExercises={blockedExercises} />
 
                 {sugestoes.length > 0 && grupo.exercicios.length < 12 && (
                   <div style={{ marginTop:12, marginBottom:8 }}>
@@ -1501,21 +1601,28 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                           <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
                             {exercises.map(ex => {
                               const jaAdicionado = grupo.exercicios.some(e => e.id.startsWith(ex.id));
+                              const isBlocked = blockedExercises?.has(ex.id);
                               return (
-                                <button key={ex.id} onClick={() => !jaAdicionado && addExercicio(grupo.key, ex)}
-                                  disabled={jaAdicionado}
+                                <button key={ex.id} onClick={() => !jaAdicionado && !isBlocked && addExercicio(grupo.key, ex)}
+                                  disabled={jaAdicionado || isBlocked}
+                                  title={isBlocked ? "Restrito pela Fisioterapia" : ""}
                                   style={{
-                                    fontSize:11, fontFamily:F, cursor: jaAdicionado ? "not-allowed" : "pointer",
-                                    background: jaAdicionado ? C.greenBg : C.surface,
-                                    border: `1px solid ${jaAdicionado ? C.green+"40" : C.borderLight}`,
-                                    color: jaAdicionado ? C.green : C.text,
-                                    borderRadius:8, padding:"6px 10px", opacity: jaAdicionado ? 0.7 : 1,
+                                    fontSize:11, fontFamily:F,
+                                    cursor: jaAdicionado ? "not-allowed" : isBlocked ? "not-allowed" : "pointer",
+                                    background: jaAdicionado ? C.greenBg : isBlocked ? C.redBg : C.surface,
+                                    border: `1px solid ${jaAdicionado ? C.green+"40" : isBlocked ? C.red+"50" : C.borderLight}`,
+                                    color: jaAdicionado ? C.green : isBlocked ? C.red : C.text,
+                                    borderRadius:8, padding:"6px 10px",
+                                    opacity: jaAdicionado ? 0.7 : isBlocked ? 0.6 : 1,
                                     display:"inline-flex", alignItems:"center", gap:4,
                                   }}>
                                   {jaAdicionado && <span style={{fontSize:10}}>✓</span>}
+                                  {isBlocked && <span style={{fontSize:10}}>🚫</span>}
                                   {ex.nome}
-                                  {ex.videoUrl && <span style={{ fontSize:9, color: C.red }}>▶</span>}
-                                  <span style={{ fontSize:9, color: jaAdicionado ? C.green : C.textDim }}>({ex.equipamento})</span>
+                                  {!isBlocked && ex.videoUrl && <span style={{ fontSize:9, color: C.red }}>▶</span>}
+                                  <span style={{ fontSize:9, color: jaAdicionado ? C.green : isBlocked ? C.red : C.textDim }}>
+                                    {isBlocked ? "Restrito" : `(${ex.equipamento})`}
+                                  </span>
                                 </button>
                               );
                             })}
@@ -1531,7 +1638,8 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                     {grupo.exercicios.map((ex, idx) => (
                       <ExerciseRow key={ex.id} exercise={ex} index={idx + 1}
                         onRemove={() => removeExercicio(grupo.key, ex.id)}
-                        onUpdate={(updated) => updateExercicio(grupo.key, ex.id, updated)} />
+                        onUpdate={(updated) => updateExercicio(grupo.key, ex.id, updated)}
+                        blockedExercises={blockedExercises} />
                     ))}
                   </div>
                 )}
@@ -1631,6 +1739,18 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
         )}
 
       </div>
+
+      {patientShareOpen && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:32, maxWidth:500, width:"90%", maxHeight:"90vh", overflowY:"auto" }}>
+            <PatientView
+              studentId={student.id || student.nome}
+              onBack={() => setPatientShareOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

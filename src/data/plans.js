@@ -43,7 +43,7 @@ const PLANS = {
       users:      { label: "Profissional",       value: "1 CREFITO", start: false, evidencia: true, clinicas: true, ia: true, note: "Clínicas: até 3 CREFITOs" },
       extraUser:  { label: "CREFITO extra",      value: "Indisponível", start: false, evidencia: false, clinicas: true, ia: false, note: "Apenas Clínicas" },
       voice:      { label: "Transcrição por voz",value: "Ilimitado", start: false, evidencia: true, clinicas: true, ia: true, note: "Start: 60 min/mês" },
-      ai:         { label: "Análise por IA",     value: "Não disponível", start: false, evidencia: false, clinicas: false, ia: true, note: "Exclusivo do Plano IA Premium" },
+      ai:         { label: "Análise por IA",     value: "30 análises/mês", start: false, evidencia: true, clinicas: true, ia: true, note: "Clínicas: 50 análises · IA Premium: 300" },
       cif:        { label: "CIF Automatizada",   value: "Não disponível", start: false, evidencia: false, clinicas: false, ia: true, note: "Exclusivo do Plano IA Premium" },
       report:     { label: "Relatório",          value: "Premium (PDF)", start: false, evidencia: true, clinicas: true, ia: true, note: "Start: apenas básico" },
       finance:    { label: "Financeiro",         value: "Tabelas CREFITO", start: false, evidencia: true, clinicas: true, ia: true, note: "Start: controle básico · Clínicas: consolidado" },
@@ -52,7 +52,7 @@ const PLANS = {
       scales:     { label: "Escalas validadas",  value: "36 instrumentos", start: false, evidencia: true, clinicas: true, ia: true, note: null },
       agenda:     { label: "Agenda",             value: "Disponível", start: false, evidencia: true, clinicas: true, ia: true, note: null },
     },
-    featuredNote: "Custa menos de 1 café por dia e libera pacientes ilimitados, transcrição por voz, relatório premium e tabelas CREFITO.",
+    featuredNote: "Custa menos de 1 café por dia e libera pacientes ilimitados, transcrição por voz, 30 análises de IA/mês, relatório premium e tabelas CREFITO.",
   },
   clinicas: {
     key: "clinicas",
@@ -67,7 +67,7 @@ const PLANS = {
       users:      { label: "Profissional",       value: "Até 3 CREFITOs", start: false, evidencia: false, clinicas: true, ia: true, note: "Inclusos. Adicionais: R$ 9,90/mês" },
       extraUser:  { label: "CREFITO extra",      value: "R$ 9,90/mês", start: false, evidencia: false, clinicas: true, ia: false, note: "Apenas no Clínicas" },
       voice:      { label: "Transcrição por voz",value: "Ilimitado", start: false, evidencia: false, clinicas: true, ia: true, note: null },
-      ai:         { label: "Análise por IA",     value: "Não disponível", start: false, evidencia: false, clinicas: false, ia: true, note: "Exclusivo do Plano IA Premium" },
+      ai:         { label: "Análise por IA",     value: "50 análises/mês", start: false, evidencia: false, clinicas: true, ia: true, note: "Evidência: 30 · IA Premium: 300" },
       cif:        { label: "CIF Automatizada",   value: "Não disponível", start: false, evidencia: false, clinicas: false, ia: true, note: "Exclusivo do Plano IA Premium" },
       report:     { label: "Relatório",          value: "Premium (PDF)", start: false, evidencia: false, clinicas: true, ia: true, note: null },
       finance:    { label: "Financeiro",         value: "Consolidado por prof.", start: false, evidencia: false, clinicas: true, ia: true, note: "Evidência: individual · Clínicas: consolidado" },
@@ -76,7 +76,7 @@ const PLANS = {
       scales:     { label: "Escalas validadas",  value: "36 instrumentos", start: false, evidencia: false, clinicas: true, ia: true, note: null },
       agenda:     { label: "Agenda",             value: "Disponível", start: false, evidencia: false, clinicas: true, ia: true, note: null },
     },
-    featuredNote: "Para clínicas com até 3 fisioterapeutas. Cada profissional extra custa apenas R$ 9,90/mês.",
+    featuredNote: "Para clínicas com até 3 fisioterapeutas. Profissionais extras R$ 9,90/mês. Inclui 50 análises de IA/mês.",
   },
   ia: {
     key: "ia",
@@ -122,8 +122,8 @@ const PLAN_LABELS = {
 
 const AI_LIMITS = {
   start: 0,
-  evidencia: 0,
-  clinicas: 0,
+  evidencia: 30,
+  clinicas: 50,
   ia: 300,
 };
 

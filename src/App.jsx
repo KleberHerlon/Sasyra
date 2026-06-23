@@ -7,13 +7,18 @@ import Agenda from "./screens/Agenda";
 import Financeiro from "./screens/Financeiro";
 import Plans from "./screens/Plans";
 import SubscriptionSettings from "./screens/SubscriptionSettings";
+import Integrations from "./screens/Integrations";
 import { useSubscription } from "./hooks/useSubscription";
+import { useSupabasePatients, useSupabaseAssessments, useSupabaseLogs } from "./hooks/useSupabaseData";
 import ExpressAssessment from "./components/ExpressAssessment";
 import EvidencePanel from "./components/EvidencePanel";
 import { detectKB, detectMultipleKB } from "./utils/clinicalDetection";
 import PhysicalEducation from "./screens/PhysicalEducation";
 import OccupationalTherapy from "./screens/OccupationalTherapy";
 import Nutrition from "./screens/Nutrition";
+import Pediatria from "./screens/Pediatria";
+import CrossFit from "./screens/CrossFit";
+import Neuro from "./screens/Neuro";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -923,6 +928,9 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
     { value:"to", label:"Terapeuta Ocupacional", icon:"🤲" },
     { value:"educFisico", label:"Educador Físico", icon:"🏃" },
     { value:"nutricionista", label:"Nutricionista", icon:"🥗" },
+    { value:"pediatria", label:"Fisioterapeuta Pediátrico", icon:"👶" },
+    { value:"crossfit", label:"Treinador CrossFit", icon:"💪" },
+    { value:"neurofuncional", label:"Fisioterapeuta Neurofuncional", icon:"🧠" },
   ];
 
   const handleEnter = () => {
@@ -1012,7 +1020,7 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
   );
 }
 
-const PROF_LABELS = { fisio:"Fisioterapeuta", to:"Terapeuta Ocupacional", educFisico:"Educador Físico", nutricionista:"Nutricionista" };
+const PROF_LABELS = { fisio:"Fisioterapeuta", to:"Terapeuta Ocupacional", educFisico:"Educador Físico", nutricionista:"Nutricionista", pediatria:"Fisioterapeuta Pediátrico", crossfit:"Treinador CrossFit", neurofuncional:"Fisioterapeuta Neurofuncional" };
 
 function ModuleSelector({ user, onSelect, onLogout }) {
   const [selectedModule, setSelectedModule] = useState(() => {
@@ -1020,6 +1028,9 @@ function ModuleSelector({ user, onSelect, onLogout }) {
     if (user.prof === "to") return "terapiaOcupacional";
     if (user.prof === "educFisico") return "educacaoFisica";
     if (user.prof === "nutricionista") return "nutricao";
+    if (user.prof === "pediatria") return "pediatria";
+    if (user.prof === "crossfit") return "crossfit";
+    if (user.prof === "neurofuncional") return "neuro";
     return null;
   });
   return (
@@ -1047,6 +1058,9 @@ function ModuleSelector({ user, onSelect, onLogout }) {
           { id:"terapiaOcupacional", icon:"🤲", title:"Terapia Ocupacional", desc:"Avaliação de AVDs/AIVDs, COPM, MIF, função manual, cognição e reabilitação baseada em evidências", color:C.purple },
           { id:"educacaoFisica", icon:"🏋️", title:"Educação Física / Performance", desc:"Avaliação física (Pollock, VO₂máx, 1RM), prescrição automatizada de treino e periodização baseada no ACSM", color:C.blue },
           { id:"nutricao", icon:"🥗", title:"Nutrição Clínica", desc:"Avaliação antropométrica, BIA, recordatório alimentar, gasto energético, exames bioquímicos e plano alimentar baseado em evidências", color:C.amber },
+          { id:"pediatria", icon:"👶", title:"Pediatria", desc:"Fisioterapia pediátrica: desenvolvimento motor, escalas GMFCS/AIMS/M-CHAT, marcos motores e plano terapêutico infantil", color:C.blue },
+          { id:"crossfit", icon:"💪", title:"CrossFit", desc:"Treinamento e performance: WODs, benchmarks, 1RM olímpico, RPE, periodização e prevenção de lesões em atletas", color:C.amber },
+          { id:"neuro", icon:"🧠", title:"Neurofuncional", desc:"Reabilitação neurológica: escalas (MAS, BBS, MIF), avaliação de marcha, tônus, coordenação e treino funcional", color:C.purple },
         ].map(m => (
           <button key={m.id} onClick={() => setSelectedModule(m.id)}
             style={{
@@ -1076,7 +1090,8 @@ function ModuleSelector({ user, onSelect, onLogout }) {
 }
 
 // ── Patient List ──────────────────────────────────────────────────────────────
-function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChange, user, assessmentHistory, onDelete, onChangeModule }) {
+function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChange, user, assessmentHistory, onDelete, onChangeModule, plan }) {
+  const [showClinicasUpsell, setShowClinicasUpsell] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -1116,6 +1131,7 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChan
           <div style={{ display:"flex", gap:8 }}>
             <button onClick={onAgenda} style={ghostBtn({ fontSize:12 })}>📅 Agenda</button>
             <button onClick={() => onViewChange?.("financeiro")} style={ghostBtn({ fontSize:12 })}>💰 Financeiro</button>
+            <button onClick={() => onViewChange?.("integrations")} style={ghostBtn({ fontSize:12 })}>🔗 Integrações</button>
             <button onClick={onLogout} style={ghostBtn({ fontSize:12 })}>Sair</button>
           </div>
         </div>
@@ -1124,6 +1140,22 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChan
           <div style={{ fontSize:22, fontWeight:800, color:C.text, marginBottom:2 }}>Olá, {user.nome}</div>
           <div style={{ fontSize:13, color:C.textMuted }}>{PROF_LABELS[user.prof] || user.prof}{user.crefito ? ` · CREFITO ${user.crefito}` : ""}</div>
         </div>
+
+        {(plan === "start" || plan === "evidencia") && showClinicasUpsell && (
+          <div style={{ background:"linear-gradient(135deg, #1a2e1a 0%, #0F1F0F 100%)", border:`1px solid ${C.green}40`, borderRadius:14, padding:"16px 20px", marginBottom:20, position:"relative" }}>
+            <button onClick={() => setShowClinicasUpsell(false)} style={{ position:"absolute", top:8, right:10, background:"transparent", border:"none", color:C.textMuted, cursor:"pointer", fontSize:16, lineHeight:1 }}>×</button>
+            <div style={{ display:"flex", gap:14, alignItems:"center", flexWrap:"wrap" }}>
+              <div style={{ fontSize:28 }}>🏥</div>
+              <div style={{ flex:1, minWidth:200 }}>
+                <div style={{ fontSize:14, fontWeight:800, color:C.green, marginBottom:4 }}>Migre para Clínicas & Equipes</div>
+                <div style={{ fontSize:12, color:C.textSub, lineHeight:1.5 }}>
+                  Até <strong style={{ color:C.text }}>3 CREFITOs</strong> inclusos · Financeiro consolidado por profissional · Margem de <strong style={{ color:C.green }}>90%</strong> por assinante · Profissionais extras por apenas <strong style={{ color:C.text }}>R$ 9,90/mês</strong>
+                </div>
+              </div>
+              <button onClick={() => onViewChange?.("plans")} style={{ background:C.green, color:"#061A0C", border:"none", borderRadius:8, padding:"8px 18px", fontSize:12, fontWeight:800, cursor:"pointer", fontFamily:F, whiteSpace:"nowrap" }}>Ver Planos →</button>
+            </div>
+          </div>
+        )}
 
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
           <span style={{ fontSize:15, fontWeight:700, color:C.text }}>Pacientes {patients.length > 0 && <span style={{ color:C.textMuted, fontWeight:400, fontSize:13 }}>({patients.length})</span>}</span>
@@ -1259,6 +1291,11 @@ export default function Sasyra() {
     localStorage.setItem("sasyra_theme", theme);
   }, [theme]);
 
+  const userId = user?.id || user?.nome;
+  const { patients: supabasePatients, setPatients: setSupabasePatients } = useSupabasePatients(userId);
+  const { assessments: supabaseAssessments, setAssessments: setSupabaseAssessments } = useSupabaseAssessments(userId);
+  const { logs: supabaseLogs, setLogs: setSupabaseLogs } = useSupabaseLogs(userId);
+
   const [patients, setPatients] = useState(() => { try { const d = localStorage.getItem("sasyra_patients"); return d ? JSON.parse(d) : []; } catch { return []; } });
   const [patientView, setPatientView] = useState(true);
   const [tab, setTab] = useState("avaliacao");
@@ -1267,8 +1304,19 @@ export default function Sasyra() {
   const [appView, setAppView] = useState("patients");
   const [module, setModule] = useState(() => {
     const saved = localStorage.getItem("sasyra_module");
-    return (saved === "fisioterapia" || saved === "educacaoFisica" || saved === "em_desenvolvimento") ? saved : null;
+    return (saved === "fisioterapia" || saved === "educacaoFisica" || saved === "em_desenvolvimento" || saved === "pediatria" || saved === "crossfit" || saved === "neuro") ? saved : null;
   });
+
+  // Sync Supabase data when hooks finish loading (replaces localStorage on first Supabase load)
+  useEffect(() => {
+    if (supabasePatients.length > 0) setPatients(supabasePatients);
+  }, [supabasePatients]);
+  useEffect(() => {
+    if (supabaseAssessments.length > 0) setAssessmentHistory(supabaseAssessments);
+  }, [supabaseAssessments]);
+  useEffect(() => {
+    if (supabaseLogs.length > 0) setLogs(supabaseLogs);
+  }, [supabaseLogs]);
 
   // Patient
   const [pt, setPt] = useState({ nome:"", dataNasc:"", sexo:"", lateralidade:"", estadoCivil:"", profissao:"", convenio:"", sessoesAuth:"", telefone:"", peso:"", altura:"", data:new Date().toISOString().slice(0,10) });
@@ -1336,6 +1384,9 @@ export default function Sasyra() {
     else if (userObj.prof === "to") m = "terapiaOcupacional";
     else if (userObj.prof === "educFisico") m = "educacaoFisica";
     else if (userObj.prof === "nutricionista") m = "nutricao";
+    else if (userObj.prof === "pediatria") m = "pediatria";
+    else if (userObj.prof === "crossfit") m = "crossfit";
+    else if (userObj.prof === "neurofuncional") m = "neuro";
     else m = "em_desenvolvimento";
     localStorage.setItem("sasyra_module", m);
     setModule(m);
@@ -1435,10 +1486,10 @@ export default function Sasyra() {
     return false;
   }, [canUseFeature]);
 
-  // ── localStorage ─────────────────────────────────────────────────────────
-  useEffect(() => { const t = setTimeout(() => { try { localStorage.setItem("sasyra_patients", JSON.stringify(patients)); } catch { /* storage full or unavailable */ } }, 500); return () => clearTimeout(t); }, [patients]);
-  useEffect(() => { const t = setTimeout(() => { try { localStorage.setItem("sasyra_assessments", JSON.stringify(assessmentHistory)); } catch { /* storage full or unavailable */ } }, 500); return () => clearTimeout(t); }, [assessmentHistory]);
-  useEffect(() => { const t = setTimeout(() => { try { localStorage.setItem("sasyra_logs", JSON.stringify(logs)); } catch { /* storage full or unavailable */ } }, 500); return () => clearTimeout(t); }, [logs]);
+  // ── localStorage + Supabase sync ──────────────────────────────────────────
+  useEffect(() => { const t = setTimeout(() => { try { localStorage.setItem("sasyra_patients", JSON.stringify(patients)); } catch {} }, 500); return () => clearTimeout(t); }, [patients]);
+  useEffect(() => { const t = setTimeout(() => { try { localStorage.setItem("sasyra_assessments", JSON.stringify(assessmentHistory)); } catch {} }, 500); return () => clearTimeout(t); }, [assessmentHistory]);
+  useEffect(() => { const t = setTimeout(() => { try { localStorage.setItem("sasyra_logs", JSON.stringify(logs)); } catch {} }, 500); return () => clearTimeout(t); }, [logs]);
 
   const currentLogs = logs.filter(l => l.patientId === (pt.id || pt.nome));
 
@@ -1660,6 +1711,42 @@ Responda em tópicos claros e objetivos. Seja preciso, clínico e baseado em evi
     />
   );
 
+  if (module === "pediatria") return (
+    <Pediatria
+      students={patients}
+      student={pt}
+      onSelectStudent={selectPatient}
+      onAddStudent={addPatient}
+      onUpdateStudent={up}
+      onDeleteStudent={deletePatient}
+      onUpdateStudentById={updatePatientById}
+    />
+  );
+
+  if (module === "crossfit") return (
+    <CrossFit
+      students={patients}
+      student={pt}
+      onSelectStudent={selectPatient}
+      onAddStudent={addPatient}
+      onUpdateStudent={up}
+      onDeleteStudent={deletePatient}
+      onUpdateStudentById={updatePatientById}
+    />
+  );
+
+  if (module === "neuro") return (
+    <Neuro
+      students={patients}
+      student={pt}
+      onSelectStudent={selectPatient}
+      onAddStudent={addPatient}
+      onUpdateStudent={up}
+      onDeleteStudent={deletePatient}
+      onUpdateStudentById={updatePatientById}
+    />
+  );
+
   if (module === "em_desenvolvimento") return (
     <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:F, padding:24 }}>
       <div style={{ maxWidth:460, textAlign:"center" }}>
@@ -1684,8 +1771,9 @@ Responda em tópicos claros e objetivos. Seja preciso, clínico e baseado em evi
   );
   if (appView === "plans") return <Plans onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} />;
   if (appView === "subscription") return <SubscriptionSettings onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} />;
+  if (appView === "integrations") return <Integrations onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} />;
   if (patientView) return <>
-    <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} onAgenda={() => setAppView("agenda")} onViewChange={(v) => setAppView(v)} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} onChangeModule={changeModule} />
+    <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} onAgenda={() => setAppView("agenda")} onViewChange={(v) => setAppView(v)} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} onChangeModule={changeModule} plan={plan} />
     <PaywallModal open={paywallOpen} onClose={() => setPaywallOpen(false)}
       featureName={paywallFeature.name} featureDesc={paywallFeature.desc}
       onUpgrade={() => { setPaywallOpen(false); setAppView("plans"); }} />

@@ -65,7 +65,24 @@ export function calcVO2maxRockport(pesoKg, sexo, idade, tempoMinutos, frequencia
 }
 
 export function calc1RMPreditivo(carga, repeticoes) {
-  if (repeticoes === 1) return { rm: carga, formula: "Direto" };
+  if (repeticoes === 1) return { rm: carga, formula: "Direto", bloqueio: null };
+  if (repeticoes > 10) {
+    return {
+      rm: null,
+      rmEpley: null,
+      rmBrzycki: null,
+      rmLombardi: null,
+      repeticoes,
+      carga,
+      classe: null,
+      bloqueio: {
+        tipo: "alerta",
+        mensagem: `Com ${repeticoes} repetições o cálculo de 1RM não é preciso. As fórmulas funcionam melhor entre 2 e 10 repetições.`,
+        alternativa: "Use uma carga maior e refaça o teste com 2 a 10 repetições. Ou utilize o teste de 10RM (carga máxima para 10 repetições).",
+        referencia: "LeSuer DA, et al. J Strength Cond Res. 1997;11(1):25-29.",
+      },
+    };
+  }
   const rmEpley = carga * (1 + repeticoes / 30);
   const rmBrzycki = carga * (36 / (37 - repeticoes));
   const rmLombardi = carga * repeticoes ** 0.1;
@@ -84,6 +101,7 @@ export function calc1RMPreditivo(carga, repeticoes) {
     repeticoes,
     carga,
     classe,
+    bloqueio: null,
     referencia: "LeSuer DA, McCormick JH, Mayhew JL, Wasserstein RL, Arnold MD. The accuracy of prediction equations for estimating 1-RM performance. J Strength Cond Res. 1997;11(1):25-29.",
   };
 }
@@ -190,6 +208,12 @@ export function calcBioimpedancia(resistenciaOhm, reactanciaOhm, sexo, idade, pe
     protocolo: "Bioimpedância (BIA)",
     referencia: "Kyle UG, Bosaeus I, De Lorenzo AD, et al. Bioelectrical impedance analysis — part I: review of principles and methods. Clin Nutr. 2004;23(5):1226-1243.",
   };
+}
+
+function isSupabaseConfigured() {
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  return url && url !== "https://sua-url-supabase.supabase.co" && key && key !== "sua-anon-key-aqui";
 }
 
 export function savePhysicalAssessment(studentId, assessment) {

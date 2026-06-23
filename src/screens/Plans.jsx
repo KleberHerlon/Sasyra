@@ -81,7 +81,7 @@ export default function Plans({ onNavigate }) {
 
                 {/* Show AI limit badge */}
                 <div style={{ fontSize:10, color:C.textMuted, textAlign:"center", marginTop:6, fontFamily:F }}>
-                  {key === "ia" ? `🤖 ${aiLimit} análises/mês inclusas` : "🔹 IA avulsa: R$ 4,90/análise"}
+                  {key === "ia" ? `🤖 ${aiLimit} análises/mês inclusas` : key === "evidencia" ? `🤖 ${aiLimit} análises IA/mês inclusas` : key === "clinicas" ? `🤖 ${aiLimit} análises IA/mês inclusas` : "🔹 IA avulsa: R$ 4,90/análise"}
                 </div>
               </div>
             );
@@ -90,8 +90,8 @@ export default function Plans({ onNavigate }) {
 
         <div style={{ marginTop:32, background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"18px 20px", maxWidth:700, marginLeft:"auto", marginRight:"auto", textAlign:"center" }}>
           <p style={{ fontSize:12, color:C.textMuted, lineHeight:1.6, margin:0 }}>
-            💡 O <strong style={{ color:C.green }}>IA Premium</strong> (R$ 79,90/mês) inclui <strong>300 análises por IA/mês</strong> + CIF Automatizada.
-            Nos demais planos, você pode usar a IA avulsa por apenas <strong>R$ {AI_EXPANSION.pricePerAnalysis.toFixed(2)} por análise</strong> — paga só quando usar.
+            💡 <strong style={{ color:C.green }}>Evidência</strong> inclui <strong>30 análises de IA/mês</strong> · <strong style={{ color:C.green }}>Clínicas</strong> inclui <strong>50 análises/mês</strong> · <strong style={{ color:C.green }}>IA Premium</strong> (R$ 79,90) inclui <strong>300 análises/mês</strong> + CIF Automatizada.
+            Acima do limite: <strong>R$ {AI_EXPANSION.pricePerAnalysis.toFixed(2)}/análise avulsa</strong> — paga só quando usar.
           </p>
         </div>
       </div>
