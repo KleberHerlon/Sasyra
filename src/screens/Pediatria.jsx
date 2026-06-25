@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
+import { useMediaQuery } from "../components";
 
 const C = {
   bg:"#F5F0EB",surface:"#FCFAF7",card:"#FCFAF7",cardAlt:"#F0EBE5",
@@ -144,6 +146,11 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
   // Evolução
   const [evolucao, setEvolucao] = useState("");
 
+  const sid = student?.id || student?.nome;
+  const isMobile = useMediaQuery("(max-width:767px)");
+  const enhancer = useEnhancer("pediatria", sid, `ped_enhancer_${sid}`);
+  const pedColors = { ...C, accent: C.blue, font: F };
+
   useEffect(() => {
     if (student?.id || student?.nome) {
       const sid = student.id || student.nome;
@@ -168,6 +175,10 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
         setFrequencia(saved.frequencia || "");
         setOrientacoesCuidador(saved.orientacoesCuidador || "");
         setEvolucao(saved.evolucao || "");
+        if (saved.pain) enhancer.setPain(saved.pain);
+        if (saved.logs) enhancer.setLogs(saved.logs);
+        if (saved.redFlags) enhancer.setRedFlags(saved.redFlags);
+        if (saved.aiRes) enhancer.setAiRes(saved.aiRes);
       }
     }
   }, [student?.id, student?.nome]);
@@ -181,12 +192,13 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
       gmfcs, aimsScore, mchat,
       objetivosFuncionais, atividadesTerapeuticas, frequencia, orientacoesCuidador,
       evolucao,
+      pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
     });
   };
 
   if (studentListView) return (
-    <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text, padding:24 }}>
+    <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text, padding: isMobile ? 12 : 24 }}>
       <div style={{ maxWidth:680, margin:"0 auto" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
           <span style={{ fontSize:22, fontWeight:800, color:C.blue }}>👶 Pediatria</span>
@@ -206,7 +218,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
             <div style={{ fontSize:14, fontWeight:700, color:C.blue, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
               {editingStudent ? "✏️ Editar Paciente" : "➕ Novo Paciente"}
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
+            <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
               {[
                 {k:"nome",l:"Nome completo",pl:"Nome do paciente"},
                 {k:"dataNasc",l:"Nascimento",pl:"",type:"date"},
@@ -349,18 +361,19 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
 
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
-      <div style={{ background:"#FFFFFF", borderBottom:`2px solid ${C.border}`, padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:60, boxShadow:"0 2px 12px rgba(232,160,160,0.08)" }}>
+      <div style={{ background:"#FFFFFF", borderBottom:`2px solid ${C.border}`, padding: isMobile ? "0 10px" : "0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height: isMobile ? 50 : 60, boxShadow:"0 2px 12px rgba(232,160,160,0.08)" }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <button onClick={() => setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>← Voltar</button>
           <span style={{ fontSize:12, fontWeight:800, color:C.blue }}>👶 Pediatria</span>
         </div>
-        <div style={{ display:"flex", gap:4 }}>
-          {[["anamnese","📋","Anamnese"],["terapia","🏃‍♂️","Terapia"],["evolucao","📈","Evolução"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
+        <div style={{ display:"flex", gap:4, overflowX: isMobile ? "auto" : "visible", flexShrink:1, msOverflowStyle:"none", scrollbarWidth:"none", WebkitOverflowScrolling:"touch" }}>
+          {[["anamnese","📋","Anamnese"],["terapia","🏃‍♂️","Terapia"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               background: tab === k ? C.blueBg : "#F8F5F0",
               border: `1px solid ${tab === k ? C.blue + "50" : C.border}`,
-              borderRadius: 30, padding: "8px 18px", fontSize: 12,
+              borderRadius: 30, padding: isMobile ? "8px 12px" : "8px 18px", fontSize: isMobile ? 11 : 12,
               fontWeight: tab === k ? 800 : 500,
+              whiteSpace:"nowrap",
               color: tab === k ? C.blue : C.textSub, cursor: "pointer", fontFamily: F,
               boxShadow: tab === k ? "0 2px 8px rgba(232,160,160,0.2)" : "none",
             }}>{ic} {lb}</button>
@@ -369,16 +382,16 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
           {student?.nome && (
             <>
-              <div style={{ width:30, height:30, background:C.blueBg, border:`1px solid ${C.blue}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.blue }}>
+              <div style={{ width: isMobile ? 24 : 30, height: isMobile ? 24 : 30, background:C.blueBg, border:`1px solid ${C.blue}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize: isMobile ? 10 : 13, fontWeight:800, color:C.blue }}>
                 {student.nome[0]?.toUpperCase()}
               </div>
-              <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span>
+              {!isMobile && <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span>}
             </>
           )}
         </div>
       </div>
 
-      <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
+      <div style={{ maxWidth:960, margin:"0 auto", padding: isMobile ? "12px 10px" : "20px 16px" }}>
         {tab === "anamnese" && (
           <>
             <Section title="Anamnese Pediátrica" icon="📋">
@@ -403,7 +416,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
                   placeholder="Descreva a gestação: intercorrências, uso de medicamentos, infecções, sofrimento fetal, idade gestacional ao nascer..." />
               </div>
 
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
+              <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
                 <div>
                   <span style={lbl()}>Tipo de parto</span>
                   <SingleSelect options={["Vaginal","Cesárea","Fórceps"]} value={tipoParto} onChange={setTipoParto} activeColor={C.blue} />
@@ -449,7 +462,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
             </Section>
 
             <Section title="Escalas Pediátricas" icon="📊">
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
+              <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
                 <div>
                   <span style={lbl()}>GMFCS (Classificação da Função Motora Grossa)</span>
                   <SingleSelect options={[
@@ -507,7 +520,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
                 <TagSelect options={["Estimulação motora grossa","Estimulação motora fina","Treino de marcha","Alongamento","Fortalecimento","Equilíbrio","Coordenação","Integração sensorial","Exercícios lúdicos","Órtese/posicionamento","Treino de AVDs"]}
                   value={atividadesTerapeuticas} onChange={setAtividadesTerapeuticas} activeColor={C.blue} />
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
+              <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
                 <div>
                   <span style={lbl()}>Frequência (sessões/semana)</span>
                   <input type="number" value={frequencia} onChange={e => setFrequencia(e.target.value)} style={inp()} min={1} max={7} placeholder="Ex: 3" />
@@ -565,6 +578,28 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
               <button onClick={handleSave} style={primaryBtn({ padding:"11px 26px", fontSize:14 })}>💾 Salvar Evolução</button>
             </div>
           </Section>
+        )}
+
+        {tab === "sessoes" && (
+          <>
+            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={pedColors} />
+            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
+              flags={["Febre ≥38°C (risco infeccioso)","Sonolência/letargia","Hipoatividade súbita","Recusa alimentar progressiva","Cianose / desconforto respiratório","Convulsão recente","Vômitos em jato / hipertensão intracraniana","Assimetria de força súbita"]}
+              colors={pedColors} />
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={pedColors} />
+            <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
+              summaryText={`Paciente pediátrico: ${student?.nome || "—"}\nQueixa: ${queixaPrincipal}\nDiagnóstico: ${diagnosticoMedico}\nComorbidades: ${comorbidades.join(", ")}\nGMFCS: ${gmfcs || "—"}\nAIMS: ${aimsScore || "—"}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nMarcos motores: ${marcosMotores.join(", ")}\nAtividades: ${atividadesTerapeuticas.join(", ")}\nEvolução: ${evolucao}`}
+              colors={pedColors} />
+            <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
+              <button onClick={handleSave} style={primaryBtn({ padding:"11px 26px", fontSize:14 })}>💾 Salvar Tudo</button>
+            </div>
+          </>
+        )}
+
+        {tab === "relatorio" && (
+          <ReportSection pain={enhancer.pain} logs={enhancer.logs} redFlags={enhancer.redFlags}
+            aiRes={enhancer.aiRes} patientName={student?.nome || "—"}
+            moduleLabel="Pediatria" colors={pedColors} />
         )}
 
         {tab === "evidencias" && (

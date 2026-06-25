@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 import Accordion from "../components/Accordion";
+import { useMediaQuery } from "../components";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -156,9 +158,13 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
   // Evolução
   const [evolucao, setEvolucao] = useState("");
 
+  const sid = student?.id || student?.nome;
+  const isMobile = useMediaQuery("(max-width:767px)");
+  const enhancer = useEnhancer("crossfit", sid, `cf_enhancer_${sid}`);
+  const cfColors = { ...C, accent: C.amber, font: F };
+
   useEffect(() => {
     if (student?.id || student?.nome) {
-      const sid = student.id || student.nome;
       const saved = loadCFData(sid);
       if (saved) {
         setNomeAtleta(saved.nomeAtleta || "");
@@ -181,13 +187,16 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
         setShoulderPressRM(saved.shoulderPressRM || "");
         setBenchmarksHistorico(saved.benchmarksHistorico || []);
         setEvolucao(saved.evolucao || "");
+        if (saved.pain) enhancer.setPain(saved.pain);
+        if (saved.logs) enhancer.setLogs(saved.logs);
+        if (saved.redFlags) enhancer.setRedFlags(saved.redFlags);
+        if (saved.aiRes) enhancer.setAiRes(saved.aiRes);
       }
     }
   }, [student?.id, student?.nome]);
 
   const handleSave = () => {
     if (!student?.id && !student?.nome) return;
-    const sid = student.id || student.nome;
     saveCFData(sid, {
       nomeAtleta, idadeAtleta, sexoAtleta, tempoCrossfit, modalidades, lesoesPrevias,
       restricoesMovimentos, nivelAtleta, objetivos, frequenciaSemanal,
@@ -195,6 +204,7 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
       snatchRM, cleanJerkRM, backSquatRM, frontSquatRM, deadliftRM, benchPressRM, shoulderPressRM,
       benchmarksHistorico,
       evolucao,
+      pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
     });
   };
@@ -238,7 +248,7 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
   };
 
   if (studentListView) return (
-    <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text, padding:24 }}>
+    <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text, padding: isMobile ? 12 : 24 }}>
       <div style={{ maxWidth:680, margin:"0 auto" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
           <span style={{ fontSize:16, fontWeight:800, color:C.text, letterSpacing:"0.05em" }}>💪 CrossFit</span>
@@ -258,7 +268,7 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
             <div style={{ fontSize:14, fontWeight:700, color:C.amber, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
               {editingStudent ? "✏️ Editar Aluno" : "➕ Novo Aluno"}
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
+            <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
               {[
                 {k:"nome",l:"Nome completo",pl:"Nome do aluno"},
                 {k:"dataNasc",l:"Nascimento",pl:"",type:"date"},
@@ -401,18 +411,19 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
 
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
-      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:60 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <button onClick={() => setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>← Alunos</button>
-          <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>💪 CrossFit</span>
+      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding: isMobile ? "0 8px" : "0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height: isMobile ? 50 : 60 }}>
+        <div style={{ display:"flex", alignItems:"center", gap: isMobile ? 6 : 12 }}>
+          <button onClick={() => setStudentListView(true)} style={ghostBtn({ padding:"5px 8px", fontSize: isMobile ? 10 : 11 })}>← {isMobile ? "" : "Alunos"}</button>
+          <span style={{ fontSize: isMobile ? 10 : 11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>{isMobile ? "💪" : "💪 CrossFit"}</span>
         </div>
-        <div style={{ display:"flex", gap:4 }}>
-          {[["anamnese","📋","Anamnese"],["treinos","🏋️","Treinos"],["metricas","📊","Métricas"],["evolucao","📈","Evolução"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
+        <div style={{ display:"flex", gap:4, overflowX: isMobile ? "auto" : "visible", flexShrink:1, msOverflowStyle:"none", scrollbarWidth:"none", WebkitOverflowScrolling:"touch" }}>
+          {[["anamnese","📋","Anamnese"],["treinos","🏋️","Treinos"],["metricas","📊","Métricas"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               background: tab === k ? C.amberBg : "transparent",
               border: `1px solid ${tab === k ? C.amber + "50" : "transparent"}`,
-              borderRadius: 8, padding: "7px 14px", fontSize: 12,
+              borderRadius: 8, padding: isMobile ? "6px 10px" : "7px 14px", fontSize: isMobile ? 10 : 12,
               fontWeight: tab === k ? 700 : 400,
+              whiteSpace:"nowrap",
               color: tab === k ? C.amber : C.textMuted, cursor: "pointer", fontFamily: F,
             }}>{ic} {lb}</button>
           ))}
@@ -420,23 +431,23 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
           {student?.nome && (
             <>
-              <div style={{ width:30, height:30, background:C.amberBg, border:`1px solid ${C.amber}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.amber }}>
+              <div style={{ width: isMobile ? 24 : 30, height: isMobile ? 24 : 30, background:C.amberBg, border:`1px solid ${C.amber}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize: isMobile ? 10 : 13, fontWeight:800, color:C.amber }}>
                 {student.nome[0]?.toUpperCase()}
               </div>
-              <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span>
+              {!isMobile && <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span>}
             </>
           )}
         </div>
       </div>
 
-      <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
+      <div style={{ maxWidth:960, margin:"0 auto", padding: isMobile ? "12px 10px" : "20px 16px" }}>
         {tab === "anamnese" && (
           <>
             <Section title="Perfil do Atleta" icon="📋">
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
                 Preencha o perfil do atleta de CrossFit para personalizar o treinamento.
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
+              <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
                 <div>
                   <span style={lbl()}>Nome do atleta</span>
                   <input type="text" value={nomeAtleta} onChange={e => setNomeAtleta(e.target.value)} style={inp()} placeholder="Nome completo" />
@@ -469,7 +480,7 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
                 <TagSelect options={["Snatch","Clean & Jerk","Back squat","Overhead squat","Muscle-up","Handstand push-up","Burpee","Double-under","Kipping pull-up","Box jump"]}
                   value={restricoesMovimentos} onChange={setRestricoesMovimentos} activeColor={C.amber} />
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
+              <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
                 <div>
                   <span style={lbl()}>Nível</span>
                   <SingleSelect options={["Iniciante","Intermediário","Avançado","Elite/Competidor"]} value={nivelAtleta} onChange={setNivelAtleta} activeColor={C.amber} />
@@ -498,7 +509,7 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
                 Registre os treinos realizados pelo atleta.
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
+              <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
                 <div>
                   <span style={lbl()}>Data</span>
                   <input type="date" value={treinoData} onChange={e => setTreinoData(e.target.value)} style={inp()} />
@@ -518,7 +529,7 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
                   style={{ ...inp({ resize:"vertical", lineHeight:1.5 }) }}
                   placeholder="Descreva o WOD, rounds, repetições, cargas..." />
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
+              <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
                 <div>
                   <span style={lbl()}>Resultado</span>
                   <input type="text" value={treinoResultado} onChange={e => setTreinoResultado(e.target.value)} style={inp()} placeholder="Ex: 8:32, 95kg, 12 rounds..." />
@@ -595,7 +606,7 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
                 Registre as cargas máximas (1RM) para cada levantamento.
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"12px 16px" }}>
+              <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap:"12px 16px" }}>
                 <NumericField label="Snatch" value={snatchRM} onChange={setSnatchRM} unit="kg" min={0} max={300} step={0.5} />
                 <NumericField label="Clean & Jerk" value={cleanJerkRM} onChange={setCleanJerkRM} unit="kg" min={0} max={400} step={0.5} />
                 <NumericField label="Back Squat" value={backSquatRM} onChange={setBackSquatRM} unit="kg" min={0} max={500} step={0.5} />
@@ -690,6 +701,28 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
               <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Evolução</button>
             </div>
           </Section>
+        )}
+
+        {tab === "sessoes" && (
+          <>
+            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={cfColors} />
+            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
+              flags={["Dor torácica durante exercício","Falta de ar desproporcional","Tontura/síncope","Palpitações","Edema articular agudo","Hematúria pós-treino","Febre + mialgia intensa","Perda de força súbita"]}
+              colors={cfColors} />
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={cfColors} />
+            <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
+              summaryText={`Atleta: ${student?.nome || "—"}\nNível: ${nivelAtleta}\nModalidades: ${modalidades.join(", ")}\nLesões: ${lesoesPrevias.join(", ")}\nRestrições: ${restricoesMovimentos.join(", ")}\nObjetivos: ${objetivos.join(", ")}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nSnatch: ${snatchRM || "—"}kg\nC&J: ${cleanJerkRM || "—"}kg\nBack SQ: ${backSquatRM || "—"}kg\nTreinos: ${historicoTreinos.length}\nEvolução: ${evolucao}`}
+              colors={cfColors} />
+            <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
+              <button onClick={handleSave} style={primaryBtn({ padding:"11px 26px", fontSize:14 })}>💾 Salvar Tudo</button>
+            </div>
+          </>
+        )}
+
+        {tab === "relatorio" && (
+          <ReportSection pain={enhancer.pain} logs={enhancer.logs} redFlags={enhancer.redFlags}
+            aiRes={enhancer.aiRes} patientName={student?.nome || "—"}
+            moduleLabel="CrossFit" colors={cfColors} />
         )}
 
         {tab === "evidencias" && (

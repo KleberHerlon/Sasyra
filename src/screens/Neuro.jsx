@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Accordion from "../components/Accordion";
+import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -213,9 +214,12 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
 
   const [evolucaoNeuro, setEvolucaoNeuro] = useState("");
 
+  const sid = student?.id || student?.nome;
+  const enhancer = useEnhancer("neurofuncional", sid, `neuro_enhancer_${sid}`);
+  const neuroColors = { ...C, accent: C.purple, font: F };
+
   useEffect(() => {
     if (student?.id || student?.nome) {
-      const sid = student.id || student.nome;
       const saved = loadNeuroData(sid);
       if (saved) {
         setDiagnosticoMedico(saved.diagnosticoMedico || "");
@@ -240,6 +244,10 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
         setTipoMarcha(saved.tipoMarcha || []);
         setReflexos(saved.reflexos || []);
         setEvolucaoNeuro(saved.evolucaoNeuro || "");
+        if (saved.pain) enhancer.setPain(saved.pain);
+        if (saved.logs) enhancer.setLogs(saved.logs);
+        if (saved.redFlags) enhancer.setRedFlags(saved.redFlags);
+        if (saved.aiRes) enhancer.setAiRes(saved.aiRes);
       }
     }
   }, [student?.id, student?.nome]);
@@ -253,6 +261,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
       masScores, masResult, bbsScores, bbsResult, mifScores, mifResult,
       tono, forcaNeuro, sensibilidade, coordenacao, tipoMarcha, reflexos,
       evolucaoNeuro,
+      pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
     });
   };
@@ -427,7 +436,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
           <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>🧠 Neurofuncional</span>
         </div>
         <div style={{ display:"flex", gap:4 }}>
-          {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
+          {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               background: tab === k ? C.purpleBg : "transparent",
               border: `1px solid ${tab === k ? C.purple + "50" : "transparent"}`,
@@ -665,6 +674,28 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
               <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Evolução</button>
             </div>
           </Section>
+        )}
+
+        {tab === "sessoes" && (
+          <>
+            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={neuroColors} />
+            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
+              flags={["Cefaleia súbita e intensa (hemorragia)","Déficit motor focal súbito (AVC)","Perda de consciência","Piora progressiva","Febre + rigidez nucal (meningite)","Trauma craniano recente","Tumor cerebral suspeito","Disfagia progressiva"]}
+              colors={neuroColors} />
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={neuroColors} />
+            <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
+              summaryText={`Paciente: ${student?.nome || "—"}\nDiagnóstico: ${diagnosticoMedico}\nTempo lesão: ${tempoLesao}\nLado afetado: ${ladoAfetado}\nSintomas: ${sintomas.join(", ")}\nMAS: ${masResult?.total || "—"}\nBBS: ${bbsResult?.total || "—"}\nMIF: ${mifResult?.total || "—"}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nMarcha: ${tipoMarcha.join(", ")}\nCoordenação: ${coordenacao.join(", ")}\nEvolução: ${evolucaoNeuro}`}
+              colors={neuroColors} />
+            <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
+              <button onClick={handleSave} style={primaryBtn({ padding:"11px 26px", fontSize:14 })}>💾 Salvar Tudo</button>
+            </div>
+          </>
+        )}
+
+        {tab === "relatorio" && (
+          <ReportSection pain={enhancer.pain} logs={enhancer.logs} redFlags={enhancer.redFlags}
+            aiRes={enhancer.aiRes} patientName={student?.nome || "—"}
+            moduleLabel="Neurofuncional" colors={neuroColors} />
         )}
 
         {tab === "evidencias" && (

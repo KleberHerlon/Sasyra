@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 import YouTube from "react-youtube";
 import Accordion from "../components/Accordion";
 import { calcPollock7Dobras, calcPollock3Dobras, calcVO2maxCooper, calcVO2maxRockport, calc1RMPreditivo, calcPercentual1RM, DOBRAS_LOCATIONS, RM_TABLE, calcISAK6Dobras, calcBioimpedancia, savePhysicalAssessment, loadPhysicalAssessments, getBFEvolution, saveTreino, loadTreinos, calcVolumeLoad, calcWeeklyVolume, calcProgression, suggestNextCycle } from "../data/physicalAssessment";
@@ -284,6 +285,10 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
 
   const [bfEvolution, setBfEvolution] = useState([]);
   const [weeklyVolume, setWeeklyVolume] = useState([]);
+
+  const sid = student?.id || student?.nome;
+  const enhancer = useEnhancer("pe", sid, `pe_enhancer_${sid}`);
+  const peColors = { ...C, accent: C.green, font: F };
   const [progressionResult, setProgressionResult] = useState(null);
   const [cycleSuggestion, setCycleSuggestion] = useState(null);
 
@@ -327,6 +332,13 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
       const br = readFisioterapiaRestrictions(sid);
       setBridgeRestricoes(br);
       setBlockedExercises(getBlockedExercises(br));
+      const enhancerData = loadPesEnhancer(sid);
+      if (enhancerData) {
+        if (enhancerData.pain) enhancer.setPain(enhancerData.pain);
+        if (enhancerData.logs) enhancer.setLogs(enhancerData.logs);
+        if (enhancerData.redFlags) enhancer.setRedFlags(enhancerData.redFlags);
+        if (enhancerData.aiRes) enhancer.setAiRes(enhancerData.aiRes);
+      }
     }
   }, [student?.id, student?.nome]);
 
@@ -712,7 +724,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
           </span>
         </div>
         <div style={{ display:"flex", gap:4 }}>
-          {[["anamnese","📋","Anamnese",bridgeExibidas.length],["avaliacao","🔬","Avaliação Física"],["prescricao","📝","Prescrição"],["dashboard","📊","Dashboard"],["evidencias","🔬","Evidências"]].map(([k,ic,lb,badge]) => (
+          {[["anamnese","📋","Anamnese",bridgeExibidas.length],["avaliacao","🔬","Avaliação Física"],["prescricao","📝","Prescrição"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["dashboard","📊","Dashboard"],["evidencias","🔬","Evidências"]].map(([k,ic,lb,badge]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               background: tab === k ? C.greenBg : "transparent",
               border: `1px solid ${tab === k ? C.green + "50" : "transparent"}`,
@@ -1694,6 +1706,25 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
           />
         )}
 
+        {tab === "sessoes" && (
+          <>
+            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={peColors} />
+            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
+              flags={["Dor torácica ao esforço","Falta de ar / dispneia anormal","Tontura/síncope durante treino","Palpitações","Edema articular sem trauma","Perda de força súbita","Febre + mialgia","Cefaleia intensa pós-exercício"]}
+              colors={peColors} />
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={peColors} />
+            <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
+              summaryText={`Aluno: ${student?.nome || "—"}\nObjetivo: ${objetivo}\nQueixa: ${queixa}\nRestrições: ${restricoes.map(r=>r.local).join(", ")}\nNível: ${nivel}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nTreinos prescritos: ${estruturaTreino.length}\nPSE médio: ${pseSessoes.length > 0 ? (pseSessoes.reduce((a,b)=>a+Number(b.rpe||0),0)/pseSessoes.length).toFixed(1) : "—"}/10\nAvaliações: ${savedAssessments.length}`}
+              colors={peColors} />
+          </>
+        )}
+
+        {tab === "relatorio" && (
+          <ReportSection pain={enhancer.pain} logs={enhancer.logs} redFlags={enhancer.redFlags}
+            aiRes={enhancer.aiRes} patientName={student?.nome || "—"}
+            moduleLabel="Educação Física" colors={peColors} />
+        )}
+
         {tab === "evidencias" && (
           <>
             <div style={{ marginBottom:14, padding:"12px 16px", background:C.blueBg, border:`1px solid ${C.blue}40`, borderRadius:12, fontSize:12, color:C.textSub, lineHeight:1.7 }}>
@@ -1753,6 +1784,10 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
 
     </div>
   );
+}
+
+function loadPesEnhancer(studentId) {
+  try { const d = localStorage.getItem(`pe_enhancer_${studentId}`); return d ? JSON.parse(d) : null; } catch { return null; }
 }
 
 function calcIdade(dataNasc) {

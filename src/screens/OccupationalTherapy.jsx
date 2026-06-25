@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Accordion from "../components/Accordion";
+import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 import { calcBioimpedancia } from "../data/physicalAssessment";
 
 const C = {
@@ -245,6 +246,10 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
   const [alturaBia, setAlturaBia] = useState(student?.altura || "");
   const [biaResult, setBiaResult] = useState(null);
 
+  const sid = student?.id || student?.nome;
+  const enhancer = useEnhancer("terapia_ocupacional", sid, `to_enhancer_${sid}`);
+  const toColors = { ...C, accent: C.purple, font: F };
+
   useEffect(() => {
     if (student?.id || student?.nome) {
       const sid = student.id || student.nome;
@@ -282,6 +287,10 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
         setRiscoQueda(saved.riscoQueda || "");
         setEvolucao(saved.evolucao || "");
         setMetas(saved.metas || "");
+        if (saved.pain) enhancer.setPain(saved.pain);
+        if (saved.logs) enhancer.setLogs(saved.logs);
+        if (saved.redFlags) enhancer.setRedFlags(saved.redFlags);
+        if (saved.aiRes) enhancer.setAiRes(saved.aiRes);
       }
     }
   }, [student?.id, student?.nome]);
@@ -304,6 +313,7 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
       forcaPinça, forcaPreensao, jebsenTime, manipulacaoFina,
       sensibilidade, estereognosia, miniMental, memoria, atencao, funcaoExecutiva,
       barreiras, riscoQueda, evolucao, metas,
+      pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
     });
   };
@@ -480,7 +490,7 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
           <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>🤲 Terapia Ocupacional</span>
         </div>
         <div style={{ display:"flex", gap:4 }}>
-          {[["anamnese","📋","Avaliação"],["biometria","🔬","Biometria"],["evidencias","🔬","Evidências"],["evolucao","📈","Evolução"]].map(([k,ic,lb]) => (
+          {[["anamnese","📋","Avaliação"],["biometria","🔬","Biometria"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evolucao","📈","Evolução"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               background: tab === k ? C.purpleBg : "transparent",
               border: `1px solid ${tab === k ? C.purple + "50" : "transparent"}`,
@@ -742,6 +752,28 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
               )}
             </Section>
           </>
+        )}
+
+        {tab === "sessoes" && (
+          <>
+            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={toColors} />
+            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
+              flags={["Dor súbita + perda de função","Parestesia progressiva","Ferida/úlcera com sinais de infecção","Queda recente + fratura suspeita","Disfagia + tosse/engasgo","Agitação psicomotora grave","Ideação suicida relatada","Alucinações visuais/auditivas recentes"]}
+              colors={toColors} />
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={toColors} />
+            <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
+              summaryText={`Paciente: ${student?.nome || "—"}\nDiagnóstico: ${diagnosticoMedico}\nQueixa: ${queixaTO}\nOcupação: ${ocupacao}\nAVDs: ${avds.join(", ")}\nAIVDs: ${aivds.join(", ")}\nTecnologia assistiva: ${tecnologiaAssistiva.join(", ")}\nBarreiras: ${barreiras.join(", ")}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nEvolução: ${evolucao}`}
+              colors={toColors} />
+            <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
+              <button onClick={handleSave} style={primaryBtn({ padding:"11px 26px", fontSize:14 })}>💾 Salvar Tudo</button>
+            </div>
+          </>
+        )}
+
+        {tab === "relatorio" && (
+          <ReportSection pain={enhancer.pain} logs={enhancer.logs} redFlags={enhancer.redFlags}
+            aiRes={enhancer.aiRes} patientName={student?.nome || "—"}
+            moduleLabel="Terapia Ocupacional" colors={toColors} />
         )}
 
         {tab === "evidencias" && (

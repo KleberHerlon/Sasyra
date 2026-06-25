@@ -1010,6 +1010,8 @@ export default function Dashboard() {
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
           model:"claude-sonnet-4-6", max_tokens:1000,
+          _patientName: pt.nome,
+          _queixa: queixa,
           messages:[{role:"user",content:
 `Você é fisioterapeuta ortopédico especialista em medicina baseada em evidências (PEDro, Cochrane, CPGs internacionais).
 Com base nos dados clínicos abaixo, forneça análise estruturada e atualizada:

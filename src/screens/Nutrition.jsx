@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Accordion from "../components/Accordion";
 import { calcBioimpedancia, calcPollock7Dobras, calcPollock3Dobras } from "../data/physicalAssessment";
 import { calcIMC, calcRCQ } from "../data/peScales";
+import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -240,6 +241,10 @@ export default function Nutrition({ student, students, onSelectStudent, onAddStu
   const [evolucao, setEvolucao] = useState("");
   const [condutaNutri, setCondutaNutri] = useState("");
 
+  const sid = student?.id || student?.nome;
+  const enhancer = useEnhancer("nutricao", sid, `nutri_enhancer_${sid}`);
+  const nutriColors = { ...C, accent: C.amber, font: F };
+
   useEffect(() => {
     if (student?.sexo) setSexoRcq(student.sexo);
   }, [student?.sexo]);
@@ -278,6 +283,10 @@ export default function Nutrition({ student, students, onSelectStudent, onAddStu
         setIpaq(saved.ipaq || "");
         setEvolucao(saved.evolucao || "");
         setCondutaNutri(saved.condutaNutri || "");
+        if (saved.pain) enhancer.setPain(saved.pain);
+        if (saved.logs) enhancer.setLogs(saved.logs);
+        if (saved.redFlags) enhancer.setRedFlags(saved.redFlags);
+        if (saved.aiRes) enhancer.setAiRes(saved.aiRes);
       }
     }
   }, [student?.id, student?.nome]);
@@ -340,6 +349,7 @@ export default function Nutrition({ student, students, onSelectStudent, onAddStu
       mustScores, mustResult, sarcfAnswers, sarcfResult,
       refeicoes, bioquimica, ipaq,
       evolucao, condutaNutri,
+      pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
     });
   };
@@ -510,7 +520,7 @@ export default function Nutrition({ student, students, onSelectStudent, onAddStu
           <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>🥗 Nutrição Clínica</span>
         </div>
         <div style={{ display:"flex", gap:4 }}>
-          {[["anamnese","📋","Anamnese"],["antropometria","📏","Antropometria"],["bioquimica","🔬","Bioquímica"],["recordatorio","🍽","Recordatório"],["evolucao","📈","Evolução"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
+          {[["anamnese","📋","Anamnese"],["antropometria","📏","Antropometria"],["bioquimica","🔬","Bioquímica"],["recordatorio","🍽","Recordatório"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               background: tab === k ? C.amberBg : "transparent",
               border: `1px solid ${tab === k ? C.amber + "50" : "transparent"}`,
@@ -919,6 +929,28 @@ export default function Nutrition({ student, students, onSelectStudent, onAddStu
               <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Evolução</button>
             </div>
           </Section>
+        )}
+
+        {tab === "sessoes" && (
+          <>
+            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={nutriColors} />
+            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
+              flags={["Perda de peso involuntária >5% em 3 meses","Disfagia progressiva","IMC <18.5 (baixo peso)","IMC >40 (obesidade grave)","Anemia grave (Hb <8)","Desnutrição grave (MUST ≥2)","Sarcopenia + quedas frequentes","Comprometimento cognitivo + disfagia"]}
+              colors={nutriColors} />
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={nutriColors} />
+            <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
+              summaryText={`Paciente: ${student?.nome || "—"}\nQueixa: ${queixaNutri}\nPeso: ${pesoAtual}kg / Alt: ${alturaAtual}cm\nIMC: ${imcResult?.value || "—"}\nRCQ: ${rcqResult || "—"}\nMUST: ${mustResult?.total || "—"}\nSARC-F: ${sarcfResult?.score || "—"}\nHabitos: ${habitosVida.join(", ")}\nAlergias: ${alergias.join(", ")}\nSuplementos: ${suplementos}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nEvolução: ${evolucao}`}
+              colors={nutriColors} />
+            <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
+              <button onClick={handleSave} style={primaryBtn({ padding:"11px 26px", fontSize:14 })}>💾 Salvar Tudo</button>
+            </div>
+          </>
+        )}
+
+        {tab === "relatorio" && (
+          <ReportSection pain={enhancer.pain} logs={enhancer.logs} redFlags={enhancer.redFlags}
+            aiRes={enhancer.aiRes} patientName={student?.nome || "—"}
+            moduleLabel="Nutrição Clínica" colors={nutriColors} />
         )}
 
         {tab === "evidencias" && (

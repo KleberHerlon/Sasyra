@@ -4,6 +4,7 @@ import cors from "cors";
 import { readFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { saveAnalysis, listAnalyses, getTokenSummary } from "./memoryStore.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3001;
@@ -32,11 +33,45 @@ app.post("/api/anthropic", async (req, res) => {
     });
 
     const data = await anthropicRes.json();
+
+    if (anthropicRes.ok && data.usage) {
+      const lastMsg = req.body.messages?.[req.body.messages.length - 1];
+      const promptText = typeof lastMsg?.content === "string" ? lastMsg.content : "";
+      const responseText = data.content?.map(c => c.text || "").join("\n") || "";
+      saveAnalysis({
+        patientName: req.body._patientName,
+        queixa: req.body._queixa,
+        prompt: promptText,
+        response: responseText,
+        inputTokens: data.usage.input_tokens,
+        outputTokens: data.usage.output_tokens,
+        model: req.body.model,
+      });
+    }
+
     res.status(anthropicRes.status).json(data);
   } catch (err) {
     console.error("Proxy error:", err);
     res.status(502).json({ error: "Erro ao comunicar com Anthropic API." });
   }
+});
+
+app.post("/api/memory/save", (req, res) => {
+  const { patientName, queixa, prompt, response, inputTokens, outputTokens, model } = req.body;
+  if (!prompt || !response) return res.status(400).json({ error: "prompt e response são obrigatórios." });
+  const entry = saveAnalysis({ patientName, queixa, prompt, response, inputTokens, outputTokens, model });
+  res.json({ ok: true, entry });
+});
+
+app.get("/api/memory", (req, res) => {
+  const limit = parseInt(req.query.limit) || 50;
+  const analyses = listAnalyses(limit);
+  res.json({ analyses });
+});
+
+app.get("/api/tokens", (_req, res) => {
+  const summary = getTokenSummary();
+  res.json(summary);
 });
 
 app.get("/api/health", (_req, res) => {
@@ -46,7 +81,7 @@ app.get("/api/health", (_req, res) => {
 const distPath = join(__dirname, "..", "dist");
 if (existsSync(distPath)) {
   app.use(express.static(distPath));
-  app.get("*", (_req, res) => {
+  app.use((_req, res) => {
     res.sendFile(join(distPath, "index.html"));
   });
 }

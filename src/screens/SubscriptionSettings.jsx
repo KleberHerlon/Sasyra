@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSubscription } from "../hooks/useSubscription";
+import { useTokens } from "../hooks/useTokens";
 import { PLANS, PLAN_ORDER, PLAN_LABELS } from "../data/plans";
 
 const C = {
@@ -33,6 +34,9 @@ const cardStyle = (extra={}) => ({ background:C.card, border:`1px solid ${C.bord
 
 export default function SubscriptionSettings({ onNavigate }) {
   const { sub, plan, label, setPlan, extraUsers, addExtraUser, removeExtraUser, invoices, isAnnual } = useSubscription();
+  const { summary: tokenSummary, loading: tokenLoading, fetchSummary } = useTokens();
+
+  useEffect(() => { fetchSummary(); }, []);
   const [newUser, setNewUser] = useState({ nome: "", crefito: "", email: "" });
   const [showChangePlan, setShowChangePlan] = useState(false);
 
@@ -145,6 +149,50 @@ export default function SubscriptionSettings({ onNavigate }) {
           <div style={{ fontSize:12, color:C.textMuted, marginTop:2 }}>
             {isAnnual ? "Cobrança anual" : "Cobrança mensal"} • Plano {label}
           </div>
+        </div>
+
+        {/* Token Usage */}
+        <div style={cardStyle()}>
+          <div style={{ fontSize:10, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:12 }}>
+            🤖 Uso de Tokens — IA
+          </div>
+          {tokenLoading ? (
+            <div style={{ fontSize:12, color:C.textDim }}>Carregando...</div>
+          ) : (
+            <>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
+                <div style={{ background:C.surface, borderRadius:8, padding:"10px 12px", border:`1px solid ${C.borderLight}` }}>
+                  <div style={{ fontSize:9, color:C.textMuted, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>Mês Atual</div>
+                  <div style={{ fontSize:18, fontWeight:800, color:C.amber }}>{(tokenSummary.currentMonth.totalTokens || 0).toLocaleString()}</div>
+                  <div style={{ fontSize:10, color:C.textDim }}>tokens ({tokenSummary.currentMonth.totalAnalyses || 0} análises)</div>
+                </div>
+                <div style={{ background:C.surface, borderRadius:8, padding:"10px 12px", border:`1px solid ${C.borderLight}` }}>
+                  <div style={{ fontSize:9, color:C.textMuted, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>Total Acumulado</div>
+                  <div style={{ fontSize:18, fontWeight:800, color:C.green }}>{(tokenSummary.allTime.totalTokens || 0).toLocaleString()}</div>
+                  <div style={{ fontSize:10, color:C.textDim }}>tokens ({tokenSummary.allTime.totalAnalyses || 0} análises)</div>
+                </div>
+              </div>
+              {tokenSummary.months && tokenSummary.months.length > 0 && (
+                <div style={{ maxHeight:160, overflowY:"auto" }}>
+                  {tokenSummary.months.map(m => {
+                    const cost = (m.inputTokens / 1_000_000 * 3) + (m.outputTokens / 1_000_000 * 15);
+                    return (
+                      <div key={m.month} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 0", borderBottom:`1px solid ${C.borderLight}`, fontSize:12 }}>
+                        <span style={{ color:C.textMuted }}>{m.month}</span>
+                        <div style={{ textAlign:"right" }}>
+                          <span style={{ color:C.text, fontWeight:600 }}>{m.totalTokens.toLocaleString()} tok</span>
+                          <span style={{ color:C.textDim, marginLeft:8 }}>R$ {cost.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <div style={{ fontSize:10, color:C.textDim, marginTop:10 }}>
+                Custo estimado: input ~R$ 3,00/milhão • output ~R$ 15,00/milhão
+              </div>
+            </>
+          )}
         </div>
 
         {/* Invoice History */}

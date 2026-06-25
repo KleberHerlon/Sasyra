@@ -14,59 +14,123 @@ Ao iniciar uma nova sessão, SEMPRE ler o arquivo `SIMULACAO_PERSONAS.md` antes 
 1. Dados só no localStorage sem backend
 2. Falta app mobile para alunos
 3. Sem integração Google Calendar/WhatsApp
-4. Falta suporte para áreas específicas (pediatria, neuro, crossfit)
+4. ~~Falta suporte para áreas específicas (pediatria, neuro, crossfit)~~ ✅ Implementado
 5. IA com custo alto nos planos básicos
 
 ---
 
-## Arquitetura dos Últimos Módulos Implementados (Pediatria, CrossFit, Neuro)
+## Última Sessão — 25/06/2026
 
-### Ponte de Transição de Dados — `src/data/transitionBridge.js`
-- Lê `sasyra_assessments` do localStorage e mapeia restrições da fisioterapia para alertas visuais no módulo de treino.
-- **Deduplicação automática**: restrições já detectadas via `getRestricoesClinicas()` na anamnese do PE são omitidas da ponte (`bridgeExibidas`).
-- **Bloqueio de exercícios**: 12 condições mapeadas para IDs de exercícios proibidos — aparecem como 🚫 na busca e nas sugestões, impedindo adição.
-- **Validade temporal**: avaliações com >90 dias recebem badge "+90 dias" e aviso de reavaliação.
+### O que foi implementado
 
-### Bloqueio Brzycki > 10 reps — `src/data/physicalAssessment.js`
-- `calc1RMPreditivo` retorna `bloqueio` com mensagem simplificada quando `repeticoes > 10`.
-- Interface exibe card vermelho 🚫 com alternativa (teste de 10RM).
+#### 1. Componente Compartilhado: `src/components/ModuleEnhancer.jsx`
+Adiciona a qualquer módulo: Dor (EVA), Red Flags, Sessões Diário, Análise IA, Relatório PDF
 
-### Novo Módulo Pediatria — `src/screens/Pediatria.jsx`
-- Persistência: `ped_data_[studentId]` (localStorage)
-- Abas: Anamnese (📋), Terapia (🏃), Evolução (📈), Evidências (🔬)
-- Conteúdo: história gestacional/perinatal, marcos motores, comorbidades pediátricas, exame físico pediátrico (tônus, reflexos primitivos, coordenação)
-- Escalas: GMFCS (I-V), AIMS score, M-CHAT (autismo - TagSelect)
-- Plano terapêutico com atividades (estimulação motora, treino de marcha, fortalecimento, integração sensorial, exercícios lúdicos)
-- Cor: C.blue (#60A5FA)
-- Evidências pediátricas: paralisia_cerebral, sindrome_down, tea, mielomeningocele, distrofia_muscular, torcicolo_congenito
+#### 2. Módulos Aprimorados (Pain + RedFlags + SessionLog + IA + Report)
+| Módulo | Arquivo | Abas novas |
+|---|---|---|
+| Pediatria | `src/screens/Pediatria.jsx` | 📅 Sessões, 📊 Relatório |
+| Neurofuncional | `src/screens/Neuro.jsx` | 📅 Sessões, 📊 Relatório |
+| CrossFit | `src/screens/CrossFit.jsx` | 📅 Sessões, 📊 Relatório |
+| Nutrição Clínica | `src/screens/Nutrition.jsx` | 📅 Sessões, 📊 Relatório |
+| Terapia Ocupacional | `src/screens/OccupationalTherapy.jsx` | 📅 Sessões, 📊 Relatório |
 
-### Novo Módulo CrossFit — `src/screens/CrossFit.jsx`
-- Persistência: `cf_data_[studentId]` (localStorage)
-- Abas: Perfil (📋), Treinos (🏋️), Métricas (📊), Evolução (📈), Evidências (🔬)
-- Conteúdo: perfil do atleta (nível, modalidades favoritas, lesões prévias, movimentos proibidos), registro de treinos (Strength/Metcon/Gymnastics/Weightlifting)
-- Benchmarks WODs predefinidos: Fran, Helen, Cindy, Grace, Isabel, Diane, Annie, Karen, Kelly
-- RPE tracking em cada treino
-- 1RM tracking: Snatch, Clean & Jerk, Back Squat, Front Squat, Deadlift, Bench Press, Shoulder Press
-- Cor: C.amber (#FBBF24)
-- Evidências: Lombalgia em CrossFitters, Ombro do CrossFitter, Joelho do CrossFitter, Rabdomiólise, Tendinopatias
+#### 3. Servidor de Memória Permanente
+- `server/memoryStore.js` — Persistência JSON das análises IA no servidor
+- `server/proxy.js` — Endpoints `/api/memory`, `/api/tokens`
+- `src/hooks/useMemory.js`, `useTokens.js` — Hooks frontend
+- Token tracking extraído automaticamente das respostas Anthropic
+- Card de uso de tokens em `SubscriptionSettings.jsx`
 
-### Novo Módulo Neuro — `src/screens/Neuro.jsx`
-- Persistência: `neuro_data_[studentId]` (localStorage)
-- Abas: Anamnese (📋), Avaliação (🔬), Evolução (📈), Evidências (🔬)
-- Conteúdo: diagnóstico neurológico, tempo/mecanismo da lesão, lado afetado, sintomas neurológicos, exame neurológico (tônus, força muscular MRC 0-5 para 6 grupos bilaterais, sensibilidade, coordenação, marcha, reflexos)
-- Escalas embutidas:
-  - **MAS (Ashworth Modificada)**: 6 itens (flexores cotovelo D/E, extensores joelho D/E, flexores plantares D/E), total 0-24
-  - **BBS (Berg Balance Scale) simplificada**: 5 itens, total 0-20, classificação de risco de queda
-  - **MIF (Medida de Independência Funcional) simplificada**: 6 itens (alimentação, higiene, banho, vestir superior/inferior, uso banheiro), total 0-42
-- Cor: C.purple (#A78BFA)
-- Evidências neurológicas: avc, lesao_medular, parkinson, esclerose_multipla, tce, elau, ataxia
+#### 4. Estrutura Multi-idioma (i18n)
+- `src/i18n/index.js` — Config i18next com fallback pt-BR, detecção de idioma (localStorage → navegador → pt-BR)
+- `src/i18n/locales/pt-BR.json` — Traduções português
+- `src/i18n/locales/en.json` — Traduções inglês
+- `src/components/LanguageSwitcher.jsx` — Seletor PT/EN com persistência em localStorage
+- Integrado em: LoginScreen, ModuleSelector, PatientList (App.jsx)
+- Seletor de idioma posicionado no canto superior direito (login, módulos) e na navbar (pacientes)
+- Pronto para expansão: todos os arquivos de tela podem importar `useTranslation` e usar `t("chave")`
 
-### Registro no App.jsx
-- LoginScreen: 3 novas profissões (pediatria, crossfit, neurofuncional)
-- ModuleSelector: 3 novos cards de módulo
-- handleLogin: mapeamento prof → module key
-- Routing condicional: 3 novos blocos `if (module === "pediatria"/"crossfit"/"neuro")`
-- Import statements para os 3 novos screens
+#### 5. Responsividade Mobile
+- **Pediatria** — `useMediaQuery` adicionado; grids (formulários, escalas, terapia) viram 1 coluna; padding reduzido; tabs com scroll horizontal; cabeçalho compacto
+- **CrossFit** — `useMediaQuery` adicionado; grids (anamnese, treinos, 1RM tracking) adaptativos; tabs com scroll horizontal; cabeçalho compacto; nome do aluno oculto em mobile
 
-### Arquivo de Memória Arquitetural
-- `.sasyra-context.md` na raiz do projeto contém o escopo completo do sistema e próximos passos.
+#### 5. Infraestrutura (antigo)
+- `src/components/ModuleEnhancer.jsx` — Componentes: `useEnhancer`, `PainSection`, `RedFlagsSection`, `SessionLogSection`, `AIAnalysisSection`, `ReportSection`
+- Persistência por paciente: `[modulo]_enhancer_[studentId]` no localStorage
+- Script: `npm run dev:server` para iniciar servidor de memória
+
+---
+
+## Roadmap de Melhorias Pendentes
+
+### 🔴 Alta Prioridade
+
+- [ ] **Supabase como backend real** — Migrar localStorage para Supabase. `src/data/supabaseService.js` já tem base com `syncLocalStorageToSupabase()`
+- [ ] **App mobile (PWA)** — Melhorar `public/sw.js` para cache de dados + IndexedDB. Adicionar manifest com suporte a instalação
+- [ ] **Code-splitting** — Usar `React.lazy()` + `Suspense` nos 6 módulos para reduzir bundle inicial (atualmente 1.2MB)
+- [x] **ModuleEnhancer no PhysicalEducation** — PE (`src/screens/PhysicalEducation.jsx`) agora com PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection e ReportSection nas abas "Sessões" e "Relatório". Persistência via `pe_enhancer_[id]` no localStorage
+
+### 🟡 Média Prioridade
+
+- [ ] **Ponte de Transição entre todos os módulos** — Atualmente só conecta Fisioterapia → PE via `transitionBridge.js`. Estender para: TO → Neuro, Nutri → Fisio, Ped → TO
+- [ ] **Tema claro para Neuro, CrossFit, Nutrição, TO** — Só Pediatria tem tema claro. Os demais são escuros fixos
+- [x] **Responsivo mobile** — Pediatria e CrossFit agora com `useMediaQuery`, grids adaptativos, tabs scroll, cabeçalho compacto
+- [ ] **Testes automatizados** — Adicionar pelo menos smoke tests: `npm test` inexistente. Criar testes com Vitest
+- [x] **Multi-idioma (i18n)** — Preparar estrutura para futura tradução
+
+### 🟢 Baixa Prioridade
+
+- [ ] **Exportação CSV/JSON** — Botão para exportar dados de todos os pacientes por módulo
+- [ ] **Dashboard global multi-módulo** — Cruzar dados de paciente em Fisio + Nutri simultaneamente
+- [ ] **Google Calendar ativo** — As credenciais OAuth estão comentadas no `.env`. Ativar integração
+- [ ] **WhatsApp Business** — Token de acesso permanente comentado no `.env`. Ativar notificações
+- [ ] **GitHub Actions / CI** — Build automático + lint ao fazer push
+
+---
+
+## Arquitetura dos Módulos
+
+### Fisioterapia (referência gold standard)
+- `src/App.jsx` — 2631 linhas. O módulo mais completo.
+- Features exclusivas: autoCIF, Yellow Flags, Testes ortopédicos (30+), Goniometria com valores de referência, Escalas (WOMAC/DASH/SF-36), Agenda, Financeiro, Planos/Assinatura, Express Assessment, Barra de progresso, Paywall
+
+### Educação Física
+- `src/screens/PhysicalEducation.jsx` — 1766 linhas. Segundo maior.
+- Features exclusivas: Periodização (macro/micro/deload), PSE Foster (monotonia/strain), VO2max (Cooper+Rockport), 1RM preditivo (Epley/Brzycki/Lombardi), Zonas FC Karvonen, Estratificação ACSM, Dashboard de Performance, PatientView, Ponte de Transição com Fisioterapia
+
+### Terapia Ocupacional
+- `src/screens/OccupationalTherapy.jsx` — 836 linhas.
+- Features exclusivas: COPM, Barthel, Lawton & Brody, Força de pinça/preensão, Mini-Mental, Barreiras ambientais, Tecnologia assistiva
+
+### Nutrição Clínica
+- `src/screens/Nutrition.jsx` — 961 linhas.
+- Features exclusivas: MUST, SARC-F, IPAQ, TMB/GET (Harris-Mifflin), Recordatório 24h, Bioquímica (15 campos), Bioimpedância, Pollock dobras
+
+### Pediatria
+- `src/screens/Pediatria.jsx` — ~620 linhas.
+- Features exclusivas: História gestacional/perinatal, Marcos motores, Reflexos primitivos, GMFCS, AIMS, M-CHAT, Plano terapêutico com orientações ao cuidador
+
+### CrossFit
+- `src/screens/CrossFit.jsx` — ~750 linhas.
+- Features exclusivas: Perfil atleta CrossFit, 1RM tracking (7 levantamentos), Total Olímpico, 9 WODs benchmark, RPE tracking, Modalidades de treino (Strength/Metcon/Gymnastics/Weightlifting)
+
+### Neurofuncional
+- `src/screens/Neuro.jsx` — ~720 linhas.
+- Features exclusivas: MAS (Ashworth Modificada 0-24), BBS simplificada (0-20), MIF simplificada (0-42), Força MRC 12 grupos bilaterais, Marcha (8 tipos), Reflexos patológicos
+
+### Componentes Compartilhados
+- `src/components.jsx` — EvaSlider, TagSelect, SingleSelect, AudioField, Section, Row, Field, SubHeading, GonioRow, MRCRow
+- `src/components/ModuleEnhancer.jsx` — useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection
+- `src/data/transitionBridge.js` — Ponte Fisioterapia → PE
+- `server/memoryStore.js` — Memória permanente + token tracking
+
+### Persistência
+- localStorage: `[modulo]_data_[studentId]` para dados clínicos, `[modulo]_enhancer_[studentId]` para dados do enhancer
+- Servidor: `server/data/memory-store.json` para análises IA, `server/data/token-tracker.json` para tokens
+- Servidor: `npm run dev:server` (porta 3001)
+
+---
+
+## Arquivo de Memória Arquitetural
+- `.sasyra-context.md` na raiz do projeto contém o escopo original do sistema.

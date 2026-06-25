@@ -1,0 +1,88 @@
+{
+  "app": {
+    "name": "SASYRA",
+    "subtitle": "REHABILITATION & EVIDENCE",
+    "description": "Clinical decision support system for evidence-based assessment, documentation and orthopedic treatment",
+    "enter": "Enter SASYRA →",
+    "disclaimer": "By entering, you declare you are a licensed healthcare professional"
+  },
+  "auth": {
+    "profLabel": "I am a",
+    "nameLabel": "Full name",
+    "namePlaceholder": "Your name",
+    "crefitoLabel": "License / registration",
+    "crefitoOptional": "(optional)",
+    "crefitoPlaceholder": "Ex: 12345-F",
+    "professions": {
+      "fisio": "Physical Therapist",
+      "to": "Occupational Therapist",
+      "educFisico": "Exercise Physiologist",
+      "nutricionista": "Nutritionist",
+      "pediatria": "Pediatric Physical Therapist",
+      "crossfit": "CrossFit Coach",
+      "neurofuncional": "Neurofunctional Physical Therapist"
+    }
+  },
+  "modules": {
+    "title": "Select module",
+    "greeting": "Hello, {{name}}",
+    "fisioterapia": "Physical Therapy",
+    "educacaoFisica": "Physical Education",
+    "terapiaOcupacional": "Occupational Therapy",
+    "nutricao": "Clinical Nutrition",
+    "pediatria": "Pediatrics",
+    "crossfit": "CrossFit",
+    "neuro": "Neurofunctional",
+    "logout": "Logout",
+    "back": "Back",
+    "accessModule": "Access Module →"
+  },
+  "common": {
+    "save": "💾 Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "new": "New",
+    "search": "Search",
+    "loading": "Loading…",
+    "noData": "No data found",
+    "confirm": "Confirm",
+    "continue": "Continue",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "patient": {
+    "list": "Patients",
+    "newPatient": "New Patient",
+    "newStudent": "New Student",
+    "editPatient": "Edit Patient",
+    "editStudent": "Edit Student",
+    "deleteConfirm": "Are you sure you want to delete {{name}}?",
+    "deleteWarning": "All data from {{name}} will be permanently lost. This cannot be undone.",
+    "deleteFinal": "Yes, permanently delete",
+    "nameLabel": "Full name",
+    "birthLabel": "Date of birth",
+    "sexLabel": "Sex",
+    "professionLabel": "Profession",
+    "insuranceLabel": "Insurance",
+    "phoneLabel": "Phone",
+    "weightLabel": "Weight (kg)",
+    "heightLabel": "Height (cm)"
+  },
+  "tabs": {
+    "anamnese": "Assessment",
+    "treinos": "Workouts",
+    "metricas": "Metrics",
+    "evolucao": "Progress",
+    "sessoes": "Sessions",
+    "relatorio": "Report",
+    "evidencias": "Evidence",
+    "terapia": "Therapy",
+    "perfil": "Profile"
+  },
+  "language": {
+    "label": "Language",
+    "pt-BR": "Português (BR)",
+    "en": "English"
+  }
+}

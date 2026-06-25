@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { EvaSlider, TagSelect, SingleSelect, AudioField, useProgress, Section, Row, Field, SubHeading, useMediaQuery, GonioRow, MRCRow, MUSCLES, JOINTS, MVMT, getRef, isOutOfRange, PaywallModal } from "./components";
+import LanguageSwitcher from "./components/LanguageSwitcher";
 import Assessment from "./Assessment";
 import ScaleModal from "./ScaleModal";
 import SCALES from "./scales";
@@ -919,18 +921,19 @@ let _gId = 20;
 
 // ── Login Screen ────────────────────────────────────────────────────────────────
 function LoginScreen({ onLogin, theme, onToggleTheme }) {
+  const { t } = useTranslation();
   const [prof, setProf] = useState("");
   const [nome, setNome] = useState("");
   const [crefito, setCrefito] = useState("");
 
   const profOptions = [
-    { value:"fisio", label:"Fisioterapeuta", icon:"🦵" },
-    { value:"to", label:"Terapeuta Ocupacional", icon:"🤲" },
-    { value:"educFisico", label:"Educador Físico", icon:"🏃" },
-    { value:"nutricionista", label:"Nutricionista", icon:"🥗" },
-    { value:"pediatria", label:"Fisioterapeuta Pediátrico", icon:"👶" },
-    { value:"crossfit", label:"Treinador CrossFit", icon:"💪" },
-    { value:"neurofuncional", label:"Fisioterapeuta Neurofuncional", icon:"🧠" },
+    { value:"fisio", label: t("auth.professions.fisio"), icon:"🦵" },
+    { value:"to", label: t("auth.professions.to"), icon:"🤲" },
+    { value:"educFisico", label: t("auth.professions.educFisico"), icon:"🏃" },
+    { value:"nutricionista", label: t("auth.professions.nutricionista"), icon:"🥗" },
+    { value:"pediatria", label: t("auth.professions.pediatria"), icon:"👶" },
+    { value:"crossfit", label: t("auth.professions.crossfit"), icon:"💪" },
+    { value:"neurofuncional", label: t("auth.professions.neurofuncional"), icon:"🧠" },
   ];
 
   const handleEnter = () => {
@@ -940,10 +943,12 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
 
   return (
     <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:F, padding:24, position:"relative" }}>
-      {/* Theme toggle */}
-      <button onClick={onToggleTheme} style={{ position:"absolute", top:20, right:20, background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.textMuted, padding:"7px 12px", fontSize:16, lineHeight:1, cursor:"pointer", fontFamily:F, transition:"all 0.2s" }}>
-        {theme === "dark" ? "☀️" : "🌙"}
-      </button>
+      <div style={{ position:"absolute", top:20, right:20, display:"flex", alignItems:"center", gap:8 }}>
+        <LanguageSwitcher />
+        <button onClick={onToggleTheme} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.textMuted, padding:"7px 12px", fontSize:16, lineHeight:1, cursor:"pointer", fontFamily:F, transition:"all 0.2s" }}>
+          {theme === "dark" ? "☀️" : "🌙"}
+        </button>
+      </div>
 
       <div style={{ maxWidth:440, width:"100%", textAlign:"center" }}>
 
@@ -958,17 +963,17 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
               <circle cx="0" cy="0" r="6" fill={C.amber}/>
             </g>
             <text x="200" y="50" fill={C.text} fontSize="36" fontWeight="900" letterSpacing="8" fontFamily={F} textAnchor="middle">SASYRA</text>
-            <text x="200" y="66" fill={C.green} fontSize="13" fontWeight="800" letterSpacing="6" fontFamily={F} textAnchor="middle">REABILITAÇÃO E EVIDÊNCIA</text>
+            <text x="200" y="66" fill={C.green} fontSize="13" fontWeight="800" letterSpacing="6" fontFamily={F} textAnchor="middle">{t("app.subtitle")}</text>
           </svg>
         </div>
 
         <p style={{ color:C.textMuted, fontSize:14, lineHeight:1.6, margin:"8px 0 28px" }}>
-          Sistema de apoio à decisão clínica para avaliação, documentação e tratamento ortopédico baseado em evidências
+          {t("app.description")}
         </p>
 
         {/* Profissão */}
         <div style={{ textAlign:"left", marginBottom:18 }}>
-          <span style={lbl()}>Sou profissional de</span>
+          <span style={lbl()}>{t("auth.profLabel")}</span>
           <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
             {profOptions.map(opt => (
               <button key={opt.value} onClick={() => setProf(opt.value)}
@@ -989,15 +994,15 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
 
         {/* Nome */}
         <div style={{ textAlign:"left", marginBottom:14 }}>
-          <span style={lbl()}>Nome completo</span>
-          <input type="text" value={nome} onChange={e => setNome(e.target.value)} placeholder="Seu nome"
+          <span style={lbl()}>{t("auth.nameLabel")}</span>
+          <input type="text" value={nome} onChange={e => setNome(e.target.value)} placeholder={t("auth.namePlaceholder")}
             style={inp({ padding:"11px 14px", fontSize:14 })} />
         </div>
 
         {/* CREFITO (opcional) */}
         <div style={{ textAlign:"left", marginBottom:24 }}>
-          <span style={lbl()}>CREFITO / registro profissional <span style={{ color:C.textDim, fontWeight:400, textTransform:"none" }}>(opcional)</span></span>
-          <input type="text" value={crefito} onChange={e => setCrefito(e.target.value)} placeholder="Ex: 12345-F"
+          <span style={lbl()}>{t("auth.crefitoLabel")} <span style={{ color:C.textDim, fontWeight:400, textTransform:"none" }}>{t("auth.crefitoOptional")}</span></span>
+          <input type="text" value={crefito} onChange={e => setCrefito(e.target.value)} placeholder={t("auth.crefitoPlaceholder")}
             style={inp({ padding:"11px 14px", fontSize:14 })} />
         </div>
 
@@ -1009,11 +1014,11 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
             opacity: (!prof || !nome.trim()) ? 0.4 : 1,
             cursor: (!prof || !nome.trim()) ? "not-allowed" : "pointer"
           }}>
-          Entrar no SASYRA →
+          {t("app.enter")}
         </button>
 
         <p style={{ color:C.textDim, fontSize:11, marginTop:24 }}>
-          Ao entrar, você declara ser profissional de saúde habilitado
+          {t("app.disclaimer")}
         </p>
       </div>
     </div>
@@ -1022,7 +1027,8 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
 
 const PROF_LABELS = { fisio:"Fisioterapeuta", to:"Terapeuta Ocupacional", educFisico:"Educador Físico", nutricionista:"Nutricionista", pediatria:"Fisioterapeuta Pediátrico", crossfit:"Treinador CrossFit", neurofuncional:"Fisioterapeuta Neurofuncional" };
 
-function ModuleSelector({ user, onSelect, onLogout }) {
+function ModuleSelector({ user, onSelect, onLogout, theme, onToggleTheme }) {
+  const { t } = useTranslation();
   const [selectedModule, setSelectedModule] = useState(() => {
     if (user.prof === "fisio") return "fisioterapia";
     if (user.prof === "to") return "terapiaOcupacional";
@@ -1034,8 +1040,14 @@ function ModuleSelector({ user, onSelect, onLogout }) {
     return null;
   });
   return (
-    <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:F, padding:24 }}>
+    <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:F, padding:24, position:"relative" }}>
       <div style={{ maxWidth:500, width:"100%", textAlign:"center" }}>
+        <div style={{ position:"absolute", top:20, right:20, display:"flex", alignItems:"center", gap:8 }}>
+          <LanguageSwitcher />
+          <button onClick={onToggleTheme} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.textMuted, padding:"7px 12px", fontSize:16, lineHeight:1, cursor:"pointer", fontFamily:F, transition:"all 0.2s" }}>
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
+        </div>
         <div style={{ marginBottom:8 }}>
           <svg viewBox="0 0 400 70" width="280" height="54" style={{ display:"block", margin:"0 auto" }}>
             <g transform="translate(78,36)">
@@ -1049,18 +1061,18 @@ function ModuleSelector({ user, onSelect, onLogout }) {
           </svg>
         </div>
         <div style={{ marginBottom:28 }}>
-          <div style={{ fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>Olá, {user.nome}</div>
+          <div style={{ fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>{t("modules.greeting", { name: user.nome })}</div>
           <div style={{ fontSize:13, color:C.textMuted }}>{PROF_LABELS[user.prof] || user.prof}{user.crefito ? ` · ${user.crefito}` : ""}</div>
         </div>
-        <p style={{ color:C.textMuted, fontSize:14, marginBottom:24, lineHeight:1.6 }}>Selecione o módulo de atendimento:</p>
+        <p style={{ color:C.textMuted, fontSize:14, marginBottom:24, lineHeight:1.6 }}>{t("modules.title")}:</p>
         {[
-          { id:"fisioterapia", icon:"🦵", title:"Fisioterapia", desc:"Avaliação ortopédica, escalas funcionais, CIF, diário de evolução e prescrição baseada em evidências", color:C.green },
-          { id:"terapiaOcupacional", icon:"🤲", title:"Terapia Ocupacional", desc:"Avaliação de AVDs/AIVDs, COPM, MIF, função manual, cognição e reabilitação baseada em evidências", color:C.purple },
-          { id:"educacaoFisica", icon:"🏋️", title:"Educação Física / Performance", desc:"Avaliação física (Pollock, VO₂máx, 1RM), prescrição automatizada de treino e periodização baseada no ACSM", color:C.blue },
-          { id:"nutricao", icon:"🥗", title:"Nutrição Clínica", desc:"Avaliação antropométrica, BIA, recordatório alimentar, gasto energético, exames bioquímicos e plano alimentar baseado em evidências", color:C.amber },
-          { id:"pediatria", icon:"👶", title:"Pediatria", desc:"Fisioterapia pediátrica: desenvolvimento motor, escalas GMFCS/AIMS/M-CHAT, marcos motores e plano terapêutico infantil", color:C.blue },
-          { id:"crossfit", icon:"💪", title:"CrossFit", desc:"Treinamento e performance: WODs, benchmarks, 1RM olímpico, RPE, periodização e prevenção de lesões em atletas", color:C.amber },
-          { id:"neuro", icon:"🧠", title:"Neurofuncional", desc:"Reabilitação neurológica: escalas (MAS, BBS, MIF), avaliação de marcha, tônus, coordenação e treino funcional", color:C.purple },
+          { id:"fisioterapia", icon:"🦵", title:t("modules.fisioterapia"), desc:"Avaliação ortopédica, escalas funcionais, CIF, diário de evolução e prescrição baseada em evidências", color:C.green },
+          { id:"terapiaOcupacional", icon:"🤲", title:t("modules.terapiaOcupacional"), desc:"Avaliação de AVDs/AIVDs, COPM, MIF, função manual, cognição e reabilitação baseada em evidências", color:C.purple },
+          { id:"educacaoFisica", icon:"🏋️", title:t("modules.educacaoFisica"), desc:"Avaliação física (Pollock, VO₂máx, 1RM), prescrição automatizada de treino e periodização baseada no ACSM", color:C.blue },
+          { id:"nutricao", icon:"🥗", title:t("modules.nutricao"), desc:"Avaliação antropométrica, BIA, recordatório alimentar, gasto energético, exames bioquímicos e plano alimentar baseado em evidências", color:C.amber },
+          { id:"pediatria", icon:"👶", title:t("modules.pediatria"), desc:"Fisioterapia pediátrica: desenvolvimento motor, escalas GMFCS/AIMS/M-CHAT, marcos motores e plano terapêutico infantil", color:C.blue },
+          { id:"crossfit", icon:"💪", title:t("modules.crossfit"), desc:"Treinamento e performance: WODs, benchmarks, 1RM olímpico, RPE, periodização e prevenção de lesões em atletas", color:C.amber },
+          { id:"neuro", icon:"🧠", title:t("modules.neuro"), desc:"Reabilitação neurológica: escalas (MAS, BBS, MIF), avaliação de marcha, tônus, coordenação e treino funcional", color:C.purple },
         ].map(m => (
           <button key={m.id} onClick={() => setSelectedModule(m.id)}
             style={{
@@ -1078,10 +1090,10 @@ function ModuleSelector({ user, onSelect, onLogout }) {
           </button>
         ))}
         <div style={{ display:"flex", gap:10, marginTop:8 }}>
-          <button onClick={onLogout} style={{ ...ghostBtn(), flex:1, justifyContent:"center", padding:"12px" }}>Sair</button>
+          <button onClick={onLogout} style={{ ...ghostBtn(), flex:1, justifyContent:"center", padding:"12px" }}>{t("modules.logout")}</button>
           <button onClick={() => selectedModule && onSelect(selectedModule)} disabled={!selectedModule}
             style={{ ...primaryBtn({ flex:1, justifyContent:"center", padding:"12px", fontSize:14, opacity: !selectedModule ? 0.4 : 1, cursor: !selectedModule ? "not-allowed" : "pointer" }) }}>
-            Acessar Módulo →
+            {t("modules.accessModule")}
           </button>
         </div>
       </div>
@@ -1090,7 +1102,8 @@ function ModuleSelector({ user, onSelect, onLogout }) {
 }
 
 // ── Patient List ──────────────────────────────────────────────────────────────
-function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChange, user, assessmentHistory, onDelete, onChangeModule, plan }) {
+function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChange, user, assessmentHistory, onDelete, onChangeModule, plan, theme, onToggleTheme }) {
+  const { t } = useTranslation();
   const [showClinicasUpsell, setShowClinicasUpsell] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
@@ -1129,10 +1142,16 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChan
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
           <LogoSVG/>
           <div style={{ display:"flex", gap:8 }}>
+            <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+              <LanguageSwitcher styles={{ alignSelf:"center" }} />
+              <button onClick={onToggleTheme} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.textMuted, padding:"5px 8px", fontSize:14, lineHeight:1, cursor:"pointer", fontFamily:F, transition:"all 0.2s" }}>
+                {theme === "dark" ? "☀️" : "🌙"}
+              </button>
+            </div>
             <button onClick={onAgenda} style={ghostBtn({ fontSize:12 })}>📅 Agenda</button>
             <button onClick={() => onViewChange?.("financeiro")} style={ghostBtn({ fontSize:12 })}>💰 Financeiro</button>
             <button onClick={() => onViewChange?.("integrations")} style={ghostBtn({ fontSize:12 })}>🔗 Integrações</button>
-            <button onClick={onLogout} style={ghostBtn({ fontSize:12 })}>Sair</button>
+            <button onClick={onLogout} style={ghostBtn({ fontSize:12 })}>{t("modules.logout")}</button>
           </div>
         </div>
 
@@ -1168,14 +1187,14 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChan
           <div style={{ ...cardStyle(), marginBottom:16, border:`1px solid ${C.green}50` }}>
             <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
               {[
-                {k:"nome",l:"Nome completo",pl:"Nome do paciente"},
-                {k:"dataNasc",l:"Nascimento",pl:"",type:"date"},
-                {k:"sexo",l:"Sexo",type:"select",opts:["","Feminino","Masculino","Outro"]},
-                {k:"profissao",l:"Profissão",pl:"Profissão"},
-                {k:"convenio",l:"Convênio",type:"select",opts:["","Particular","Unimed","Bradesco Saúde","Amil","SulAmérica","Hapvida","NotreDame","IPSEMG","SUS / NASF","Outro"]},
-                {k:"telefone",l:"Telefone",pl:"(99) 99999-9999"},
-                {k:"peso",l:"Peso (kg)",pl:"kg"},
-                {k:"altura",l:"Altura (cm)",pl:"cm"},
+                {k:"nome",l:t("patient.nameLabel"),pl:"Nome do paciente"},
+                {k:"dataNasc",l:t("patient.birthLabel"),pl:"",type:"date"},
+                {k:"sexo",l:t("patient.sexLabel"),type:"select",opts:["","Feminino","Masculino","Outro"]},
+                {k:"profissao",l:t("patient.professionLabel"),pl:"Profissão"},
+                {k:"convenio",l:t("patient.insuranceLabel"),type:"select",opts:["","Particular","Unimed","Bradesco Saúde","Amil","SulAmérica","Hapvida","NotreDame","IPSEMG","SUS / NASF","Outro"]},
+                {k:"telefone",l:t("patient.phoneLabel"),pl:"(99) 99999-9999"},
+                {k:"peso",l:t("patient.weightLabel"),pl:"kg"},
+                {k:"altura",l:t("patient.heightLabel"),pl:"cm"},
               ].map(({k,l,pl,type,opts}) => (
                 <div key={k}>
                   <span style={lbl()}>{l}</span>
@@ -1620,6 +1639,8 @@ export default function Sasyra() {
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
           model:"claude-sonnet-4-6", max_tokens:1000,
+          _patientName: pt.nome,
+          _queixa: queixa,
           system:"A saída deve ser gerada estritamente em Português do Brasil (pt-BR). Use terminologia clínica humanizada adotada no Brasil (ex: usar 'fisioterapeuta' e não 'fisioterapeuta', 'paciente' e não 'utente', 'joelho' e não 'rótula'). É terminantemente proibido responder em inglês ou português de Portugal.",
           messages:[{role:"user",content:
 `Você é fisioterapeuta ortopédico especialista em medicina baseada em evidências (PEDro, Cochrane, CPGs internacionais).
@@ -1670,6 +1691,8 @@ Responda em tópicos claros e objetivos. Seja preciso, clínico e baseado em evi
   if (!module) return (
     <ModuleSelector
       user={user}
+      theme={theme}
+      onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")}
       onSelect={(m) => { setModule(m); setPatientView(m === "fisioterapia"); localStorage.setItem("sasyra_module", m); }}
       onLogout={handleLogout}
     />
@@ -1773,7 +1796,7 @@ Responda em tópicos claros e objetivos. Seja preciso, clínico e baseado em evi
   if (appView === "subscription") return <SubscriptionSettings onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} />;
   if (appView === "integrations") return <Integrations onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} />;
   if (patientView) return <>
-    <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} onAgenda={() => setAppView("agenda")} onViewChange={(v) => setAppView(v)} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} onChangeModule={changeModule} plan={plan} />
+    <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} onAgenda={() => setAppView("agenda")} onViewChange={(v) => setAppView(v)} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} onChangeModule={changeModule} plan={plan} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} />
     <PaywallModal open={paywallOpen} onClose={() => setPaywallOpen(false)}
       featureName={paywallFeature.name} featureDesc={paywallFeature.desc}
       onUpgrade={() => { setPaywallOpen(false); setAppView("plans"); }} />

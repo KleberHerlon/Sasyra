@@ -1,0 +1,88 @@
+{
+  "app": {
+    "name": "SASYRA",
+    "subtitle": "REABILITAÇÃO E EVIDÊNCIA",
+    "description": "Sistema de apoio à decisão clínica para avaliação, documentação e tratamento ortopédico baseado em evidências",
+    "enter": "Entrar no SASYRA →",
+    "disclaimer": "Ao entrar, você declara ser profissional de saúde habilitado"
+  },
+  "auth": {
+    "profLabel": "Sou profissional de",
+    "nameLabel": "Nome completo",
+    "namePlaceholder": "Seu nome",
+    "crefitoLabel": "CREFITO / registro profissional",
+    "crefitoOptional": "(opcional)",
+    "crefitoPlaceholder": "Ex: 12345-F",
+    "professions": {
+      "fisio": "Fisioterapeuta",
+      "to": "Terapeuta Ocupacional",
+      "educFisico": "Educador Físico",
+      "nutricionista": "Nutricionista",
+      "pediatria": "Fisioterapeuta Pediátrico",
+      "crossfit": "Treinador CrossFit",
+      "neurofuncional": "Fisioterapeuta Neurofuncional"
+    }
+  },
+  "modules": {
+    "title": "Selecione o módulo",
+    "greeting": "Olá, {{name}}",
+    "fisioterapia": "Fisioterapia",
+    "educacaoFisica": "Educação Física",
+    "terapiaOcupacional": "Terapia Ocupacional",
+    "nutricao": "Nutrição Clínica",
+    "pediatria": "Pediatria",
+    "crossfit": "CrossFit",
+    "neuro": "Neurofuncional",
+    "logout": "Sair",
+    "back": "Voltar",
+    "accessModule": "Acessar Módulo →"
+  },
+  "common": {
+    "save": "💾 Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "new": "Novo",
+    "search": "Buscar",
+    "loading": "Carregando…",
+    "noData": "Nenhum dado encontrado",
+    "confirm": "Confirmar",
+    "continue": "Continuar",
+    "yes": "Sim",
+    "no": "Não"
+  },
+  "patient": {
+    "list": "Pacientes",
+    "newPatient": "Novo Paciente",
+    "newStudent": "Novo Aluno",
+    "editPatient": "Editar Paciente",
+    "editStudent": "Editar Aluno",
+    "deleteConfirm": "Deseja realmente excluir {{name}}?",
+    "deleteWarning": "Todos os dados de {{name}} serão perdidos permanentemente. Esta operação não pode ser desfeita.",
+    "deleteFinal": "Sim, excluir permanentemente",
+    "nameLabel": "Nome completo",
+    "birthLabel": "Nascimento",
+    "sexLabel": "Sexo",
+    "professionLabel": "Profissão",
+    "insuranceLabel": "Convênio",
+    "phoneLabel": "Telefone",
+    "weightLabel": "Peso (kg)",
+    "heightLabel": "Altura (cm)"
+  },
+  "tabs": {
+    "anamnese": "Anamnese",
+    "treinos": "Treinos",
+    "metricas": "Métricas",
+    "evolucao": "Evolução",
+    "sessoes": "Sessões",
+    "relatorio": "Relatório",
+    "evidencias": "Evidências",
+    "terapia": "Terapia",
+    "perfil": "Perfil"
+  },
+  "language": {
+    "label": "Idioma",
+    "pt-BR": "Português (BR)",
+    "en": "English"
+  }
+}
