@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, Patient, GonioRow, LogEntry } from "@/types";
 import { COLORS, FONTS, microStyles } from "@/styles/theme";
 
@@ -18,8 +18,26 @@ import TestCard from "@/components/TestCard";
 import PedroCard from "@/components/PedroCard";
 import HonorariosCard, { CREFITO_REGIOES } from "@/components/HonorariosCard";
 
+// Screens (Modules)
+import Pediatria from "@/screens/Pediatria";
+import CrossFit from "@/screens/CrossFit";
+import Neuro from "@/screens/Neuro";
+import PhysicalEducation from "@/screens/PhysicalEducation";
+import Nutrition from "@/screens/Nutrition";
+import OccupationalTherapy from "@/screens/OccupationalTherapy";
+import Agenda from "@/screens/Agenda";
+import Financeiro from "@/screens/Financeiro";
+import Plans from "@/screens/Plans";
+import SubscriptionSettings from "@/screens/SubscriptionSettings";
+import Integrations from "@/screens/Integrations";
+import PerformanceDashboard from "@/screens/PerformanceDashboard";
+import ModuleSelector from "@/components/ModuleSelector";
+
 // Hooks & Services & Utils & Data
 import useProgress from "@/hooks/useProgress";
+import { useSupabasePatients, useSupabaseAssessments, useSupabaseLogs } from "@/hooks/useSupabaseData";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useIntegrations } from "@/hooks/useIntegrations";
 import { calcIMC } from "@/utils/imc";
 import { getRef, isOutOfRange } from "@/utils/gonio";
 import { generateCIF } from "@/data/cifEngine";
@@ -29,10 +47,47 @@ import { runClinicalAnalysis } from "@/services/aiService";
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
-  const [patients, setPatients] = useState<Patient[]>([]);
   const [patientView, setPatientView] = useState(true);
   const [tab, setTab] = useState("avaliacao");
   const [regiao, setRegiao] = useState("Centro-Oeste");
+  
+  const [theme, setTheme] = useState(() => localStorage.getItem("sasyra_theme") || "dark");
+  const [appView, setAppView] = useState("patients");
+  const [module, setModule] = useState<string | null>(() => {
+    const saved = localStorage.getItem("sasyra_module");
+    return (saved === "fisioterapia" || saved === "educacaoFisica" || saved === "terapiaOcupacional" || saved === "nutricao" || saved === "pediatria" || saved === "crossfit" || saved === "neuro") ? saved : null;
+  });
+
+  // Sync Theme dataset
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("sasyra_theme", theme);
+  }, [theme]);
+
+  const userId = user?.nome || "";
+
+  // Data Hooks
+  const patientsResult = useSupabasePatients(userId) as any;
+  const patients = patientsResult.patients;
+  const addPatient = patientsResult.addPatient;
+  const updatePatientById = patientsResult.updatePatient;
+  const deletePatientHook = patientsResult.deletePatient;
+
+  const assessmentsResult = useSupabaseAssessments(userId) as any;
+  const assessmentHistory = assessmentsResult.assessments;
+  const saveAssessmentHook = assessmentsResult.addAssessment;
+  const deleteAssessmentHook = assessmentsResult.deleteAssessment;
+
+  const logsResult = useSupabaseLogs(userId) as any;
+  const sessionLogs = logsResult.logs;
+  const saveLogHook = logsResult.addLog;
+  const deleteLogHook = logsResult.deleteLog;
+
+  // Subscription & Integrations
+  const subscriptionResult = useSubscription() as any;
+  const plan = subscriptionResult.plan;
+  const planLabel = subscriptionResult.label;
+  const { googleCalendar, whatsApp } = useIntegrations() as any;
 
   // Patient State
   const [patient, setPatient] = useState<Patient>({
@@ -53,17 +108,48 @@ export default function Dashboard() {
 
   const updatePatientField = (k: keyof Patient, v: any) => setPatient((p) => ({ ...p, [k]: v }));
 
-  const selectPatient = (p: Patient) => {
-    setPatient((prev) => ({ ...prev, ...p }));
-    setPatientView(false);
+  const changeModule = () => {
+    localStorage.removeItem("sasyra_module");
+    setModule(null);
+    setPatientView(true);
   };
 
-  const addPatient = (p: Patient) => setPatients((ps) => [...ps, p]);
-
   const handleLogout = () => {
+    localStorage.removeItem("sasyra_module");
     setUser(null);
+    setModule(null);
     setPatientView(true);
-    setPatients([]);
+    setAppView("patients");
+  };
+
+  const deletePatient = (p: Patient) => {
+    const pid = p.id || p.nome;
+    deletePatientHook(pid);
+    const patientAssessments = assessmentHistory.filter((a: any) => a.patientId === pid);
+    patientAssessments.forEach((a: any) => deleteAssessmentHook(a.id));
+    const patientLogs = sessionLogs.filter((l: any) => l.patientId === pid);
+    patientLogs.forEach((l: any) => deleteLogHook(l.id));
+  };
+
+  const navigateToPatientFromAgenda = (p: Patient, targetTab?: string) => {
+    setPatient(prev => ({ ...prev, ...p }));
+    setPatientView(false);
+    setTab(targetTab || "avaliacao");
+    setAppView("patients");
+  };
+
+  const selectPatient = (p: Patient) => {
+    if (queixa || hda || localDor.length > 0) saveAssessment();
+    setPatient((prev) => ({ ...prev, ...p }));
+    const pid = p.id || p.nome;
+    const patientAssessments = assessmentHistory.filter((a: any) => a.patientId === pid);
+    if (patientAssessments.length > 0) {
+      const sorted = [...patientAssessments].sort((a, b) => (b.id || 0) - (a.id || 0));
+      loadAssessment(sorted[0]);
+    } else {
+      resetAssessment();
+    }
+    setPatientView(false);
   };
 
   // Anamnese State
@@ -133,7 +219,6 @@ export default function Dashboard() {
   const [aiRes, setAiRes] = useState("");
 
   // Diário State
-  const [sessionLogs, setSessionLogs] = useState<LogEntry[]>([]);
   const [newLogEntry, setNewLogEntry] = useState<LogEntry>({
     id: 0,
     data: new Date().toISOString().slice(0, 10),
@@ -144,6 +229,133 @@ export default function Dashboard() {
     metas: "",
     escalas: "",
   });
+
+  const saveAssessment = () => {
+    if (!patient.id && !patient.nome) return;
+    const pid = patient.id || patient.nome;
+    const entry = {
+      id: Date.now(),
+      date: new Date().toISOString().slice(0, 10),
+      patientId: pid,
+      queixa,
+      queixaKey,
+      localDor,
+      caraterDor,
+      tempoDor,
+      melhora,
+      piora,
+      hda,
+      comorbid,
+      antec,
+      meds,
+      yellowFlagsState,
+      evaMov,
+      evaRep,
+      avds,
+      objTrat,
+      nivelAti,
+      postura,
+      marcha,
+      edema,
+      palpacao,
+      sensib,
+      reflexos,
+      forca,
+      gonio,
+      tests,
+      obs,
+      regiao,
+    };
+    saveAssessmentHook(entry);
+  };
+
+  const loadAssessment = (a: any) => {
+    setQueixa(a.queixa || "");
+    setQueixaKey(a.queixaKey || "");
+    setLocalDor(a.localDor || []);
+    setCaraterDor(a.caraterDor || []);
+    setTempoDor(a.tempoDor || "");
+    setMelhora(a.melhora || []);
+    setPiora(a.piora || []);
+    setHda(a.hda || "");
+    setComorbid(a.comorbid || []);
+    setAntec(a.antec || []);
+    setMeds(a.meds || "");
+    setYellowFlagsState(a.yellowFlagsState || []);
+    setEvaMov(a.evaMov ?? null);
+    setEvaRep(a.evaRep ?? null);
+    setAvds(a.avds || []);
+    setObjTrat(a.objTrat || []);
+    setNivelAti(a.nivelAti || "");
+    setPostura(a.postura || []);
+    setMarcha(a.marcha || "");
+    setEdema(a.edema || "");
+    setPalpacao(a.palpacao || "");
+    setSensib(a.sensib || "");
+    setReflexos(a.reflexos || "");
+    setForca(a.forca || {
+      quadricepsD: "",
+      quadricepsE: "",
+      isquiotibialD: "",
+      isquiotibialE: "",
+      gluteoD: "",
+      gluteoE: "",
+      manguitoD: "",
+      manguitoE: "",
+      tibialAnterior: "",
+      gastrocnemio: "",
+      bicepsD: "",
+      bicepsE: "",
+    });
+    setGonio(a.gonio || [{ id: 1, joint: "", movement: "", value: "" }]);
+    setTests(a.tests || {});
+    setObs(a.obs || "");
+    setRegiao(a.regiao || "Centro-Oeste");
+  };
+
+  const resetAssessment = () => {
+    setQueixa("");
+    setQueixaKey("");
+    setLocalDor([]);
+    setCaraterDor([]);
+    setTempoDor("");
+    setMelhora([]);
+    setPiora([]);
+    setHda("");
+    setComorbid([]);
+    setAntec([]);
+    setMeds("");
+    setYellowFlagsState([]);
+    setEvaMov(null);
+    setEvaRep(null);
+    setAvds([]);
+    setObjTrat([]);
+    setNivelAti("");
+    setPostura([]);
+    setMarcha("");
+    setEdema("");
+    setPalpacao("");
+    setSensib("");
+    setReflexos("");
+    setForca({
+      quadricepsD: "",
+      quadricepsE: "",
+      isquiotibialD: "",
+      isquiotibialE: "",
+      gluteoD: "",
+      gluteoE: "",
+      manguitoD: "",
+      manguitoE: "",
+      tibialAnterior: "",
+      gastrocnemio: "",
+      bicepsD: "",
+      bicepsE: "",
+    });
+    setGonio([{ id: 1, joint: "", movement: "", value: "" }]);
+    setTests({});
+    setObs("");
+    setRegiao("Centro-Oeste");
+  };
 
   const kb = KB[queixaKey];
   const evidence = EVIDENCE[queixaKey];
@@ -220,7 +432,15 @@ export default function Dashboard() {
   };
 
   const addLog = () => {
-    setSessionLogs((l) => [{ ...newLogEntry, id: Date.now(), sessaoNum: l.length + 1 }, ...l]);
+    if (!patient.id && !patient.nome) return;
+    const pid = patient.id || patient.nome;
+    const logEntry = {
+      ...newLogEntry,
+      id: Date.now(),
+      patientId: pid,
+      sessaoNum: currentLogs.length + 1,
+    };
+    saveLogHook(logEntry);
     setNewLogEntry({
       id: 0,
       data: new Date().toISOString().slice(0, 10),
@@ -233,8 +453,136 @@ export default function Dashboard() {
     });
   };
 
+  const currentLogs = sessionLogs.filter((l: any) => l.patientId === (patient.id || patient.nome));
+
   // Render Flows
-  if (!user) return <LoginScreen onLogin={setUser} />;
+  if (!user) return <LoginScreen onLogin={(userObj) => {
+    setUser(userObj);
+    let m: string | null = null;
+    if (userObj.prof === "fisio") m = "fisioterapia";
+    else if (userObj.prof === "to") m = "terapiaOcupacional";
+    else if (userObj.prof === "educFisico") m = "educacaoFisica";
+    else if (userObj.prof === "nutricionista") m = "nutricao";
+    else if (userObj.prof === "pediatria") m = "pediatria";
+    else if (userObj.prof === "crossfit") m = "crossfit";
+    else if (userObj.prof === "neurofuncional") m = "neuro";
+    else m = "em_desenvolvimento";
+    localStorage.setItem("sasyra_module", m);
+    setModule(m);
+    setPatientView(m === "fisioterapia");
+  }} />;
+
+  if (!module) return (
+    <ModuleSelector
+      user={user}
+      onSelect={(m) => {
+        setModule(m);
+        setPatientView(m === "fisioterapia");
+        localStorage.setItem("sasyra_module", m);
+      }}
+      onLogout={handleLogout}
+    />
+  );
+
+  if (module === "educacaoFisica") return (
+    <PhysicalEducation
+      students={patients}
+      student={patient}
+      onSelectStudent={selectPatient}
+      onAddStudent={addPatient}
+      onUpdateStudent={updatePatientField}
+      onDeleteStudent={deletePatient}
+      onUpdateStudentById={updatePatientById}
+    />
+  );
+
+  if (module === "terapiaOcupacional") return (
+    <OccupationalTherapy
+      students={patients}
+      student={patient}
+      onSelectStudent={selectPatient}
+      onAddStudent={addPatient}
+      onUpdateStudent={updatePatientField}
+      onDeleteStudent={deletePatient}
+      onUpdateStudentById={updatePatientById}
+    />
+  );
+
+  if (module === "nutricao") return (
+    <Nutrition
+      students={patients}
+      student={patient}
+      onSelectStudent={selectPatient}
+      onAddStudent={addPatient}
+      onUpdateStudent={updatePatientField}
+      onDeleteStudent={deletePatient}
+      onUpdateStudentById={updatePatientById}
+    />
+  );
+
+  if (module === "pediatria") return (
+    <Pediatria
+      students={patients}
+      student={patient}
+      onSelectStudent={selectPatient}
+      onAddStudent={addPatient}
+      onUpdateStudent={updatePatientField}
+      onDeleteStudent={deletePatient}
+      onUpdateStudentById={updatePatientById}
+    />
+  );
+
+  if (module === "crossfit") return (
+    <CrossFit
+      students={patients}
+      student={patient}
+      onSelectStudent={selectPatient}
+      onAddStudent={addPatient}
+      onUpdateStudent={updatePatientField}
+      onDeleteStudent={deletePatient}
+      onUpdateStudentById={updatePatientById}
+    />
+  );
+
+  if (module === "neuro") return (
+    <Neuro
+      students={patients}
+      student={patient}
+      onSelectStudent={selectPatient}
+      onAddStudent={addPatient}
+      onUpdateStudent={updatePatientField}
+      onDeleteStudent={deletePatient}
+      onUpdateStudentById={updatePatientById}
+    />
+  );
+
+  if (module === "em_desenvolvimento") return (
+    <div style={{ background: `radial-gradient(ellipse at 50% 0%, ${COLORS.card} 0%, ${COLORS.bg} 70%)`, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: FONTS, padding: 24 }}>
+      <div style={{ maxWidth: 460, textAlign: "center" }}>
+        <div style={{ fontSize: 56, marginBottom: 16 }}>🚧</div>
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: COLORS.text, margin: 0, marginBottom: 8 }}>Módulo em Desenvolvimento</h2>
+        <p style={{ color: COLORS.textMuted, fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
+          O módulo para <strong>{PROF_LABELS[user.prof] || user.prof}</strong> está em fase de desenvolvimento.
+          Em breve você terá acesso a ferramentas específicas para sua prática clínica.
+        </p>
+        <button onClick={handleLogout} style={microStyles.ghostBtn({ padding: "10px 24px", fontSize: 13 })}>
+          Sair
+        </button>
+      </div>
+    </div>
+  );
+
+  // Secondary views
+  if (appView === "agenda") return (
+    <Agenda patients={patients} onNavigateToPatient={navigateToPatientFromAgenda} onNavigate={(v: any) => setAppView(v)} />
+  );
+  if (appView === "financeiro") return (
+    <Financeiro onNavigateToPatient={navigateToPatientFromAgenda} onNavigate={(v: any) => setAppView(v)} />
+  );
+  if (appView === "plans") return <Plans onNavigate={(v: any) => v === "back" ? setAppView("patients") : setAppView(v)} />;
+  if (appView === "subscription") return <SubscriptionSettings onNavigate={(v: any) => v === "back" ? setAppView("patients") : setAppView(v)} />;
+  if (appView === "integrations") return <Integrations onNavigate={(v: any) => v === "back" ? setAppView("patients") : setAppView(v)} />;
+
   if (patientView) {
     return (
       <PatientList
@@ -243,6 +591,11 @@ export default function Dashboard() {
         onAdd={addPatient}
         onLogout={handleLogout}
         user={user}
+        onAgenda={() => setAppView("agenda")}
+        onViewChange={(v: any) => setAppView(v)}
+        onChangeModule={changeModule}
+        onDelete={deletePatient}
+        plan={plan}
       />
     );
   }
@@ -261,15 +614,27 @@ export default function Dashboard() {
           height: 60,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <LogoSVG />
           <button
-            onClick={() => setPatientView(true)}
+            onClick={() => {
+              saveAssessment();
+              setPatientView(true);
+            }}
             style={microStyles.ghostBtn({ padding: "5px 10px", fontSize: 11 })}
             title="Trocar paciente"
             type="button"
           >
             👥 Pacientes
+          </button>
+          <button onClick={changeModule} style={microStyles.ghostBtn({ padding: "5px 10px", fontSize: 11 })} type="button" title="Trocar módulo de atendimento">
+            🔄 Módulos
+          </button>
+          <button onClick={() => setAppView("agenda")} style={microStyles.ghostBtn({ padding: "5px 10px", fontSize: 11 })} type="button">
+            📅 Agenda
+          </button>
+          <button onClick={() => setAppView("financeiro")} style={microStyles.ghostBtn({ padding: "5px 10px", fontSize: 11 })} type="button">
+            💰 Financeiro
           </button>
         </div>
         <div style={{ display: "flex", gap: 4 }}>
@@ -299,7 +664,24 @@ export default function Dashboard() {
             </button>
           ))}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <button onClick={() => setAppView("subscription")}
+            style={{
+              background: plan === "start" ? `${COLORS.amber}15` : "transparent",
+              border: `1px solid ${plan === "start" ? COLORS.amber + "50" : COLORS.border}`,
+              borderRadius: 8,
+              padding: "5px 10px",
+              fontSize: 11,
+              fontWeight: 700,
+              color: plan === "start" ? COLORS.amber : COLORS.green,
+              cursor: "pointer",
+              fontFamily: FONTS,
+              whiteSpace: "nowrap"
+            }}
+            type="button"
+          >
+            {plan === "start" ? "⭐ Start" : `⭐ ${planLabel}`}
+          </button>
           {patient.nome && (
             <>
               <div
@@ -1346,9 +1728,9 @@ export default function Dashboard() {
             {patient.sessoesAuth && (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 14 }}>
                 {[
-                  ["Sessões realizadas", sessionLogs.length, COLORS.green],
+                  ["Sessões realizadas", currentLogs.length, COLORS.green],
                   ["Autorizadas", patient.sessoesAuth, COLORS.amber],
-                  ["Restantes", Math.max(0, Number(patient.sessoesAuth) - sessionLogs.length), sessionLogs.length >= Number(patient.sessoesAuth) ? COLORS.red : COLORS.blue],
+                  ["Restantes", Math.max(0, Number(patient.sessoesAuth) - currentLogs.length), currentLogs.length >= Number(patient.sessoesAuth) ? COLORS.red : COLORS.blue],
                 ].map(([l2, v, c]) => (
                   <div
                     key={l2 as string}
@@ -1476,10 +1858,10 @@ export default function Dashboard() {
               </button>
             </Section>
 
-            {sessionLogs.length >= 2 && (
+            {currentLogs.length >= 2 && (
               <Section title="Evolução da Dor (EVA)" icon="📈">
                 <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 80, padding: "0 4px" }}>
-                  {[...sessionLogs].reverse().map((l, i) => {
+                  {[...currentLogs].reverse().map((l: any, i: number) => {
                     const h = (l.eva / 10) * 72;
                     const c = l.eva <= 3 ? COLORS.green : l.eva <= 6 ? COLORS.amber : COLORS.red;
                     return (
@@ -1510,14 +1892,14 @@ export default function Dashboard() {
                   }}
                 >
                   <span>S1 (inicial)</span>
-                  <span>S{sessionLogs.length} (última)</span>
+                  <span>S{currentLogs.length} (última)</span>
                 </div>
               </Section>
             )}
 
-            {sessionLogs.length > 0 && (
-              <Section title={`Histórico — ${sessionLogs.length} sessão(ões)`} icon="📋">
-                {sessionLogs.map((log) => {
+            {currentLogs.length > 0 && (
+              <Section title={`Histórico — ${currentLogs.length} sessão(ões)`} icon="📋">
+                {currentLogs.map((log: any) => {
                   const ec = log.eva <= 3 ? COLORS.green : log.eva <= 6 ? COLORS.amber : COLORS.red;
                   return (
                     <div
@@ -1575,7 +1957,7 @@ export default function Dashboard() {
                             Condutas
                           </span>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 3 }}>
-                            {log.procedimentos.map((p) => (
+                            {log.procedimentos.map((p: any) => (
                               <span
                                 key={p}
                                 style={{
@@ -1913,12 +2295,12 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {sessionLogs.length > 0 && (
+              {currentLogs.length > 0 && (
                 <div style={{ marginBottom: 18 }}>
                   <div style={{ fontWeight: 700, color: "#0F6E56", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 10 }}>
-                    Evolução — {sessionLogs.length} sessão(ões)
+                    Evolução — {currentLogs.length} sessão(ões)
                   </div>
-                  {[...sessionLogs].reverse().map((l) => (
+                  {[...currentLogs].reverse().map((l) => (
                     <div key={l.id} style={{ borderLeft: "3px solid #4ADE80", paddingLeft: 12, marginBottom: 10 }}>
                       <div style={{ fontSize: 11, color: "#7C8FA6", marginBottom: 2 }}>
                         Sessão {l.sessaoNum} · {l.data} · EVA {l.eva}/10

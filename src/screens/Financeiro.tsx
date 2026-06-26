@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState, useMemo } from "react";
-import { OnboardingDica } from "../components";
+import OnboardingDica from "../components/OnboardingDica";
 
 const C = {
   bg: "var(--bg)", surface: "var(--surface)", card: "var(--card)", cardAlt: "var(--cardAlt)",

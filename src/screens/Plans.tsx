@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState } from "react";
-import { PlanCard } from "../components";
+import PlanCard from "../components/PlanCard";
 import { PLANS, PLAN_ORDER, AI_LIMITS, AI_EXPANSION } from "../data/plans";
 import { useSubscription } from "../hooks/useSubscription";
 

@@ -141,11 +141,11 @@ export default function BodyMap({ value = [], onChange, sex }: BodyMapProps) {
     return Object.entries(groups).map(([slug, g]) => ({
       slug,
       color: C_BODY.green,
-      ...(g.sides.size === 1 ? { side: [...g.sides][0] } : {}),
-    }));
+      ...(g.sides.size === 1 ? { side: [...g.sides][0] as "left" | "right" } : {}),
+    })) as any;
   }, [value, kv]);
 
-  const handlePartPress = (_part: any, side: string) => {
+  const handlePartPress = (_part: any, side?: "left" | "right") => {
     const slug = _part?.slug;
     if (!slug) return;
     let key = `${slug}|${side || ""}|${kv}`;
