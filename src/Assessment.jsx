@@ -96,7 +96,7 @@ export default function Assessment({
   mergedRedFlags, mergedEscalas,
   progSteps, detectKB,
   assessmentHistory, saveAssessment, loadAssessment, resetAssessment, patientId,
-  tryFeature, plan, onUpgrade, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion,
+  tryFeature, plan, onUpgrade, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion, canUseFeature,
   diagnosticoCinesio, setDiagnosticoCinesio,
 }) {
   const { entities, dcSuggestion } = useClinicalScan(queixa);
@@ -232,11 +232,11 @@ export default function Assessment({
               ✓ Condição{queixaKeys.length > 1 ? "ões" : ""} identificada{queixaKeys.length > 1 ? "s" : ""}: {kbList.slice(0,2).map((k,i) => <strong key={i}>{k.label}{i < kbList.slice(0,2).length-1 ? " + " : ""}</strong>)}{kbList.length > 2 && <span style={{fontSize:10,color:C.textMuted}}> e +{kbList.length-2}</span>} — protocolos carregados automaticamente
             </div>
 
-            {plan !== "ia" ? (
+            {!canUseFeature?.("cif") ? (
               <div style={{ background: C.card, borderRadius: 8, padding: "12px", marginBottom: 10 }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>CIF sugeridos pela condição</div>
                 <div style={{ fontSize: 12, color: C.textMuted, display:"flex", alignItems:"center", gap:8 }}>
-                  🔒 Sugestão CIF disponível no <strong style={{color:C.green}}>Plano IA Premium</strong>.
+                  🔒 Sugestão CIF disponível nos planos <strong style={{color:C.green}}>Evidência</strong> e <strong style={{color:C.green}}>Clínica</strong>.
                   <button onClick={() => onUpgrade?.()}
                     style={{ background:"transparent", border:"none", color:C.green, fontWeight:700, cursor:"pointer", fontSize:12, fontFamily:F, textDecoration:"underline" }}>
                     Desbloquear
@@ -256,11 +256,11 @@ export default function Assessment({
               </div>
             )}
 
-            {plan !== "ia" ? (
+            {!canUseFeature?.("cif") ? (
               <div style={{ background: C.surface, borderRadius: 8, padding: "12px", marginBottom: 10 }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>CIF identificados automaticamente (baseados nos dados preenchidos)</div>
                 <div style={{ fontSize: 12, color: C.textMuted, display:"flex", alignItems:"center", gap:8 }}>
-                  🔒 CIF automática com qualificadores disponível no <strong style={{color:C.green}}>Plano IA Premium</strong>.
+                  🔒 CIF automática com qualificadores disponível nos planos <strong style={{color:C.green}}>Evidência</strong> e <strong style={{color:C.green}}>Clínica</strong>.
                   <button onClick={() => onUpgrade?.()}
                     style={{ background:"transparent", border:"none", color:C.green, fontWeight:700, cursor:"pointer", fontSize:12, fontFamily:F, textDecoration:"underline" }}>
                     Desbloquear
@@ -585,7 +585,10 @@ export default function Assessment({
         <div style={{ display: "flex", flexDirection:"column", gap:8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <button onClick={() => {
-              if (aiRemaining <= 0 && plan !== "ia") { runAI(true); return; }
+              if (aiRemaining <= 0 && !canUseFeature?.("ai")) {
+                if (plan === "trial") { onUpgrade?.(); return; }
+                runAI(true); return;
+              }
               runAI();
             }} disabled={aiLoad || !queixa} style={{ ...primaryBtn({ background: C.green, color: "#061A0C" }), opacity: aiLoad || !queixa ? 0.45 : 1 }}>
               {aiLoad ? "⏳ Analisando…" : "🔍"} Gerar análise clínica
@@ -596,17 +599,19 @@ export default function Assessment({
               ))}
             </div>
           </div>
-          {plan === "ia" && (
+          {canUseFeature?.("ai") && (
             <div style={{ fontSize: 11, color: aiRemaining < 10 ? C.amber : C.textMuted, fontFamily:F }}>
               📊 {aiRemaining}/{aiLimit} análises restantes neste mês
             </div>
           )}
-          {plan !== "ia" && (
+          {!canUseFeature?.("ai") && (
             <div style={{ fontSize: 11, color: C.textMuted, fontFamily:F, display:"flex", alignItems:"center", gap:6 }}>
               {hasExpansion && aiRemaining > 0 ? (
                 <span style={{ color:C.green }}>✅ {aiRemaining} crédito(s) restante(s)</span>
+              ) : plan === "trial" ? (
+                <span style={{ color:C.amber, fontWeight:600 }}>🎯 Fim do teste gratuito. <button onClick={() => onUpgrade?.()} style={{ background:"none", border:"none", color:C.green, fontWeight:700, cursor:"pointer", fontSize:11, fontFamily:F, textDecoration:"underline", padding:0 }}>Escolher plano</button></span>
               ) : (
-                <span>Ao clicar em <strong>Gerar análise clínica</strong>, você será cobrado <strong>R$ 4,90</strong> por esta análise avulsa.</span>
+                <span>Ao clicar em <strong>Gerar análise clínica</strong>, você será cobrado <strong>R$ 5,90</strong> por esta análise avulsa.</span>
               )}
             </div>
           )}

@@ -499,26 +499,29 @@ const LABEL_POS = {
   "Lombar":      { B:[1086,550] },
   "Sacroilíaca": { F:[362,460] },
   "Glúteos":     { B:[1086,720] },
-  "Ombro D":     { F:[450,340], B:[1228,340] },
-  "Ombro E":     { F:[275,340], B:[980,340] },
-  "Braço D":     { F:[525,490], B:[1210,500] },
-  "Braço E":     { F:[200,490], B:[930,500] },
-  "Antebraço D": { F:[595,680], B:[1318,650] },
-  "Antebraço E": { F:[130,680], B:[878,650] },
-  "Mão D":       { F:[670,720], B:[1400,690] },
-  "Mão E":       { F:[55,720],  B:[790,690]  },
-  "Quadril D":   { F:[425,840], B:[1160,850] },
-  "Quadril E":   { F:[300,840], B:[1000,850] },
-  "Adutores D":  { F:[425,920], B:[1160,950] },
-  "Adutores E":  { F:[300,920], B:[1000,950] },
-  "Joelho D":    { F:[435,1008], B:[1170,1100] },
-  "Joelho E":    { F:[290,1008], B:[990,1100] },
-  "Perna D":     { F:[435,1130] },
-  "Perna E":     { F:[290,1130] },
-  "Tornozelo D": { F:[430,1250], B:[1150,1260] },
-  "Tornozelo E": { F:[295,1250], B:[998,1260] },
-  "Pé D":        { F:[450,1340], B:[1155,1340] },
-  "Pé E":        { F:[275,1340], B:[970,1340] },
+  // Front view (F) x-coordinates are mirrored from visual to anatomical:
+  // visual left = anatomical right, visual right = anatomical left.
+  // y-coordinates and back view (B) are unchanged.
+  "Ombro D":     { F:[275,340], B:[1228,340] },
+  "Ombro E":     { F:[450,340], B:[980,340] },
+  "Braço D":     { F:[200,490], B:[1210,500] },
+  "Braço E":     { F:[525,490], B:[930,500] },
+  "Antebraço D": { F:[130,680], B:[1318,650] },
+  "Antebraço E": { F:[595,680], B:[878,650] },
+  "Mão D":       { F:[55,720],  B:[1400,690] },
+  "Mão E":       { F:[670,720],  B:[790,690]  },
+  "Quadril D":   { F:[300,840], B:[1160,850] },
+  "Quadril E":   { F:[425,840], B:[1000,850] },
+  "Adutores D":  { F:[300,920], B:[1160,950] },
+  "Adutores E":  { F:[425,920], B:[1000,950] },
+  "Joelho D":    { F:[290,1008], B:[1170,1100] },
+  "Joelho E":    { F:[435,1008], B:[990,1100] },
+  "Perna D":     { F:[290,1130] },
+  "Perna E":     { F:[435,1130] },
+  "Tornozelo D": { F:[295,1250], B:[1150,1260] },
+  "Tornozelo E": { F:[430,1250], B:[998,1260] },
+  "Pé D":        { F:[275,1340], B:[1155,1340] },
+  "Pé E":        { F:[450,1340], B:[970,1340] },
 };
 
 const SLUG_REV = {};
@@ -575,7 +578,13 @@ export function BodyMap({ value, onChange, sex }) {
       const slug = m[kv];
       if (!slug) return;
       if (!groups[slug]) groups[slug] = { sides: new Set() };
-      if (m.side) groups[slug].sides.add(m.side);
+      if (m.side) {
+        // Mirror side for front view (visual → anatomical)
+        const adjSide = kv === "F"
+          ? (m.side === "left" ? "right" : m.side === "right" ? "left" : m.side)
+          : m.side;
+        groups[slug].sides.add(adjSide);
+      }
     });
     return Object.entries(groups).map(([slug, g]) => ({
       slug,
@@ -587,7 +596,13 @@ export function BodyMap({ value, onChange, sex }) {
   const handlePartPress = (_part, side) => {
     const slug = _part?.slug;
     if (!slug) return;
-    let key = `${slug}|${side||""}|${kv}`;
+    // Library uses visual coordinates (viewer's perspective).
+    // Front view: visual left = anatomical right; visual right = anatomical left.
+    // Back view: visual sides match anatomical sides.
+    const adjustedSide = kv === "F"
+      ? (side === "left" ? "right" : side === "right" ? "left" : side)
+      : side;
+    let key = `${slug}|${adjustedSide||""}|${kv}`;
     let id = SLUG_REV[key];
     if (!id) {
       key = `${slug}||${kv}`;
@@ -730,7 +745,7 @@ export function PaywallModal({ open, onClose, featureName, featureDesc, onUpgrad
 
 // ── PlanCard ──────────────────────────────────────────────────────────────────
 export function PlanCard({ plan, isAnnual, onSelect, isCurrent }) {
-  const isPremium = plan.key === "ia";
+  const isHighlight = plan.highlight;
   const C3 = {
     surface:     "var(--surface)",
     card:        "var(--card)",
@@ -742,8 +757,8 @@ export function PlanCard({ plan, isAnnual, onSelect, isCurrent }) {
     amber:       "var(--amber)",
     amberBg:     "var(--amberBg)",
   };
-  const accent = isPremium ? C3.amber : C3.green;
-  const accentBg = isPremium ? C3.amberBg : C3.greenBg;
+  const accent = isHighlight ? C3.green : C3.textMuted;
+  const accentBg = isHighlight ? C3.greenBg : "transparent";
   const price = isAnnual ? plan.yearlyMonth : plan.monthly;
   const allFeatures = Object.entries(plan.features);
   const unlocked = allFeatures.filter(([, f]) => f[plan.key]);
@@ -751,31 +766,29 @@ export function PlanCard({ plan, isAnnual, onSelect, isCurrent }) {
   return (
     <div style={{
       flex:1, minWidth:270,
-      background: isPremium ? C3.card : (plan.highlight ? C3.card : C3.surface),
-      border: isPremium ? `2px solid ${C3.amber}99` : (plan.highlight ? `1px solid ${C3.green+"60"}` : `1px solid ${C3.border}`),
+      background: plan.highlight ? C3.card : C3.surface,
+      border: plan.highlight ? `2px solid ${C3.green}99` : `1px solid ${C3.border}`,
       borderRadius:16, padding:"28px 22px", display:"flex", flexDirection:"column",
       position:"relative", overflow:"hidden",
-      boxShadow: isPremium ? `0 0 40px ${C3.amber}25, inset 0 0 0 1px ${C3.amber}15` : (plan.highlight ? `0 0 30px ${C3.green}15` : "none"),
+      boxShadow: plan.highlight ? `0 0 30px ${C3.green}15` : "none",
     }}>
       {plan.badge && (
         <div style={{
-          position:"absolute", top:12, right:-28, background:isPremium ? C3.amber : C3.green, color:"#061A0C",
+          position:"absolute", top:12, right:-28, background:C3.green, color:"#061A0C",
           fontSize:10, fontWeight:800, padding:"4px 32px", transform:"rotate(45deg)",
           letterSpacing:"0.05em", fontFamily:"'Inter','Segoe UI',sans-serif",
         }}>
           {plan.badge}
         </div>
       )}
-      {isPremium ? (
-        <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:`linear-gradient(90deg,transparent,${C3.amber},transparent)` }} />
-      ) : plan.highlight ? (
+      {plan.highlight ? (
         <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,transparent,${C3.green},transparent)` }} />
       ) : null}
       <div style={{ fontSize:11, fontWeight:700, color:C3.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:4, fontFamily:"'Inter','Segoe UI',sans-serif" }}>{plan.name}</div>
       <div style={{ fontSize:13, color:C3.textMuted, marginBottom:12, fontFamily:"'Inter','Segoe UI',sans-serif" }}>{plan.tagline}</div>
 
       {plan.featuredNote && (
-        <div style={{ fontSize:11, color:isPremium ? C3.text : C3.text, lineHeight:1.5, marginBottom:16, padding:"8px 10px", background:accentBg, borderRadius:8, fontFamily:"'Inter','Segoe UI',sans-serif" }}>
+        <div style={{ fontSize:11, color:C3.text, lineHeight:1.5, marginBottom:16, padding:"8px 10px", background:accentBg, borderRadius:8, fontFamily:"'Inter','Segoe UI',sans-serif" }}>
           {plan.featuredNote}
         </div>
       )}
@@ -783,7 +796,7 @@ export function PlanCard({ plan, isAnnual, onSelect, isCurrent }) {
       <div style={{ marginBottom:16 }}>
         {isAnnual ? (
           <>
-            <span style={{ fontSize:30, fontWeight:800, color:isPremium ? C3.amber : C3.text, fontFamily:"'Inter','Segoe UI',sans-serif" }}>R$ {plan.yearlyMonth.toFixed(2)}</span>
+            <span style={{ fontSize:30, fontWeight:800, color:C3.text, fontFamily:"'Inter','Segoe UI',sans-serif" }}>R$ {plan.yearlyMonth.toFixed(2)}</span>
             <span style={{ fontSize:13, color:C3.textMuted, marginLeft:4, fontFamily:"'Inter','Segoe UI',sans-serif" }}>/mês</span>
             <div style={{ fontSize:11, color:C3.amber, marginTop:4, fontFamily:"'Inter','Segoe UI',sans-serif" }}>
               <s style={{ color:C3.textMuted }}>R$ {plan.monthly.toFixed(2)}</s> — 20% de desconto
@@ -792,7 +805,7 @@ export function PlanCard({ plan, isAnnual, onSelect, isCurrent }) {
           </>
         ) : (
           <>
-            <span style={{ fontSize:30, fontWeight:800, color:isPremium ? C3.amber : C3.text, fontFamily:"'Inter','Segoe UI',sans-serif" }}>R$ {plan.monthly.toFixed(2)}</span>
+            <span style={{ fontSize:30, fontWeight:800, color:C3.text, fontFamily:"'Inter','Segoe UI',sans-serif" }}>R$ {plan.monthly.toFixed(2)}</span>
             <span style={{ fontSize:13, color:C3.textMuted, marginLeft:4, fontFamily:"'Inter','Segoe UI',sans-serif" }}>/mês</span>
           </>
         )}
@@ -828,15 +841,15 @@ export function PlanCard({ plan, isAnnual, onSelect, isCurrent }) {
       <button onClick={()=>onSelect?.(plan.key)}
         style={{
           marginTop:"auto", width:"100%",
-          background: isCurrent ? C3.border : (isPremium ? C3.amber : (plan.highlight ? C3.green : "transparent")),
-          color: isCurrent ? C3.textMuted : (isPremium ? "#1a1400" : (plan.highlight ? "#061A0C" : C3.green)),
-          border: `1px solid ${isCurrent ? C3.border : (isPremium ? C3.amber : (plan.highlight ? C3.green : C3.green+"50"))}`,
+          background: isCurrent ? C3.border : (plan.highlight ? C3.green : "transparent"),
+          color: isCurrent ? C3.textMuted : (plan.highlight ? "#061A0C" : C3.green),
+          border: `1px solid ${isCurrent ? C3.border : (plan.highlight ? C3.green : C3.green+"50")}`,
           borderRadius:10, padding:"12px 16px", fontSize:14, fontWeight:800,
           cursor: isCurrent ? "default" : "pointer",
           fontFamily:"'Inter','Segoe UI',sans-serif",
           transition:"all 0.12s",
         }}>
-        {isCurrent ? "✓ Plano Atual" : (plan.key === "start" ? "Ativar Start" : "Adquirir Plano")}
+        {isCurrent ? "✓ Plano Atual" : (plan.key === "avulso" ? "Usar Avulso" : plan.key === "start" ? "Ativar Start" : "Adquirir Plano")}
       </button>
     </div>
   );

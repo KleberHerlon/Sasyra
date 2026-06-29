@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PlanCard } from "../components";
-import { PLANS, PLAN_ORDER, AI_LIMITS, AI_EXPANSION } from "../data/plans";
+import { PLANS, PLAN_ORDER, AI_LIMITS, AI_OVERAGE } from "../data/plans";
 import { useSubscription } from "../hooks/useSubscription";
 
 const C = {
@@ -77,11 +77,11 @@ export default function Plans({ onNavigate }) {
                     <div style={{ fontSize:16, fontWeight:800, color:C.green, fontFamily:F }}>✅ Adquirido!</div>
                   </div>
                 )}
-                <PlanCard plan={plan} isAnnual={annual} isCurrent={isCurrent} onSelect={handleSelect} aiLimit={aiLimit} aiExpansion={AI_EXPANSION} />
+                <PlanCard plan={plan} isAnnual={annual} isCurrent={isCurrent} onSelect={handleSelect} aiLimit={aiLimit} aiExpansion={AI_OVERAGE[key] || AI_OVERAGE.avulso} />
 
                 {/* Show AI limit badge */}
-                <div style={{ fontSize:10, color:C.textMuted, textAlign:"center", marginTop:6, fontFamily:F }}>
-                  {key === "ia" ? `🤖 ${aiLimit} análises/mês inclusas` : key === "evidencia" ? `🤖 ${aiLimit} análises IA/mês inclusas` : key === "clinicas" ? `🤖 ${aiLimit} análises IA/mês inclusas` : "🔹 IA avulsa: R$ 4,90/análise"}
+                <div style={{ fontSize: 10, color: C.textMuted, textAlign:"center", marginTop:6, fontFamily:F }}>
+                  {key === "evidencia" ? `🤖 ${aiLimit} análises IA/mês inclusas` : key === "clinicas" ? `🤖 ${aiLimit} análises IA/mês (compartilhada)` : `🔹 IA avulsa: R$ ${(AI_OVERAGE[key]?.pricePerAnalysis || AI_OVERAGE.avulso.pricePerAnalysis).toFixed(2)}/análise`}
                 </div>
               </div>
             );
@@ -90,8 +90,9 @@ export default function Plans({ onNavigate }) {
 
         <div style={{ marginTop:32, background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"18px 20px", maxWidth:700, marginLeft:"auto", marginRight:"auto", textAlign:"center" }}>
           <p style={{ fontSize:12, color:C.textMuted, lineHeight:1.6, margin:0 }}>
-            💡 <strong style={{ color:C.green }}>Evidência</strong> inclui <strong>30 análises de IA/mês</strong> · <strong style={{ color:C.green }}>Clínicas</strong> inclui <strong>50 análises/mês</strong> · <strong style={{ color:C.green }}>IA Premium</strong> (R$ 79,90) inclui <strong>300 análises/mês</strong> + CIF Automatizada.
-            Acima do limite: <strong>R$ {AI_EXPANSION.pricePerAnalysis.toFixed(2)}/análise avulsa</strong> — paga só quando usar.
+            💡 <strong style={{ color:C.green }}>Evidência</strong> (R$ 59,90) inclui <strong>40 análises de IA/mês</strong> · <strong style={{ color:C.green }}>Clínica</strong> (R$ 149,90) inclui <strong>150 análises/mês</strong> (cota compartilhada).
+            Acima do limite: <strong>R$ 2,90/análise</strong> (Evidência) ou <strong>R$ 2,50/análise</strong> (Clínica) — paga só quando usar.
+            <strong style={{ color:C.amber }}>Start</strong> e <strong style={{ color:C.amber }}>Avulso</strong>: R$ 5,90/análise avulsa.
           </p>
         </div>
       </div>

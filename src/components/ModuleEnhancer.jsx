@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AI_LIMITS, AI_OVERAGE } from "../data/plans";
 
 const STYLE = {
   evaColor: (v) => v <= 3 ? "#22c55e" : v <= 6 ? "#eab308" : "#ef4444",
@@ -46,6 +47,45 @@ function EvaSlider({ label, value, onChange, colors }) {
   );
 }
 
+function loadSub() {
+  try {
+    const d = localStorage.getItem("sasyra_subscription");
+    if (d) return JSON.parse(d);
+  } catch {}
+  return { plan: "avulso", aiAnalysesUsed: 0, aiPeriodStart: "", aiExpansion: null };
+}
+
+function monthKey() { return new Date().toISOString().slice(0, 7); }
+
+function readQuota() {
+  const sub = loadSub();
+  const baseLimit = AI_LIMITS[sub.plan] || 0;
+  const expLimit = sub.aiExpansion?.analyses || 0;
+  const aiLimit = baseLimit + expLimit;
+  const curMonth = monthKey();
+  const used = sub.aiPeriodStart !== curMonth ? 0 : (sub.aiAnalysesUsed || 0);
+  const remaining = Math.max(0, aiLimit - used);
+  return { sub, plan: sub.plan, aiAnalysesUsed: used, aiLimit, remaining };
+}
+
+function consumeQuota() {
+  const sub = loadSub();
+  const curMonth = monthKey();
+  const used = sub.aiPeriodStart !== curMonth ? 0 : (sub.aiAnalysesUsed || 0);
+  sub.aiAnalysesUsed = used + 1;
+  sub.aiPeriodStart = curMonth;
+  localStorage.setItem("sasyra_subscription", JSON.stringify(sub));
+  window.dispatchEvent(new CustomEvent("sasyra-sub-changed"));
+  return sub;
+}
+
+function addInvoice(amount, desc) {
+  const sub = loadSub();
+  sub.invoices = [...(sub.invoices || []), { amount, date: new Date().toISOString(), status: "Pago", desc }];
+  localStorage.setItem("sasyra_subscription", JSON.stringify(sub));
+  window.dispatchEvent(new CustomEvent("sasyra-sub-changed"));
+}
+
 export function useEnhancer(moduleName, studentId, storageKey) {
   const STORAGE_KEY = storageKey || `${moduleName}_enhancer_${studentId}`;
 
@@ -75,15 +115,30 @@ export function useEnhancer(moduleName, studentId, storageKey) {
   };
 
   const runAI = async (summaryText) => {
+    const { sub, plan, aiAnalysesUsed, aiLimit, remaining } = readQuota();
+    const baseLimit = AI_LIMITS[plan] || 0;
+    const overage = AI_OVERAGE[plan] || AI_OVERAGE.avulso;
+
+    if (remaining > 0 && baseLimit > 0) {
+      consumeQuota();
+    } else if (plan === "avulso" || baseLimit === 0) {
+      addInvoice(overage.pricePerAnalysis, `1 análise avulsa IA (${moduleName}) — R$ ${overage.pricePerAnalysis.toFixed(2)}`);
+    } else if (remaining <= 0 && baseLimit > 0) {
+      addInvoice(overage.pricePerAnalysis, `1 análise extra IA (${moduleName}) — R$ ${overage.pricePerAnalysis.toFixed(2)}`);
+    }
+
     setAiRes("Carregando...");
     try {
       const res = await fetch("/api/anthropic", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-6", max_tokens: 1000,
+          model: "claude-sonnet-4-6", max_tokens: 1500,
           _patientName: studentId,
           _queixa: pain.localDor.join(", "),
+          _plan: plan,
+          _aiAnalysesUsed: aiAnalysesUsed + 1,
+          _aiLimit: aiLimit,
           system: `Você é um profissional de ${moduleName} especialista em medicina baseada em evidências. Responda em português.`,
           messages: [{ role: "user", content: `Com base nos dados abaixo, forneça:\n1. Hipótese diagnóstica funcional\n2. Plano de tratamento padrão-ouro\n3. Prognóstico\n\nDADOS:\n${summaryText}` }],
         }),

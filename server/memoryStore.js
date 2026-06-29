@@ -21,7 +21,7 @@ function writeJSON(file, data) {
   try { writeFileSync(file, JSON.stringify(data, null, 2), "utf-8"); } catch {}
 }
 
-export function saveAnalysis({ patientName, queixa, prompt, response, inputTokens, outputTokens, model }) {
+export function saveAnalysis({ patientName, queixa, prompt, response, inputTokens, outputTokens, model, cachedInputTokens }) {
   const store = readJSON(MEMORY_FILE, { analyses: [] });
   const entry = {
     id: Date.now(),
@@ -32,6 +32,7 @@ export function saveAnalysis({ patientName, queixa, prompt, response, inputToken
     responseLength: response?.length || 0,
     inputTokens: inputTokens || 0,
     outputTokens: outputTokens || 0,
+    cachedInputTokens: cachedInputTokens || 0,
     model: model || "claude-sonnet-4-6",
   };
   store.analyses.push(entry);

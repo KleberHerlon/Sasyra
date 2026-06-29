@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSubscription } from "../hooks/useSubscription";
 import { useTokens } from "../hooks/useTokens";
-import { PLANS, PLAN_ORDER, PLAN_LABELS } from "../data/plans";
+import { PLANS, PLAN_ORDER, PLAN_LABELS, AI_LIMITS, AI_OVERAGE } from "../data/plans";
 
 const C = {
   bg:          "var(--bg)",
@@ -33,7 +33,7 @@ const primaryBtn = (extra={}) => ({ background:C.green, color:"#061A0C", border:
 const cardStyle = (extra={}) => ({ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:"20px 22px", marginBottom:14, ...extra });
 
 export default function SubscriptionSettings({ onNavigate }) {
-  const { sub, plan, label, setPlan, extraUsers, addExtraUser, removeExtraUser, invoices, isAnnual } = useSubscription();
+  const { sub, plan, label, setPlan, extraUsers, addExtraUser, removeExtraUser, invoices, isAnnual, aiAnalysesUsed, aiLimit, aiRemaining, pctUsed, daysUntilReset, hasQuota, isAvulso } = useSubscription();
   const { summary: tokenSummary, loading: tokenLoading, fetchSummary } = useTokens();
 
   useEffect(() => { fetchSummary(); }, []);
@@ -78,6 +78,67 @@ export default function SubscriptionSettings({ onNavigate }) {
           </button>
         </div>
 
+        {/* AI Usage Dashboard */}
+        {!isAvulso && (
+          <div style={cardStyle()}>
+            <div style={{ fontSize:10, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:12 }}>
+              🤖 Análises de IA — Uso do Mês
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
+              <div style={{ background:C.surface, borderRadius:8, padding:"10px 12px", border:`1px solid ${C.borderLight}` }}>
+                <div style={{ fontSize:9, color:C.textMuted, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>Utilizadas</div>
+                <div style={{ fontSize:22, fontWeight:800, color: aiRemaining <= 0 ? C.red : C.text }}>{aiAnalysesUsed}</div>
+                <div style={{ fontSize:10, color:C.textDim }}>de {aiLimit} disponíveis</div>
+              </div>
+              <div style={{ background:C.surface, borderRadius:8, padding:"10px 12px", border:`1px solid ${C.borderLight}` }}>
+                <div style={{ fontSize:9, color:C.textMuted, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>Disponíveis</div>
+                <div style={{ fontSize:22, fontWeight:800, color: aiRemaining <= 0 ? C.red : C.green }}>{aiRemaining}</div>
+                <div style={{ fontSize:10, color:C.textDim }}>{daysUntilReset} dias até o reset</div>
+              </div>
+            </div>
+            {/* Progress bar */}
+            <div style={{ background:C.surface, borderRadius:6, height:8, overflow:"hidden", marginBottom:10 }}>
+              <div style={{ width:`${Math.min(pctUsed,100)}%`, height:"100%", background: pctUsed >= 80 ? C.amber : C.green, borderRadius:6, transition:"width 0.3s" }} />
+            </div>
+            <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:C.textDim, marginBottom:12 }}>
+              <span>0%</span>
+              <span>{pctUsed}% utilizado{(!hasQuota || pctUsed >= 80) ? " ⚠" : ""}</span>
+              <span>100%</span>
+            </div>
+            {!hasQuota && (
+              <div style={{ fontSize:11, color:C.amber, background:C.amberBg, borderRadius:8, padding:"8px 12px" }}>
+                ⚡ Seu plano não inclui análises de IA. Use o modo avulso (R$ 5,90/análise) ou faça upgrade para Evidência (40 análises/mês inclusas).
+              </div>
+            )}
+            {hasQuota && aiRemaining <= 5 && aiRemaining > 0 && (
+              <div style={{ fontSize:11, color:C.amber, background:C.amberBg, borderRadius:8, padding:"8px 12px" }}>
+                ⚠ Restam apenas {aiRemaining} análises. Considere fazer upgrade para o plano Clínica ou adquirir créditos avulsos.
+              </div>
+            )}
+            {hasQuota && aiRemaining <= 0 && (
+              <div style={{ fontSize:11, color:C.red, background:C.redBg, borderRadius:8, padding:"8px 12px" }}>
+                🚫 Cota de análises esgotada. As próximas análises serão cobradas como excedente (R$ {AI_OVERAGE[plan]?.pricePerAnalysis.toFixed(2) || "2,90"}/análise).
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Avulso usage info */}
+        {isAvulso && (
+          <div style={cardStyle()}>
+            <div style={{ fontSize:10, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:12 }}>
+              🤖 Análises Avulsas
+            </div>
+            <div style={{ fontSize:12, color:C.textDim, lineHeight:1.6 }}>
+              Modo avulso ativo. Cada análise de IA custa <strong style={{color:C.amber}}>R$ 5,90</strong> e é cobrada por uso.
+              {!isAvulso && " Emita nota fiscal e acompanhe o histórico de faturas abaixo."}
+            </div>
+            <div style={{ marginTop:12, fontSize:11, color:C.textMuted }}>
+              {aiAnalysesUsed > 0 ? `📊 ${aiAnalysesUsed} análise(s) realizada(s) neste ciclo.` : "Nenhuma análise realizada ainda."}
+            </div>
+          </div>
+        )}
+
         {/* Change Plan */}
         {showChangePlan && (
           <div style={{ ...cardStyle() }}>
@@ -118,7 +179,7 @@ export default function SubscriptionSettings({ onNavigate }) {
         {plan === "clinicas" && (
           <div style={cardStyle()}>
             <div style={{ fontSize:12, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:12 }}>
-              👥 Profissionais Adicionais (R$ 59,90/mês cada)
+              👥 Profissionais Adicionais (R$ 14,90/mês cada)
             </div>
             {extraUsers.length > 0 && (
               <div style={{ marginBottom:12, display:"flex", flexDirection:"column", gap:6 }}>
