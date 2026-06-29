@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import Agenda from "./Agenda";
 import ExpressAssessment from "../components/ExpressAssessment";
 import { detectKB } from "../utils/clinicalDetection";
+import { useSubscription } from "../hooks/useSubscription";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -702,20 +703,12 @@ let _gId = 20;
 
 // ── Login Screen ────────────────────────────────────────────────────────────────
 function LoginScreen({ onLogin }) {
-  const [prof, setProf] = useState("");
   const [nome, setNome] = useState("");
   const [crefito, setCrefito] = useState("");
 
-  const profOptions = [
-    { value:"fisio", label:"Fisioterapeuta", icon:"🦵" },
-    { value:"to", label:"Terapeuta Ocupacional", icon:"🤲" },
-    { value:"educFisico", label:"Educador Físico", icon:"🏃" },
-    { value:"outro", label:"Outro profissional da saúde", icon:"💚" },
-  ];
-
   const handleEnter = () => {
-    if (!prof || !nome.trim()) return;
-    onLogin({ prof, nome: nome.trim(), crefito: crefito.trim() });
+    if (!nome.trim()) return;
+    onLogin({ prof:"fisio", nome: nome.trim(), crefito: crefito.trim() });
   };
 
   return (
@@ -740,27 +733,6 @@ function LoginScreen({ onLogin }) {
         <p style={{ color:C.textMuted, fontSize:14, lineHeight:1.6, margin:"8px 0 28px" }}>
           Sistema de apoio à decisão clínica para avaliação, documentação e tratamento ortopédico baseado em evidências
         </p>
-
-        {/* Profissão */}
-        <div style={{ textAlign:"left", marginBottom:18 }}>
-          <span style={lbl()}>Sou profissional de</span>
-          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-            {profOptions.map(opt => (
-              <button key={opt.value} onClick={() => setProf(opt.value)}
-                style={{
-                  ...iconBtn(prof === opt.value, C.green),
-                  width:"100%", justifyContent:"flex-start", textAlign:"left", padding:"12px 16px",
-                  border: prof === opt.value ? `1px solid ${C.green}70` : `1px solid ${C.border}`,
-                  background: prof === opt.value ? C.greenBg : C.surface,
-                  borderRadius:10, gap:10, fontSize:14
-                }}>
-                <span style={{ fontSize:18 }}>{opt.icon}</span>
-                <span style={{ fontWeight: prof === opt.value ? 700 : 400, color: prof === opt.value ? C.green : C.text }}>{opt.label}</span>
-                {prof === opt.value && <span style={{ marginLeft:"auto", color:C.green, fontSize:16 }}>✓</span>}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Nome */}
         <div style={{ textAlign:"left", marginBottom:14 }}>
@@ -795,7 +767,7 @@ function LoginScreen({ onLogin }) {
   );
 }
 
-const PROF_LABELS = { fisio:"Fisioterapeuta", to:"Terapeuta Ocupacional", educFisico:"Educador Físico", outro:"Profissional da Saúde" };
+const PROF_LABELS = { fisio:"Fisioterapeuta" };
 
 // ── Patient List ──────────────────────────────────────────────────────────────
 function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, user }) {
@@ -897,6 +869,7 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, user }) {
 
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
+  const { sub, plan, aiRemaining, aiLimit, useAI, buyAndUseAI } = useSubscription();
   const [user, setUser] = useState(null);
   const [patients, setPatients] = useState([]);
   const [patientView, setPatientView] = useState(true);
@@ -982,7 +955,9 @@ export default function Dashboard() {
   const { steps:progSteps, pct:progPct } = useProgress(pt, queixa, isEvaValid?evaMov:null, gonio, hasFilledTests?tests:{}, kb);
 
   // ── AI call ───────────────────────────────────────────────────────────────
-  const runAI = async () => {
+  const runAI = async (payPerUse = false) => {
+    if (payPerUse && !buyAndUseAI()) { setAiRes("Erro ao processar pagamento."); return; }
+    if (!payPerUse && !useAI()) { setAiRes("Limite de análises excedido."); return; }
     setAiLoad(true); setAiRes("");
     try {
       const summary = [
@@ -1009,9 +984,12 @@ export default function Dashboard() {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
-          model:"claude-sonnet-4-6", max_tokens:1000,
+          model:"claude-sonnet-4-6", max_tokens:1500,
           _patientName: pt.nome,
           _queixa: queixa,
+          _plan: plan,
+          _aiAnalysesUsed: sub.aiAnalysesUsed,
+          _aiLimit: aiLimit,
           messages:[{role:"user",content:
 `Você é fisioterapeuta ortopédico especialista em medicina baseada em evidências (PEDro, Cochrane, CPGs internacionais).
 Com base nos dados clínicos abaixo, forneça análise estruturada e atualizada:

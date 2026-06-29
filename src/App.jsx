@@ -15,11 +15,7 @@ import { useSupabasePatients, useSupabaseAssessments, useSupabaseLogs } from "./
 import ExpressAssessment from "./components/ExpressAssessment";
 import EvidencePanel from "./components/EvidencePanel";
 import { detectKB, detectMultipleKB } from "./utils/clinicalDetection";
-import PhysicalEducation from "./screens/PhysicalEducation";
-import OccupationalTherapy from "./screens/OccupationalTherapy";
-import Nutrition from "./screens/Nutrition";
 import Pediatria from "./screens/Pediatria";
-import CrossFit from "./screens/CrossFit";
 import Neuro from "./screens/Neuro";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -922,110 +918,145 @@ let _gId = 20;
 // ── Login Screen ────────────────────────────────────────────────────────────────
 function LoginScreen({ onLogin, theme, onToggleTheme }) {
   const { t } = useTranslation();
-  const [prof, setProf] = useState("");
   const [nome, setNome] = useState("");
   const [crefito, setCrefito] = useState("");
+  const [crefitoError, setCrefitoError] = useState("");
 
-  const profOptions = [
-    { value:"fisio", label: t("auth.professions.fisio"), icon:"🦵" },
-    { value:"to", label: t("auth.professions.to"), icon:"🤲" },
-    { value:"educFisico", label: t("auth.professions.educFisico"), icon:"🏃" },
-    { value:"nutricionista", label: t("auth.professions.nutricionista"), icon:"🥗" },
-    { value:"pediatria", label: t("auth.professions.pediatria"), icon:"👶" },
-    { value:"crossfit", label: t("auth.professions.crossfit"), icon:"💪" },
-    { value:"neurofuncional", label: t("auth.professions.neurofuncional"), icon:"🧠" },
-  ];
+  const registry = {
+    label: "CREFITO",
+    placeholder: "Ex: 278187-F",
+    pattern: /^(\d{4,7})-(F)$/i,
+    hint: 'Formato: XXXXXX-F (ex: 278187-F)',
+    validate: () => ""
+  };
+
+  const validateRegistry = (v) => {
+    const trimmed = v.trim();
+    if (!trimmed) return "Registro profissional é obrigatório.";
+    const match = trimmed.match(registry.pattern);
+    if (!match) return `Formato inválido. ${registry.hint}`;
+    return registry.validate(match);
+  };
+
+  const handleCrefitoChange = (v) => {
+    setCrefito(v);
+    setCrefitoError(validateRegistry(v));
+  };
+
+  const canEnter = nome.trim() && crefito.trim() && !validateRegistry(crefito);
 
   const handleEnter = () => {
-    if (!prof || !nome.trim()) return;
-    onLogin({ prof, nome: nome.trim(), crefito: crefito.trim() });
+    if (!canEnter) return;
+    onLogin({ prof:"fisio", nome: nome.trim(), crefito: crefito.trim() });
   };
 
   return (
-    <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:F, padding:24, position:"relative" }}>
-      <div style={{ position:"absolute", top:20, right:20, display:"flex", alignItems:"center", gap:8 }}>
+    <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", fontFamily:F, color:C.text, position:"relative", overflow:"auto" }}>
+      <div style={{ position:"sticky", top:0, zIndex:10, display:"flex", justifyContent:"flex-end", alignItems:"center", gap:8, padding:"16px 24px" }}>
         <LanguageSwitcher />
-        <button onClick={onToggleTheme} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.textMuted, padding:"7px 12px", fontSize:16, lineHeight:1, cursor:"pointer", fontFamily:F, transition:"all 0.2s" }}>
+        <button onClick={onToggleTheme} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.textMuted, padding:"7px 12px", fontSize:16, lineHeight:1, cursor:"pointer", fontFamily:F }}>
           {theme === "dark" ? "☀️" : "🌙"}
         </button>
       </div>
 
-      <div style={{ maxWidth:440, width:"100%", textAlign:"center" }}>
+      <div style={{ maxWidth:520, margin:"0 auto", padding:"0 24px 60px", textAlign:"center" }}>
 
-        {/* Logo grande */}
-        <div style={{ marginBottom:8 }}>
-          <svg viewBox="0 0 400 70" width="320" height="62" style={{ display:"block", margin:"0 auto" }}>
-            <g transform="translate(78,36)">
-              <line x1="0" y1="-28" x2="0" y2="28" stroke={C.textDim} strokeWidth="1.5" strokeDasharray="2 5"/>
-              <path d="M -20 14 C -10 4,0 0,20 -14" fill="none" stroke={C.green} strokeWidth="5" strokeLinecap="round"/>
-              <path d="M -20 -5 C -5 0,5 4,20 15" fill="none" stroke={C.greenDim} strokeWidth="3.5" strokeLinecap="round"/>
-              <path d="M -12 24 C -4 13,4 -6,15 -24" fill="none" stroke={C.greenDeep} strokeWidth="3" strokeLinecap="round"/>
-              <circle cx="0" cy="0" r="6" fill={C.amber}/>
-            </g>
-            <text x="200" y="50" fill={C.text} fontSize="36" fontWeight="900" letterSpacing="8" fontFamily={F} textAnchor="middle">SASYRA</text>
-            <text x="200" y="66" fill={C.green} fontSize="13" fontWeight="800" letterSpacing="6" fontFamily={F} textAnchor="middle">{t("app.subtitle")}</text>
-          </svg>
-        </div>
+        <svg viewBox="0 0 400 70" width="200" height="38" style={{ display:"block", margin:"0 auto 24px" }}>
+          <g transform="translate(78,36)">
+            <line x1="0" y1="-28" x2="0" y2="28" stroke={C.textDim} strokeWidth="1.5" strokeDasharray="2 5"/>
+            <path d="M -20 14 C -10 4,0 0,20 -14" fill="none" stroke={C.green} strokeWidth="5" strokeLinecap="round"/>
+            <path d="M -20 -5 C -5 0,5 4,20 15" fill="none" stroke={C.greenDim} strokeWidth="3.5" strokeLinecap="round"/>
+            <path d="M -12 24 C -4 13,4 -6,15 -24" fill="none" stroke={C.greenDeep} strokeWidth="3" strokeLinecap="round"/>
+            <circle cx="0" cy="0" r="6" fill={C.amber}/>
+          </g>
+          <text x="200" y="50" fill={C.text} fontSize="32" fontWeight="900" letterSpacing="8" fontFamily={F} textAnchor="middle">SASYRA</text>
+        </svg>
 
-        <p style={{ color:C.textMuted, fontSize:14, lineHeight:1.6, margin:"8px 0 28px" }}>
-          {t("app.description")}
+        <h1 style={{ fontSize:30, fontWeight:900, margin:"0 0 12px", lineHeight:1.2, background:"linear-gradient(135deg, #4ADE80, #22C55E)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+          Onde a clínica encontra<br/>a ciência.
+        </h1>
+        <p style={{ fontSize:14, color:C.textSub, lineHeight:1.7, margin:"0 auto 36px", maxWidth:480 }}>
+          O SASYRA une sua prática clínica às melhores evidências científicas disponíveis. 
+          Toda avaliação, conduta e relatório respaldados por diretrizes internacionais 
+          como JOSPT, NICE e Cochrane — sem você precisar abrir um artigo sequer.
         </p>
 
-        {/* Profissão */}
-        <div style={{ textAlign:"left", marginBottom:18 }}>
-          <span style={lbl()}>{t("auth.profLabel")}</span>
-          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-            {profOptions.map(opt => (
-              <button key={opt.value} onClick={() => setProf(opt.value)}
-                style={{
-                  ...iconBtn(prof === opt.value, C.green),
-                  width:"100%", justifyContent:"flex-start", textAlign:"left", padding:"12px 16px",
-                  border: prof === opt.value ? `1px solid ${C.green}70` : `1px solid ${C.border}`,
-                  background: prof === opt.value ? C.greenBg : C.surface,
-                  borderRadius:10, gap:10, fontSize:14
-                }}>
-                <span style={{ fontSize:18 }}>{opt.icon}</span>
-                <span style={{ fontWeight: prof === opt.value ? 700 : 400, color: prof === opt.value ? C.green : C.text }}>{opt.label}</span>
-                {prof === opt.value && <span style={{ marginLeft:"auto", color:C.green, fontSize:16 }}>✓</span>}
-              </button>
+        {/* ── Evidence highlight ──────────────────────────────────────── */}
+
+        <div style={{ background:`linear-gradient(135deg, ${C.purple}10, ${C.card})`, border:`1px solid ${C.purple}40`, borderRadius:16, padding:"24px 20px", marginBottom:36, textAlign:"center" }}>
+          <div style={{ fontSize:28, marginBottom:8 }}>🔬</div>
+          <div style={{ fontSize:15, fontWeight:800, color:C.purple, marginBottom:6 }}>Prática baseada em evidências, automatizada</div>
+          <p style={{ fontSize:12, color:C.textSub, lineHeight:1.7, maxWidth:440, margin:"0 auto" }}>
+            Enquanto você avalia o paciente, o SASYRA cruza os achados com as diretrizes mais recentes de 
+            lombalgia, ombro, joelho, cervical e muito mais. O plano de tratamento sugerido já vem 
+            com o nível de evidência, ano da diretriz e referência. Você pratica no mais alto padrão 
+            científico — sem esforço extra.
+          </p>
+          <div style={{ display:"flex", justifyContent:"center", gap:16, marginTop:14, flexWrap:"wrap" }}>
+            {["JOSPT · Nível A", "NICE · Guideline 2023", "Cochrane · Revisão Sistemática"].map((s,i) => (
+              <span key={i} style={{ fontSize:10, fontWeight:700, color:C.purple, background:`${C.purple}18`, padding:"4px 12px", borderRadius:6, border:`1px solid ${C.purple}30` }}>
+                {s}
+              </span>
             ))}
           </div>
         </div>
 
-        {/* Nome */}
-        <div style={{ textAlign:"left", marginBottom:14 }}>
-          <span style={lbl()}>{t("auth.nameLabel")}</span>
-          <input type="text" value={nome} onChange={e => setNome(e.target.value)} placeholder={t("auth.namePlaceholder")}
-            style={inp({ padding:"11px 14px", fontSize:14 })} />
+        <div style={{ display:"flex", justifyContent:"center", gap:32, marginBottom:40, flexWrap:"wrap" }}>
+          {[
+            { icon:"⏱️", value:"90 min → 15 min", label:"Tempo de avaliação completa" },
+            { icon:"📊", value:"1 clique", desc:"Relatório profissional com CIF + evidências + evolução" },
+            { icon:"💰", value:"+R$ 30 a R$ 50", label:"Valor agregado por sessão" },
+          ].map((p,i) => (
+            <div key={i} style={{ textAlign:"center", minWidth:120 }}>
+              <div style={{ fontSize:24, marginBottom:4 }}>{p.icon}</div>
+              <div style={{ fontSize:17, fontWeight:900, color:C.green, marginBottom:2 }}>{p.value}</div>
+              <div style={{ fontSize:11, color:C.textDim }}>{p.desc || p.label}</div>
+            </div>
+          ))}
         </div>
 
-        {/* CREFITO (opcional) */}
-        <div style={{ textAlign:"left", marginBottom:24 }}>
-          <span style={lbl()}>{t("auth.crefitoLabel")} <span style={{ color:C.textDim, fontWeight:400, textTransform:"none" }}>{t("auth.crefitoOptional")}</span></span>
-          <input type="text" value={crefito} onChange={e => setCrefito(e.target.value)} placeholder={t("auth.crefitoPlaceholder")}
-            style={inp({ padding:"11px 14px", fontSize:14 })} />
+        <div style={{ background:`linear-gradient(135deg, #0D9E5C12, ${C.card})`, border:`1px solid ${C.green}40`, borderRadius:16, padding:"18px 20px", marginBottom:40 }}>
+          <div style={{ fontSize:13, color:C.textMuted, marginBottom:4 }}>Investimento a partir de</div>
+          <div style={{ fontSize:28, fontWeight:900, color:C.green }}>R$ 19,90<span style={{ fontSize:14, fontWeight:400, color:C.textDim }}>/mês</span></div>
+          <div style={{ fontSize:12, color:C.textSub, marginTop:4 }}>Se paga em 1 atendimento · 7 dias grátis · Sem cartão de crédito</div>
         </div>
 
-        {/* Entrar */}
-        <button onClick={handleEnter} disabled={!prof || !nome.trim()}
-          style={{
-            ...primaryBtn(),
-            width:"100%", justifyContent:"center", padding:"14px", fontSize:15, fontWeight:800,
-            opacity: (!prof || !nome.trim()) ? 0.4 : 1,
-            cursor: (!prof || !nome.trim()) ? "not-allowed" : "pointer"
-          }}>
-          {t("app.enter")}
-        </button>
-
-        <p style={{ color:C.textDim, fontSize:11, marginTop:24 }}>
-          {t("app.disclaimer")}
+        <p style={{ fontSize:12, color:C.textDim, marginBottom:20 }}>
+          <span style={{ color:C.amber }}>★</span> Utilizado por fisioterapeutas em mais de 50 clínicas no Brasil
         </p>
+
+        <div style={{ maxWidth:360, margin:"0 auto" }}>
+          <div style={{ textAlign:"left", marginBottom:12 }}>
+            <span style={lbl()}>{t("auth.nameLabel")}</span>
+            <input type="text" value={nome} onChange={e => setNome(e.target.value)} placeholder={t("auth.namePlaceholder")}
+              style={inp({ padding:"11px 14px", fontSize:14 })} />
+          </div>
+          <div style={{ textAlign:"left", marginBottom:18 }}>
+            <span style={lbl()}>{registry.label} <span style={{ color:C.green, fontWeight:700 }}>*</span></span>
+            <input type="text" value={crefito} onChange={e => handleCrefitoChange(e.target.value)} placeholder={registry.placeholder}
+              style={{ ...inp({ padding:"11px 14px", fontSize:14 }), borderColor: crefito && crefitoError ? "var(--red)" : undefined }} />
+            {registry.hint && !crefitoError && <span style={{ color:C.textDim, fontSize:11, marginTop:4, display:"block" }}>{registry.hint}</span>}
+            {crefito && crefitoError && <span style={{ color:"var(--red)", fontSize:11, marginTop:4, display:"block" }}>{crefitoError}</span>}
+          </div>
+          <button onClick={handleEnter} disabled={!canEnter}
+            style={{
+              ...primaryBtn(),
+              width:"100%", justifyContent:"center", padding:"14px", fontSize:15, fontWeight:800,
+              opacity: !canEnter ? 0.4 : 1,
+              cursor: !canEnter ? "not-allowed" : "pointer"
+            }}>
+            {t("app.enter")}
+          </button>
+          <p style={{ color:C.textDim, fontSize:11, marginTop:14, lineHeight:1.5 }}>
+            {t("app.disclaimer")}
+          </p>
+        </div>
       </div>
     </div>
   );
 }
 
-const PROF_LABELS = { fisio:"Fisioterapeuta", to:"Terapeuta Ocupacional", educFisico:"Educador Físico", nutricionista:"Nutricionista", pediatria:"Fisioterapeuta Pediátrico", crossfit:"Treinador CrossFit", neurofuncional:"Fisioterapeuta Neurofuncional" };
+const PROF_LABELS = { fisio:"Fisioterapeuta" };
 
 function ModuleSelector({ user, onSelect, onLogout, theme, onToggleTheme }) {
   const { t } = useTranslation();
@@ -1102,7 +1133,7 @@ function ModuleSelector({ user, onSelect, onLogout, theme, onToggleTheme }) {
 }
 
 // ── Patient List ──────────────────────────────────────────────────────────────
-function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChange, user, assessmentHistory, onDelete, onChangeModule, plan, theme, onToggleTheme }) {
+function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChange, user, assessmentHistory, onDelete, plan, theme, onToggleTheme, noHeader }) {
   const { t } = useTranslation();
   const [showClinicasUpsell, setShowClinicasUpsell] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -1139,21 +1170,23 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChan
   return (
     <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", fontFamily:F, color:C.text, padding:isMobile?12:24 }}>
       <div style={{ maxWidth:680, margin:"0 auto" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
-          <LogoSVG/>
-          <div style={{ display:"flex", gap:8 }}>
-            <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-              <LanguageSwitcher styles={{ alignSelf:"center" }} />
-              <button onClick={onToggleTheme} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.textMuted, padding:"5px 8px", fontSize:14, lineHeight:1, cursor:"pointer", fontFamily:F, transition:"all 0.2s" }}>
-                {theme === "dark" ? "☀️" : "🌙"}
-              </button>
+        {!noHeader && (
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
+            <LogoSVG/>
+            <div style={{ display:"flex", gap:8 }}>
+              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                <LanguageSwitcher styles={{ alignSelf:"center" }} />
+                <button onClick={onToggleTheme} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.textMuted, padding:"5px 8px", fontSize:14, lineHeight:1, cursor:"pointer", fontFamily:F, transition:"all 0.2s" }}>
+                  {theme === "dark" ? "☀️" : "🌙"}
+                </button>
+              </div>
+              <button onClick={onAgenda} style={ghostBtn({ fontSize:12 })}>📅 Agenda</button>
+              <button onClick={() => onViewChange?.("financeiro")} style={ghostBtn({ fontSize:12 })}>💰 Financeiro</button>
+              <button onClick={() => onViewChange?.("integrations")} style={ghostBtn({ fontSize:12 })}>🔗 Integrações</button>
+              <button onClick={onLogout} style={ghostBtn({ fontSize:12 })}>{t("modules.logout")}</button>
             </div>
-            <button onClick={onAgenda} style={ghostBtn({ fontSize:12 })}>📅 Agenda</button>
-            <button onClick={() => onViewChange?.("financeiro")} style={ghostBtn({ fontSize:12 })}>💰 Financeiro</button>
-            <button onClick={() => onViewChange?.("integrations")} style={ghostBtn({ fontSize:12 })}>🔗 Integrações</button>
-            <button onClick={onLogout} style={ghostBtn({ fontSize:12 })}>{t("modules.logout")}</button>
           </div>
-        </div>
+        )}
 
         <div style={{ marginBottom:28 }}>
           <div style={{ fontSize:22, fontWeight:800, color:C.text, marginBottom:2 }}>Olá, {user.nome}</div>
@@ -1293,6 +1326,81 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChan
   );
 }
 
+// ── Fisioterapia SubModule Picker ──
+function FisioSubModulePicker({ user, onSelect, onLogout, theme, onToggleTheme }) {
+  const { t } = useTranslation();
+  const subs = [
+    { id:"ortopedica", icon:"🦴", title:"Fisioterapia Ortopédica", desc:"Avaliação musculoesquelética, escalas funcionais, CIF, diário de evolução e prescrição baseada em evidências", color:C.green },
+    { id:"neurologica", icon:"🧠", title:"Fisioterapia Neurológica", desc:"Reabilitação neurológica: escalas (MAS, BBS, MIF), avaliação de marcha, tônus, coordenação e treino funcional", color:C.purple },
+    { id:"pediatrica", icon:"👶", title:"Fisioterapia Pediátrica", desc:"Desenvolvimento motor, escalas GMFCS/AIMS/M-CHAT, marcos motores e plano terapêutico infantil", color:C.blue },
+  ];
+  return (
+    <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:F, padding:24, position:"relative" }}>
+      <div style={{ maxWidth:500, width:"100%", textAlign:"center" }}>
+        <div style={{ position:"absolute", top:20, right:20, display:"flex", alignItems:"center", gap:8 }}>
+          <button onClick={onToggleTheme} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.textMuted, padding:"7px 12px", fontSize:16, lineHeight:1, cursor:"pointer", fontFamily:F }}>
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
+        </div>
+        <div style={{ marginBottom:8 }}>
+          <svg viewBox="0 0 400 70" width="280" height="54" style={{ display:"block", margin:"0 auto" }}>
+            <g transform="translate(78,36)">
+              <line x1="0" y1="-28" x2="0" y2="28" stroke={C.textDim} strokeWidth="1.5" strokeDasharray="2 5"/>
+              <path d="M -20 14 C -10 4,0 0,20 -14" fill="none" stroke={C.green} strokeWidth="5" strokeLinecap="round"/>
+              <path d="M -20 -5 C -5 0,5 4,20 15" fill="none" stroke={C.greenDim} strokeWidth="3.5" strokeLinecap="round"/>
+              <path d="M -12 24 C -4 13,4 -6,15 -24" fill="none" stroke={C.greenDeep} strokeWidth="3" strokeLinecap="round"/>
+              <circle cx="0" cy="0" r="6" fill={C.amber}/>
+            </g>
+            <text x="200" y="50" fill={C.text} fontSize="32" fontWeight="900" letterSpacing="8" fontFamily={F} textAnchor="middle">SASYRA</text>
+          </svg>
+        </div>
+        <div style={{ marginBottom:28 }}>
+          <div style={{ fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>{t("modules.greeting", { name: user.nome })}</div>
+          <div style={{ fontSize:13, color:C.textMuted }}>Fisioterapeuta · {user.crefito ? `${user.crefito}` : ""}</div>
+        </div>
+        <p style={{ color:C.textMuted, fontSize:14, marginBottom:24, lineHeight:1.6 }}>Selecione a área de atuação:</p>
+        {subs.map(s => (
+          <button key={s.id} onClick={() => onSelect(s.id)}
+            style={{
+              width:"100%", display:"flex", alignItems:"center", gap:16, textAlign:"left", padding:"18px 20px", marginBottom:12,
+              background: C.card,
+              border: `1px solid ${C.border}`,
+              borderRadius:14, cursor:"pointer", fontFamily:F, color:C.text, transition:"all 0.12s",
+            }}>
+            <div style={{ fontSize:28, flexShrink:0 }}>{s.icon}</div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:16, fontWeight:700, color: s.color, marginBottom:3 }}>{s.title}</div>
+              <div style={{ fontSize:12, color:C.textMuted, lineHeight:1.5 }}>{s.desc}</div>
+            </div>
+            <span style={{ fontSize:18, color:s.color }}>→</span>
+          </button>
+        ))}
+        <div style={{ marginTop:16 }}>
+          <button onClick={onLogout} style={{ ...ghostBtn({ fontSize:12 }), color:C.textDim }}>{t("modules.logout")}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SubModuleLayout({ title, onBack, theme, onToggleTheme, children }) {
+  return (
+    <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", fontFamily:F, color:C.text, position:"relative" }}>
+      <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:100, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 20px", background:C.bg, borderBottom:`1px solid ${C.border}` }}>
+        <button onClick={onBack} style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"6px 14px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:F, display:"flex", alignItems:"center", gap:6 }}>
+          ← {title}
+        </button>
+        <button onClick={onToggleTheme} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.textMuted, padding:"5px 8px", fontSize:14, lineHeight:1, cursor:"pointer", fontFamily:F }}>
+          {theme === "dark" ? "☀️" : "🌙"}
+        </button>
+      </div>
+      <div style={{ paddingTop:60 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 // ── App ───────────────────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
   constructor(props){super(props);this.state={hasError:false}}
@@ -1323,8 +1431,9 @@ export default function Sasyra() {
   const [appView, setAppView] = useState("patients");
   const [module, setModule] = useState(() => {
     const saved = localStorage.getItem("sasyra_module");
-    return (saved === "fisioterapia" || saved === "educacaoFisica" || saved === "em_desenvolvimento" || saved === "pediatria" || saved === "crossfit" || saved === "neuro") ? saved : null;
+    return saved === "fisioterapia" ? saved : null;
   });
+  const [subModule, setSubModule] = useState(null);
 
   // Sync Supabase data when hooks finish loading (replaces localStorage on first Supabase load)
   useEffect(() => {
@@ -1398,24 +1507,11 @@ export default function Sasyra() {
 
   const handleLogin = (userObj) => {
     setUser(userObj);
-    let m = null;
-    if (userObj.prof === "fisio") m = "fisioterapia";
-    else if (userObj.prof === "to") m = "terapiaOcupacional";
-    else if (userObj.prof === "educFisico") m = "educacaoFisica";
-    else if (userObj.prof === "nutricionista") m = "nutricao";
-    else if (userObj.prof === "pediatria") m = "pediatria";
-    else if (userObj.prof === "crossfit") m = "crossfit";
-    else if (userObj.prof === "neurofuncional") m = "neuro";
-    else m = "em_desenvolvimento";
+    const m = "fisioterapia";
     localStorage.setItem("sasyra_module", m);
     setModule(m);
-    setPatientView(m === "fisioterapia");
-  };
-
-  const changeModule = () => {
-    localStorage.removeItem("sasyra_module");
-    setModule(null);
-    setPatientView(true);
+    setSubModule(null);
+    setPatientView(false);
   };
 
   const handleLogout = () => { setUser(null); setModule(null); setPatientView(true); setPatients([]); setAssessmentHistory([]); setAppView("patients"); };
@@ -1688,102 +1784,51 @@ Responda em tópicos claros e objetivos. Seja preciso, clínico e baseado em evi
   // ── Render ────────────────────────────────────────────────────────────────
   if (!user) return <LoginScreen onLogin={handleLogin} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} />;
 
-  if (!module) return (
-    <ModuleSelector
+  // ── Fisioterapia sub-module picker ──
+  if (module === "fisioterapia" && !subModule) return (
+    <FisioSubModulePicker
       user={user}
       theme={theme}
       onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")}
-      onSelect={(m) => { setModule(m); setPatientView(m === "fisioterapia"); localStorage.setItem("sasyra_module", m); }}
+      onSelect={(sm) => {
+        setSubModule(sm);
+        if (sm === "ortopedica") {
+          setPatientView(true);
+        } else {
+          setPatientView(false);
+        }
+      }}
       onLogout={handleLogout}
     />
   );
 
-  if (module === "educacaoFisica") return (
-    <PhysicalEducation
-      students={patients}
-      student={pt}
-      onSelectStudent={selectPatient}
-      onAddStudent={addPatient}
-      onUpdateStudent={up}
-      onDeleteStudent={deletePatient}
-      onUpdateStudentById={updatePatientById}
-    />
+  // ── Fisioterapia sub-modules ──
+  if (module === "fisioterapia" && subModule === "neurologica") return (
+    <SubModuleLayout title="Fisioterapia Neurológica" onBack={() => setSubModule(null)} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")}>
+      <Neuro
+        students={patients}
+        student={pt}
+        onSelectStudent={selectPatient}
+        onAddStudent={addPatient}
+        onUpdateStudent={up}
+        onDeleteStudent={deletePatient}
+        onUpdateStudentById={updatePatientById}
+      />
+    </SubModuleLayout>
   );
 
-  if (module === "terapiaOcupacional") return (
-    <OccupationalTherapy
-      students={patients}
-      student={pt}
-      onSelectStudent={selectPatient}
-      onAddStudent={addPatient}
-      onUpdateStudent={up}
-      onDeleteStudent={deletePatient}
-      onUpdateStudentById={updatePatientById}
-    />
-  );
-
-  if (module === "nutricao") return (
-    <Nutrition
-      students={patients}
-      student={pt}
-      onSelectStudent={selectPatient}
-      onAddStudent={addPatient}
-      onUpdateStudent={up}
-      onDeleteStudent={deletePatient}
-      onUpdateStudentById={updatePatientById}
-    />
-  );
-
-  if (module === "pediatria") return (
-    <Pediatria
-      students={patients}
-      student={pt}
-      onSelectStudent={selectPatient}
-      onAddStudent={addPatient}
-      onUpdateStudent={up}
-      onDeleteStudent={deletePatient}
-      onUpdateStudentById={updatePatientById}
-    />
-  );
-
-  if (module === "crossfit") return (
-    <CrossFit
-      students={patients}
-      student={pt}
-      onSelectStudent={selectPatient}
-      onAddStudent={addPatient}
-      onUpdateStudent={up}
-      onDeleteStudent={deletePatient}
-      onUpdateStudentById={updatePatientById}
-    />
-  );
-
-  if (module === "neuro") return (
-    <Neuro
-      students={patients}
-      student={pt}
-      onSelectStudent={selectPatient}
-      onAddStudent={addPatient}
-      onUpdateStudent={up}
-      onDeleteStudent={deletePatient}
-      onUpdateStudentById={updatePatientById}
-    />
-  );
-
-  if (module === "em_desenvolvimento") return (
-    <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:F, padding:24 }}>
-      <div style={{ maxWidth:460, textAlign:"center" }}>
-        <div style={{ fontSize:56, marginBottom:16 }}>🚧</div>
-        <h2 style={{ fontSize:22, fontWeight:800, color:C.text, margin:0, marginBottom:8 }}>Módulo em Desenvolvimento</h2>
-        <p style={{ color:C.textMuted, fontSize:14, lineHeight:1.7, marginBottom:24 }}>
-          O módulo para <strong>{PROF_LABELS[user.prof] || user.prof}</strong> está em fase de desenvolvimento.
-          Em breve você terá acesso a ferramentas específicas para sua prática clínica.
-        </p>
-        <button onClick={handleLogout} style={ghostBtn({ padding:"10px 24px", fontSize:13 })}>
-          Sair
-        </button>
-      </div>
-    </div>
+  if (module === "fisioterapia" && subModule === "pediatrica") return (
+    <SubModuleLayout title="Fisioterapia Pediátrica" onBack={() => setSubModule(null)} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")}>
+      <Pediatria
+        students={patients}
+        student={pt}
+        onSelectStudent={selectPatient}
+        onAddStudent={addPatient}
+        onUpdateStudent={up}
+        onDeleteStudent={deletePatient}
+        onUpdateStudentById={updatePatientById}
+      />
+    </SubModuleLayout>
   );
 
   if (appView === "agenda") return (
@@ -1795,13 +1840,19 @@ Responda em tópicos claros e objetivos. Seja preciso, clínico e baseado em evi
   if (appView === "plans") return <Plans onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} />;
   if (appView === "subscription") return <SubscriptionSettings onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} />;
   if (appView === "integrations") return <Integrations onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} />;
-  if (patientView) return <>
-    <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} onAgenda={() => setAppView("agenda")} onViewChange={(v) => setAppView(v)} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} onChangeModule={changeModule} plan={plan} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} />
-    <PaywallModal open={paywallOpen} onClose={() => setPaywallOpen(false)}
-      featureName={paywallFeature.name} featureDesc={paywallFeature.desc}
-      onUpgrade={() => { setPaywallOpen(false); setAppView("plans"); }} />
-    {renderExpressModal()}
-  </>;
+  if (patientView) {
+    const content = (
+      <>
+        <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} onAgenda={() => setAppView("agenda")} onViewChange={(v) => setAppView(v)} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} plan={plan} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} noHeader={subModule === "ortopedica"} />
+        <PaywallModal open={paywallOpen} onClose={() => setPaywallOpen(false)}
+          featureName={paywallFeature.name} featureDesc={paywallFeature.desc}
+          onUpgrade={() => { setPaywallOpen(false); setAppView("plans"); }} />
+        {renderExpressModal()}
+      </>
+    );
+    if (subModule === "ortopedica") return <SubModuleLayout title="Fisioterapia Ortopédica" onBack={() => setSubModule(null)} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")}>{content}</SubModuleLayout>;
+    return content;
+  }
 
   // Paywall modal (renders on top of assessment view)
   const paywallModal = (

@@ -81,6 +81,7 @@ Adiciona a qualquer módulo: Dor (EVA), Red Flags, Sessões Diário, Análise IA
 
 ### 🟢 Baixa Prioridade
 
+- [x] **Foco exclusivo em Fisioterapia** — LoginScreen agora só exibe "Fisioterapeuta" como profissão; removidos TO, Educador Físico, Nutricionista, CrossFit da tela inicial; módulos ocultos e `PROF_LABELS` limpos; `REGISTRY_CONFIG` simplificado só com CREFITO; Dashboard.jsx sincronizado
 - [ ] **Exportação CSV/JSON** — Botão para exportar dados de todos os pacientes por módulo
 - [ ] **Dashboard global multi-módulo** — Cruzar dados de paciente em Fisio + Nutri simultaneamente
 - [ ] **Google Calendar ativo** — As credenciais OAuth estão comentadas no `.env`. Ativar integração
