@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import Accordion from "../components/Accordion";
 import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
+import { AudioField, BodyMap, EvaSlider, TagSelect, SingleSelect, GonioRow, MRCRow, TestCard, Row, HonorariosCard } from "../components";
+import { useMediaQuery } from "../components";
+import { useClinicalScan } from "../hooks/useClinicalScan.js";
+import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
+import { detectLocalDor, extractClinicalEntities } from "../utils/clinicalDetection.js";
+import { CIF } from "../data/cif.js";
 import { calcBioimpedancia } from "../data/physicalAssessment";
 
 const C = {
@@ -33,29 +39,6 @@ function NumericField({ label, value, onChange, unit, min, max, step }) {
   );
 }
 
-function SingleSelect({ options, value, onChange, activeColor }) {
-  return (
-    <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-      {options.map(o => {
-        const v = o.value || o, l = o.label || o, active = value === v;
-        return <button key={v} onClick={() => onChange(active ? "" : v)} style={iconBtn(active, activeColor || C.purple)}>{active && <span style={{fontSize:10}}>✓ </span>}{l}</button>;
-      })}
-    </div>
-  );
-}
-
-function TagSelect({ options, value, onChange, activeColor }) {
-  const toggle = v => onChange(value.includes(v) ? value.filter(x=>x!==v) : [...value, v]);
-  return (
-    <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-      {options.map(o => {
-        const v = o.value || o, l = o.label || o, active = value.includes(v);
-        return <button key={v} onClick={() => toggle(v)} style={iconBtn(active, activeColor || C.purple)}>{active && <span style={{fontSize:10}}>✓ </span>}{l}</button>;
-      })}
-    </div>
-  );
-}
-
 function Section({ title, icon, children }) {
   return (
     <div style={card()}>
@@ -68,55 +51,134 @@ function Section({ title, icon, children }) {
   );
 }
 
+function CollapsibleSection({ title, icon, badge, expanded, onToggle, children }) {
+  const isMobile = useMediaQuery("(max-width:767px)");
+  return (
+    <div style={{ ...card(), padding: isMobile ? "14px 12px" : "20px 22px", cursor:"pointer" }} onClick={onToggle}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, paddingBottom:expanded?12:0, borderBottom:expanded?`1px solid ${C.border}`:"none", marginBottom:expanded?isMobile?14:18:0 }}>
+        <span style={{ fontSize:10, color:C.textMuted, transition:"transform 0.15s", transform:expanded?"rotate(90deg)":"rotate(0deg)" }}>▶</span>
+        <span style={{ fontSize:16 }}>{icon}</span>
+        <h3 style={{ margin:0, fontSize:isMobile?11:12, fontWeight:800, letterSpacing:"0.08em", textTransform:"uppercase", color:C.purple, flex:1 }}>{title}</h3>
+        {badge && <span style={{ fontSize:11, background:C.amberBg, color:C.amber, border:`1px solid ${C.amber}40`, borderRadius:20, padding:"2px 10px" }}>{badge}</span>}
+      </div>
+      {expanded && <div>{children}</div>}
+    </div>
+  );
+}
+
+function CollapsibleSub({ title, defaultOpen = true, children }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const isMobile = useMediaQuery("(max-width:767px)");
+  return (
+    <div style={{ marginBottom: 14, background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 10, padding: isMobile ? "8px 10px" : "10px 14px" }}>
+      <div onClick={() => setOpen(!open)} style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", userSelect:"none", paddingBottom:open?8:0, borderBottom:open?`1px solid ${C.border}`:"none", marginBottom:open?10:0 }}>
+        <span style={{ fontSize:10, color:C.textMuted, transition:"transform 0.15s", transform:open?"rotate(90deg)":"rotate(0deg)" }}>▶</span>
+        <span style={{ fontSize:11, fontWeight:800, color:C.textMuted, letterSpacing:"0.08em", textTransform:"uppercase", flex:1 }}>{title}</span>
+      </div>
+      {open && <div>{children}</div>}
+    </div>
+  );
+}
+
 // ── SAVE / LOAD HELPERS ──────────────────────────────────────────────────────
 function saveTOData(studentId, data) {
-  try {
-    const key = `to_data_${studentId}`;
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch { /* empty */ }
+  try { localStorage.setItem(`to_data_${studentId}`, JSON.stringify(data)); } catch { }
 }
 function loadTOData(studentId) {
-  try {
-    const key = `to_data_${studentId}`;
-    const d = localStorage.getItem(key);
-    return d ? JSON.parse(d) : null;
-  } catch { return null; }
+  try { const d = localStorage.getItem(`to_data_${studentId}`); return d ? JSON.parse(d) : null; } catch { return null; }
 }
+
+// ── ASSESSMENT HISTORY ──────────────────────────────────────────────────────
+const TO_HISTORY_KEY = "to_history_";
+function loadHistory(sid) {
+  try { const d = localStorage.getItem(TO_HISTORY_KEY + sid); return d ? JSON.parse(d) : []; } catch { return []; }
+}
+function saveHistory(sid, history) {
+  try { localStorage.setItem(TO_HISTORY_KEY + sid, JSON.stringify(history)); } catch { }
+}
+
+// ── TO GONIOMETRY (hand-focused) ────────────────────────────────────────────
+const TO_GONIO_DEFAULT = [
+  { joint:"Polegar — Flexão MCF", ref:"50° (40-60)", l:"", r:"" },
+  { joint:"Polegar — Extensão MCF", ref:"0° (-10-0)", l:"", r:"" },
+  { joint:"Polegar — Abdução palmar", ref:"70° (60-80)", l:"", r:"" },
+  { joint:"Punho — Flexão", ref:"80° (70-90)", l:"", r:"" },
+  { joint:"Punho — Extensão", ref:"70° (60-80)", l:"", r:"" },
+  { joint:"Cotovelo — Flexão", ref:"145° (130-160)", l:"", r:"" },
+  { joint:"Cotovelo — Extensão", ref:"0° (-5-0)", l:"", r:"" },
+  { joint:"Ombro — Flexão", ref:"180° (170-190)", l:"", r:"" },
+  { joint:"Ombro — Abdução", ref:"180° (170-190)", l:"", r:"" },
+  { joint:"Ombro — Rotação externa", ref:"90° (80-100)", l:"", r:"" },
+  { joint:"Ombro — Rotação interna", ref:"70° (60-80)", l:"", r:"" },
+];
+
+// ── TO MRC (hand/upper limb) ────────────────────────────────────────────────
+const TO_MRC_DEFAULT = [
+  { muscle:"Flexores de dedos (C8-T1)", value:5 },
+  { muscle:"Extensores de dedos (C7-C8)", value:5 },
+  { muscle:"Flexores de punho (C6-C7)", value:5 },
+  { muscle:"Extensores de punho (C6-C7)", value:5 },
+  { muscle:"Oponente do polegar (C8-T1)", value:5 },
+  { muscle:"Abdutor curto polegar (C8-T1)", value:5 },
+  { muscle:"Flexores de cotovelo (C5-C6)", value:5 },
+  { muscle:"Extensores de cotovelo (C7-C8)", value:5 },
+  { muscle:"Flexores de ombro (C5-C6)", value:5 },
+  { muscle:"Abdutores de ombro (C5-C6)", value:5 },
+];
+
+// ── TO SPECIAL TESTS ─────────────────────────────────────────────────────────
+const TO_TESTES = [
+  { id:"jebsen_taylor", name:"Jebsen-Taylor Hand Function Test", area:"Função Manual", desc:"7 subtestes cronometrados (escrita, virar cartas, pegar objetos, simular alimentação, empilhar, mover objetos grandes leves/pesados). Normas por idade e sexo.", video:"https://www.youtube.com/watch?v=example1" },
+  { id:"nine_hole", name:"Nine-Hole Peg Test", area:"Destreza Fina", desc:"Cronometra a colocação e remoção de 9 pinos. Norma 16-20s para adultos. Referência para destreza digital.", video:"https://www.youtube.com/watch?v=example2" },
+  { id:"sollerman", name:"Sollerman Hand Function Test", area:"Função Manual", desc:"20 tarefas de preensão (punho, pinça, gancho, cilíndrica, esférica). Escore 0-80. Norma ≥72 para adultos saudáveis.", video:"https://www.youtube.com/watch?v=example3" },
+  { id:"minnesota", name:"Minnesota Rate of Manipulation", area:"Destreza", desc:"5 subtestes de colocação, virada e deslocamento de objetos. Norma ≥60 peças/min para adultos.", video:"https://www.youtube.com/watch?v=example4" },
+  { id:"box_block", name:"Box & Block Test", area:"Destreza Grossa", desc:"Transferir cubos 2.5cm de um lado para outro em 60s. Norma 50-70 blocos para adultos 20-50a.", video:"https://www.youtube.com/watch?v=example5" },
+  { id:"purdue_pegboard", name:"Purdue Pegboard", area:"Coordenação Bilateral", desc:"4 subtestes: mão D, mão E, ambas mãos, montagem. Avalia destreza fina e coordenação bilateral.", video:"https://www.youtube.com/watch?v=example6" },
+  { id:"copm", name:"COPM (Canadian Occupational Performance Measure)", area:"Desempenho Ocupacional", desc:"Identifica problemas de desempenho em autocuidado, produtividade e lazer. Autoavalia desempenho e satisfação de 1-10.", video:"https://www.youtube.com/watch?v=example7" },
+  { id:"amputee", name:"ACT (Amputee Confidence & Capability Test)", area:"Pessoa Amputada", desc:"Avalia confiança e capacidade funcional em AVDs com e sem prótese. Adapta tarefas de mobilidade e autocuidado.", video:"https://www.youtube.com/watch?v=example8" },
+  { id:"cognitive_assessment", name:"Allen Cognitive Level (ACL)", area:"Cognitivo/Função", desc:"Teste de costura em couro. Níveis 1-6 (Allen). Correlaciona com capacidade para AVDs independentes. Referência nível ≥5 para vida independente.", video:"https://www.youtube.com/watch?v=example9" },
+];
 
 // ── EVIDÊNCIAS TO ────────────────────────────────────────────────────────────
 const TO_EVIDENCE = {
   avc: {
     label:"Acidente Vascular Cerebral",
     goldStandard:"Terapia orientada à tarefa repetitiva (200-600 reps/sessão) — Evidência A. Uso de CIMT (Constraint-Induced Movement Therapy) para membro superior. Treino de marcha com suporte parcial de peso. Acomodação ambiental e órteses para prevenção de deformidades.",
-    escalas:["MIF (Medida de Independência Funcional)","Barthel Index","DASH","Berg Balance Scale","HAQ"],
+    escalas:["MIF","Barthel Index","DASH","Berg Balance Scale","HAQ"],
     referencias:[{ id:"Cochrane CD008349", title:"CIMT after stroke (Cochrane 2021)", url:"https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD008349/" }],
+    redFlags:["Perda súbita de força/fala","Dor torácica + dispneia","Cefaleia intensa súbita","Disfagia com broncoaspiração","Queda com TCE"],
   },
   paralisia_cerebral: {
     label:"Paralisia Cerebral",
     goldStandard:"Abordagem centrada na família. Treino de AVDs com adaptações. Órteses para posicionamento e prevenção de deformidades. Tecnologia assistiva (CAA, switches). Mobilidade funcional (GMFCS como prognóstico). Evidência A para terapia orientada a metas.",
-    escalas:["MIF","GMFCS (Gross Motor Function Classification System)","MACS (Manual Ability Classification System)","HAQ"],
+    escalas:["MIF","GMFCS","MACS","HAQ"],
+    redFlags:["Irritabilidade sem causa","Dificuldade alimentar progressiva","Postura assimétrica persistente","Convulsão de difícil controle","Hipotonia com desconforto respiratório"],
   },
   demencia: {
     label:"Demência / Doença de Alzheimer",
     goldStandard:"Estimulação cognitiva (CST — Cognitive Stimulation Therapy) — Evidência A. Adaptação ambiental para redução de quedas. Treino de AVDs com pistas e rotinas. Abordagem centrada na pessoa. Terapia de orientação para realidade (ROT) em estágios iniciais.",
     escalas:["MEEM / Mini-Mental","MIF","Barthel Index","Lawton IADL","HAQ"],
     referencias:[{ id:"Cochrane CD005562", title:"Cognitive stimulation therapy for dementia (Cochrane 2023)", url:"https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD005562/" }],
+    redFlags:["Agitação psicomotora grave","Deambulação noturna / fuga","Alucinações com risco ao paciente","Recusa alimentar total","Queda frequente com fratura"],
   },
   tea: {
     label:"Transtorno do Espectro Autista",
-    goldStandard:"Integração sensorial (Ayres) — Evidência moderada. Estratégias visuais e TEACCH para rotinas. Intervenção precoce (modelo ESDM — Early Start Denver Model). Treino de habilidades sociais. Terapia ocupacional com foco em regulação sensorial e AVDs.",
-    escalas:["MIF","MACS","PEDI (Pediatric Evaluation of Disability Inventory)"],
+    goldStandard:"Integração sensorial (Ayres) — Evidência moderada. Estratégias visuais e TEACCH para rotinas. Intervenção precoce (modelo ESDM). Treino de habilidades sociais. TO com foco em regulação sensorial e AVDs.",
+    escalas:["MIF","MACS","PEDI"],
+    redFlags:["Autoagressão / heteroagressão","Crise de agitação prolongada","Recusa alimentar total","Regressão de habilidades","Fuga / risco de segurança"],
   },
   lesao_medular: {
     label:"Lesão Medular",
     goldStandard:"Reabilitação funcional intensiva. Treino de transferências e mobilidade funcional. Órteses e adaptações para AVDs. Tecnologia assistiva (cadeira de rodas, CAA). Estimulação elétrica funcional (FES) para membro superior em lesão C6-C7. Cuidados com integridade cutânea.",
-    escalas:["MIF","HAQ","DASH","Barthel Index","SCIM (Spinal Cord Independence Measure)"],
+    escalas:["MIF","HAQ","DASH","SCIM"],
     referencias:[{ id:"Cochrane CD006768", title:"FES for upper limb in SCI (Cochrane 2022)", url:"https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD006768/" }],
+    redFlags:["Febre + sinais de infecção urinária","Lesão de pele / úlcera por pressão","Dispneia súbita (TVP/TEP)","Hipertensão autonômica refratária","Piora súbita de força em MMSS"],
   },
   osteoartrite: {
     label:"Osteoartrite",
     goldStandard:"Treino de AVDs com conservação de energia. Órteses para descarga articular. Adaptações para higiene pessoal e vestuário. Exercício terapêutico supervisionado. Evitar órtese de repouso prolongado. Evidência A para exercício + educação.",
     escalas:["HAQ","DASH","WOMAC","AUSCAN","COPM"],
+    redFlags:["Deformidade articular progressiva","Dor noturna intensa","Sinais flogísticos articulares","Dificuldade para deambular","Perda funcional abrupta"],
   },
 };
 
@@ -158,26 +220,77 @@ function calcLawton(answers) {
   return { total, level, max: 24, color: total === 24 ? C.green : total >= 16 ? C.amber : C.red };
 }
 
-// ── COPM-STYLE GOALS ────────────────────────────────────────────────────────
-function SectionRow({ label, value, onChange, placeholder, type }) {
-  return (
-    <div>
-      <span style={lbl()}>{label}</span>
-      {type === "textarea" ? (
-        <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={2} style={{ ...inp({ resize:"vertical", lineHeight:1.5 }), fontSize:12 }} />
-      ) : type === "select" ? (
-        <select value={value} onChange={e => onChange(e.target.value)} style={sel()}>
-          {(placeholder ? [""] : []).concat(placeholder ? [{value:"",label:placeholder}].concat(placeholder) : []).length === 0 && placeholder ? "" : null}
-        </select>
-      ) : (
-        <input type={type || "text"} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={inp()} />
-      )}
-    </div>
-  );
+// ── KB CONDITIONS ────────────────────────────────────────────────────────────
+function detectKBList(diagnosticoMedico, queixaTO, condicoesAssociadas) {
+  const text = [diagnosticoMedico, queixaTO, ...condicoesAssociadas].join(" ").toLowerCase();
+  return Object.entries(TO_EVIDENCE)
+    .filter(([key]) => text.includes(key.replace(/_/g, " ")) || condicoesAssociadas.some(c => c.toLowerCase().includes(key.replace(/_/g, " "))))
+    .map(([key, val]) => ({ key, label: val.label, ...val }));
+}
+
+const CREFITO_REGIOES = {
+  "Sul (RS/SC/PR)":{consulta:180,sessao:160,avaliacao:250,relatorio:120},
+  "Sudeste - SP":{consulta:220,sessao:200,avaliacao:320,relatorio:150},
+  "Sudeste - RJ/ES/MG":{consulta:190,sessao:170,avaliacao:280,relatorio:130},
+  "Centro-Oeste":{consulta:170,sessao:150,avaliacao:240,relatorio:110},
+  "Nordeste":{consulta:150,sessao:140,avaliacao:220,relatorio:100},
+  "Norte":{consulta:140,sessao:130,avaliacao:210,relatorio:95},
+};
+
+// ── CIF AUTO KEYS ────────────────────────────────────────────────────────────
+function autoCIFKeys({ barthelResult, lawtonResult, avds, aivds, barreiras, miniMental, manipulacaoFina, sensibilidade, condicoesAssociadas, queixaTO, diagnosticoMedico, pain }) {
+  const keys = [];
+  if (barthelResult?.total < 61) keys.push("d510", "d540");
+  if (barthelResult?.total < 91) keys.push("d530", "d550");
+  if (avds.length > 3) keys.push("d5");
+  if (aivds.length > 2 || lawtonResult?.total < 16) keys.push("d640", "d630");
+  if (barreiras.length > 0) keys.push("e150", "e155");
+  if (miniMental && Number(miniMental) < 24) keys.push("b164", "b144");
+  if (manipulacaoFina.length > 0) keys.push("d440");
+  if (sensibilidade.some(s => s.includes("Hipoestesia") || s.includes("Ausência"))) keys.push("b265");
+  if (condicoesAssociadas.some(c => c.toLowerCase().includes("avc"))) keys.push("b730", "d445");
+  if (condicoesAssociadas.some(c => c.toLowerCase().includes("lesao medular") || c.toLowerCase().includes("lesão medular"))) keys.push("b730", "d465");
+  if (pain?.evaRep > 0 || pain?.evaMov > 0) keys.push("b280");
+  return [...new Set(keys)];
+}
+
+// ── SUGGEST DCT ──────────────────────────────────────────────────────────────
+function suggestDCT(condicoesAssociadas, diagnosticoMedico, barthelResult, copmCount) {
+  const text = [diagnosticoMedico, ...condicoesAssociadas].join(" ").toLowerCase();
+  if (text.includes("avc")) return "Hemiparesia/hemiplegia D/E com limitação em AVDs, necessitando de treino de tarefa orientada, adaptações ambientais e órtese para MS espástico.";
+  if (text.includes("lesao medular") || text.includes("lesão medular")) return "Tetraplegia/paraplegia nível " + (text.includes("cervical") ? "cervical" : "torácico/lombar") + " com dependência para AVDs e transferências, necessitando de treino funcional e tecnologia assistiva.";
+  if (text.includes("demencia") || text.includes("alzheimer")) return "Declínio cognitivo com comprometimento funcional progressivo, necessitando de adaptação ambiental, pistas visuais e supervisão em AVDs para manutenção de autonomia.";
+  if (text.includes("osteoartrite") || text.includes("artrose")) return "Limitação funcional por osteoartrite em MMSS/MMII, necessitando de conservação de energia, órteses para descarga e adaptações para AVDs.";
+  if (barthelResult?.total < 100) return "Dependência funcional em AVDs/AIVDs com necessidade de treino ocupacional, adaptações e tecnologia assistiva para ganho de autonomia.";
+  return "";
+}
+
+// ── YELLOW FLAGS ─────────────────────────────────────────────────────────────
+const YELLOW_FLAGS_TO = [
+  { id:"superprotecao", label:"Superproteção familiar / cuidador" },
+  { id:"sedentarismo", label:"Sedentarismo / descondicionamento severo" },
+  { id:"depressao", label:"Sinais de depressão/ansiedade" },
+  { id:"adesao", label:"Baixa adesão ao tratamento" },
+  { id:"expectativa", label:"Expectativas irreais de recuperação funcional" },
+  { id:"litigio", label:"Litígio / processo judicial" },
+  { id:"isolamento", label:"Isolamento social / baixa rede de apoio" },
+  { id:"medo_movimento", label:"Medo de movimento / cinesiofobia" },
+];
+
+// ── MERGED RED FLAGS ─────────────────────────────────────────────────────────
+function getMergedRedFlags(kbList) {
+  const base = [
+    "Dor súbita + perda de função","Parestesia progressiva",
+    "Ferida/úlcera com sinais de infecção","Queda recente + fratura suspeita",
+    "Disfagia + tosse/engasgo","Agitação psicomotora grave",
+    "Ideação suicida relatada","Alucinações visuais/auditivas recentes",
+  ];
+  const fromKB = kbList.flatMap(k => k.redFlags || []);
+  return [...new Set([...base, ...fromKB])];
 }
 
 // ── MAIN COMPONENT ──────────────────────────────────────────────────────────
-export default function OccupationalTherapy({ student, students, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById }) {
+export default function OccupationalTherapy({ student, students, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById, plan, onUpgrade, canUseFeature, tryFeature, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion }) {
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -185,7 +298,7 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
   const [editTarget, setEditTarget] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
-  const [tab, setTab] = useState("anamnese");
+  const [tab, setTab] = useState("avaliacao");
 
   // Anamnese
   const [diagnosticoMedico, setDiagnosticoMedico] = useState("");
@@ -246,9 +359,58 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
   const [alturaBia, setAlturaBia] = useState(student?.altura || "");
   const [biaResult, setBiaResult] = useState(null);
 
+  // Advanced features
+  const [diagnosticoCinesio, setDiagnosticoCinesio] = useState("");
+  const [yellowFlags, setYellowFlags] = useState([]);
+  const [evaMov, setEvaMov] = useState(0);
+  const [evaRep, setEvaRep] = useState(0);
+  const [localDor, setLocalDor] = useState([]);
+  const [bodyPain, setBodyPain] = useState([]);
+  const [gonioRows, setGonioRows] = useState(JSON.parse(JSON.stringify(TO_GONIO_DEFAULT)));
+  const [mrcRows, setMrcRows] = useState(JSON.parse(JSON.stringify(TO_MRC_DEFAULT)));
+  const [testResults, setTestResults] = useState([]);
+  const [regiao, setRegiao] = useState("");
+  const [expandedSections, setExpandedSections] = useState([]);
+  const [assessmentHistory, setAssessmentHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+
   const sid = student?.id || student?.nome;
+  const isMobile = useMediaQuery("(max-width:767px)");
   const enhancer = useEnhancer("terapia_ocupacional", sid, `to_enhancer_${sid}`);
   const toColors = { ...C, accent: C.purple, font: F };
+  const { scan } = useClinicalScan();
+  const { semanticScan } = useSemanticScanner();
+  const kbList = detectKBList(diagnosticoMedico, queixaTO, condicoesAssociadas);
+  const cifKeys = autoCIFKeys({ barthelResult, lawtonResult, avds, aivds, barreiras, miniMental, manipulacaoFina, sensibilidade, condicoesAssociadas, queixaTO, diagnosticoMedico, pain: enhancer.pain });
+  const cifEntries = CIF.filter(c => cifKeys.includes(c.code));
+  const mergedRedFlags = getMergedRedFlags(kbList);
+  const dctSuggestion = suggestDCT(condicoesAssociadas, diagnosticoMedico, barthelResult, copmGoals.filter(g=>g.desc).length);
+
+  const toggleSection = (id) => {
+    setExpandedSections(prev =>
+      prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]
+    );
+  };
+
+  // Auto BIA
+  useEffect(() => {
+    const r = parseFloat(biaResistencia), xc = parseFloat(biaReactancia);
+    const p = parseFloat(pesoBia), alt = parseFloat(alturaBia);
+    if (!r || !xc || !p || !alt || !student?.sexo) { setBiaResult(null); return; }
+    setBiaResult(calcBioimpedancia(r, xc, student.sexo, null, p, alt));
+  }, [biaResistencia, biaReactancia, pesoBia, alturaBia, student?.sexo]);
+
+  // Barthel auto-update
+  useEffect(() => {
+    const hasAnswers = Object.keys(barthelAnswers).length > 0;
+    if (hasAnswers) setBarthelResult(calcBarthel(barthelAnswers));
+  }, [barthelAnswers]);
+
+  // Lawton auto-update
+  useEffect(() => {
+    const hasAnswers = Object.keys(lawtonAnswers).length > 0;
+    if (hasAnswers) setLawtonResult(calcLawton(lawtonAnswers));
+  }, [lawtonAnswers]);
 
   useEffect(() => {
     if (student?.id || student?.nome) {
@@ -270,9 +432,9 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
         setTrabalhoProd(saved.trabalhoProd || []);
         setCopmGoals(saved.copmGoals || []);
         setBarthelAnswers(saved.barthelAnswers || {});
-        setBarthelResult(saved.barthelResult || null);
+        if (saved.barthelResult) setBarthelResult(saved.barthelResult);
         setLawtonAnswers(saved.lawtonAnswers || {});
-        setLawtonResult(saved.lawtonResult || null);
+        if (saved.lawtonResult) setLawtonResult(saved.lawtonResult);
         setForcaPinça(saved.forcaPinça || { D:"", E:"" });
         setForcaPreensao(saved.forcaPreensao || { D:"", E:"" });
         setJebsenTime(saved.jebsenTime || { D:"", E:"" });
@@ -287,21 +449,24 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
         setRiscoQueda(saved.riscoQueda || "");
         setEvolucao(saved.evolucao || "");
         setMetas(saved.metas || "");
+        setDiagnosticoCinesio(saved.diagnosticoCinesio || "");
+        setYellowFlags(saved.yellowFlags || []);
+        setEvaMov(saved.evaMov || 0);
+        setEvaRep(saved.evaRep || 0);
+        setLocalDor(saved.localDor || []);
+        setBodyPain(saved.bodyPain || []);
+        setGonioRows(saved.gonioRows || JSON.parse(JSON.stringify(TO_GONIO_DEFAULT)));
+        setMrcRows(saved.mrcRows || JSON.parse(JSON.stringify(TO_MRC_DEFAULT)));
+        setTestResults(saved.testResults || []);
+        setExpandedSections(saved.expandedSections || []);
         if (saved.pain) enhancer.setPain(saved.pain);
         if (saved.logs) enhancer.setLogs(saved.logs);
         if (saved.redFlags) enhancer.setRedFlags(saved.redFlags);
         if (saved.aiRes) enhancer.setAiRes(saved.aiRes);
       }
+      setAssessmentHistory(loadHistory(sid));
     }
   }, [student?.id, student?.nome]);
-
-  // Auto BIA
-  useEffect(() => {
-    const r = parseFloat(biaResistencia), xc = parseFloat(biaReactancia);
-    const p = parseFloat(pesoBia), alt = parseFloat(alturaBia);
-    if (!r || !xc || !p || !alt || !student?.sexo) { setBiaResult(null); return; }
-    setBiaResult(calcBioimpedancia(r, xc, student.sexo, null, p, alt));
-  }, [biaResistencia, biaReactancia, pesoBia, alturaBia, student?.sexo]);
 
   const handleSave = () => {
     if (!student?.id && !student?.nome) return;
@@ -312,14 +477,65 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
       copmGoals, barthelAnswers, barthelResult, lawtonAnswers, lawtonResult,
       forcaPinça, forcaPreensao, jebsenTime, manipulacaoFina,
       sensibilidade, estereognosia, miniMental, memoria, atencao, funcaoExecutiva,
-      barreiras, riscoQueda, evolucao, metas,
+      barreiras, riscoQueda, evolucao, metas, diagnosticoCinesio, yellowFlags,
+      evaMov, evaRep, localDor, bodyPain, gonioRows, mrcRows, testResults, expandedSections,
       pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
     });
   };
 
+  const handleSaveAssessment = () => {
+    if (!sid) return;
+    handleSave();
+    const entry = {
+      id: Date.now(), data: new Date().toISOString().slice(0,10),
+      hora: new Date().toLocaleTimeString("pt-BR", {hour:"2-digit",minute:"2-digit"}),
+      diagnostico: diagnosticoMedico, queixa: queixaTO,
+      barthel: barthelResult?.total, lawton: lawtonResult?.total,
+      miniMental, avds: [...avds], aivds: [...aivds],
+      gonioRows: JSON.parse(JSON.stringify(gonioRows)),
+      mrcRows: JSON.parse(JSON.stringify(mrcRows)),
+      testResults: [...testResults],
+      yellowFlags: [...yellowFlags],
+    };
+    const history = loadHistory(sid);
+    history.unshift(entry);
+    if (history.length > 20) history.pop();
+    saveHistory(sid, history);
+    setAssessmentHistory(history);
+  };
+
+  const handleLoadAssessment = (entry) => {
+    if (!entry) return;
+    setDiagnosticoMedico(entry.diagnostico || "");
+    setQueixaTO(entry.queixa || "");
+    setMiniMental(entry.miniMental || "");
+    setAvds(entry.avds || []);
+    setAivds(entry.aivds || []);
+    setGonioRows(entry.gonioRows || JSON.parse(JSON.stringify(TO_GONIO_DEFAULT)));
+    setMrcRows(entry.mrcRows || JSON.parse(JSON.stringify(TO_MRC_DEFAULT)));
+    setTestResults(entry.testResults || []);
+    setYellowFlags(entry.yellowFlags || []);
+    setShowHistory(false);
+  };
+
+  const handleReset = () => {
+    if (!window.confirm("Tem certeza? Todos os dados atuais serão perdidos.")) return;
+    localStorage.removeItem(`to_data_${sid}`);
+    window.location.reload();
+  };
+
+  const toggleTest = (testId) => {
+    setTestResults(prev => {
+      if (prev.includes(testId)) return prev.filter(x => x !== testId);
+      const newTest = { ...TO_TESTES.find(t => t.id === testId), result:"+", notes:"" };
+      return [...prev, newTest];
+    });
+  };
+
+  // ── PATIENT LIST VIEW ─────────────────────────────────────────────────────
   if (studentListView) return (
-    <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text, padding:24 }}>
+    <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text, padding: isMobile ? 12 : 24 }}>
       <div style={{ maxWidth:680, margin:"0 auto" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
           <span style={{ fontSize:16, fontWeight:800, color:C.text, letterSpacing:"0.05em" }}>🤲 Terapia Ocupacional</span>
@@ -339,7 +555,7 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
             <div style={{ fontSize:14, fontWeight:700, color:C.purple, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
               {editingStudent ? "✏️ Editar Paciente" : "➕ Novo Paciente"}
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
+            <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
               {[
                 {k:"nome",l:"Nome completo",pl:"Nome do paciente"},
                 {k:"dataNasc",l:"Nascimento",pl:"",type:"date"},
@@ -381,10 +597,7 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           {[...(students||[])].reverse().map(p => (
             <div key={p.id} style={{ display:"flex", gap:8, alignItems:"stretch" }}>
-              <button onClick={() => {
-                onSelectStudent(p);
-                setStudentListView(false);
-              }} style={{
+              <button onClick={() => { onSelectStudent(p); setStudentListView(false); }} style={{
                 flex:1, background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px 18px", cursor:"pointer",
                 textAlign:"left", fontFamily:F, color:C.text, display:"flex", alignItems:"center", gap:14, width:"100%",
                 transition:"all 0.12s"
@@ -403,11 +616,11 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
                 <span style={{ color:C.purple, fontSize:16 }}>→</span>
               </button>
               <div style={{ display:"flex", gap:4 }}>
-                <button onClick={() => { setEditTarget(p); }}
-                  style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:12, cursor:"pointer", width:40, height:48, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:C.textDim, fontFamily:F, flexShrink:0, transition:"all 0.12s" }}
+                <button onClick={() => setEditTarget(p)}
+                  style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:12, cursor:"pointer", width:40, height:48, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:C.textDim, fontFamily:F, flexShrink:0 }}
                   title="Editar paciente">✏️</button>
                 <button onClick={() => { setDeleteTarget(p); setDeleteStep(1); }}
-                  style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:12, cursor:"pointer", width:40, height:48, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:C.textDim, fontFamily:F, flexShrink:0, transition:"all 0.12s" }}
+                  style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:12, cursor:"pointer", width:40, height:48, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:C.textDim, fontFamily:F, flexShrink:0 }}
                   title="Excluir paciente">🗑</button>
               </div>
             </div>
@@ -415,66 +628,56 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
         </div>
       </div>
 
-      {/* Delete modals */}
-      {deleteTarget && deleteStep === 1 && (
+      {deleteTarget && (
         <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}
           onClick={() => { setDeleteTarget(null); setDeleteStep(1); }}>
           <div onClick={e => e.stopPropagation()} style={{ background:C.surface, border:`1px solid ${C.red}`, borderRadius:16, padding:"24px 28px", maxWidth:420, width:"90%", textAlign:"center", fontFamily:F }}>
-            <div style={{ fontSize:40, marginBottom:12 }}>⚠️</div>
-            <div style={{ fontSize:16, fontWeight:800, color:C.red, marginBottom:8 }}>Excluir paciente</div>
+            <div style={{ fontSize:40, marginBottom:12 }}>{deleteStep === 1 ? "⚠️" : "🔴"}</div>
+            <div style={{ fontSize:16, fontWeight:800, color:C.red, marginBottom:8 }}>{deleteStep === 1 ? "Excluir paciente" : "Confirmação final"}</div>
             <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:16, padding:"8px 12px", background:C.card, borderRadius:8, border:`1px solid ${C.border}` }}>{deleteTarget.nome}</div>
-            <div style={{ fontSize:13, color:C.textSub, marginBottom:18, lineHeight:1.6 }}>Deseja realmente excluir <strong>{deleteTarget.nome}</strong>?</div>
-            <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
-              <button onClick={() => { setDeleteTarget(null); setDeleteStep(1); }}
-                style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:700, color:C.textSub, cursor:"pointer", fontFamily:F }}>Cancelar</button>
-              <button onClick={() => setDeleteStep(2)}
-                style={{ background:C.red, border:"none", borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:F }}>Continuar</button>
-            </div>
-          </div>
-        </div>
-      )}
-      {deleteTarget && deleteStep === 2 && (
-        <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}
-          onClick={() => { setDeleteTarget(null); setDeleteStep(1); }}>
-          <div onClick={e => e.stopPropagation()} style={{ background:C.surface, border:`1px solid ${C.red}`, borderRadius:16, padding:"24px 28px", maxWidth:420, width:"90%", textAlign:"center", fontFamily:F }}>
-            <div style={{ fontSize:40, marginBottom:12 }}>🔴</div>
-            <div style={{ fontSize:16, fontWeight:800, color:C.red, marginBottom:8 }}>Confirmação final</div>
-            <div style={{ fontSize:13, color:C.textSub, marginBottom:16, lineHeight:1.6 }}>
-              Todos os dados de avaliação de <strong>{deleteTarget.nome}</strong> serão perdidos permanentemente. Esta operação <strong style={{color:C.red}}>não pode ser desfeita</strong>.
-            </div>
-            <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
-              <button onClick={() => { setDeleteTarget(null); setDeleteStep(1); }}
-                style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:700, color:C.textSub, cursor:"pointer", fontFamily:F }}>Cancelar</button>
-              <button onClick={() => { onDeleteStudent(deleteTarget); setDeleteTarget(null); setDeleteStep(1); }}
-                style={{ background:C.red, border:"none", borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:F }}>Sim, excluir permanentemente</button>
-            </div>
+            {deleteStep === 1 ? (
+              <>
+                <div style={{ fontSize:13, color:C.textSub, marginBottom:18, lineHeight:1.6 }}>Deseja realmente excluir <strong>{deleteTarget.nome}</strong>?</div>
+                <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+                  <button onClick={() => { setDeleteTarget(null); setDeleteStep(1); }}
+                    style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:700, color:C.textSub, cursor:"pointer", fontFamily:F }}>Cancelar</button>
+                  <button onClick={() => setDeleteStep(2)}
+                    style={{ background:C.red, border:"none", borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:F }}>Continuar</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize:13, color:C.textSub, marginBottom:18, lineHeight:1.6 }}>
+                  Todos os dados de avaliação de <strong>{deleteTarget.nome}</strong> serão perdidos permanentemente. <strong style={{color:C.red}}>Não pode ser desfeito</strong>.
+                </div>
+                <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+                  <button onClick={() => { setDeleteTarget(null); setDeleteStep(1); }}
+                    style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:700, color:C.textSub, cursor:"pointer", fontFamily:F }}>Cancelar</button>
+                  <button onClick={() => { onDeleteStudent(deleteTarget); setDeleteTarget(null); setDeleteStep(1); }}
+                    style={{ background:C.red, border:"none", borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:F }}>Sim, excluir</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
 
-      {/* Edit modal */}
       {editTarget && (
         <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}
           onClick={() => setEditTarget(null)}>
           <div onClick={e => e.stopPropagation()} style={{ background:C.surface, border:`1px solid ${C.purple}`, borderRadius:16, padding:"24px 28px", maxWidth:420, width:"90%", textAlign:"center", fontFamily:F }}>
             <div style={{ fontSize:40, marginBottom:12 }}>✏️</div>
             <div style={{ fontSize:16, fontWeight:800, color:C.purple, marginBottom:8 }}>Editar dados do paciente</div>
-            <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:16, padding:"8px 12px", background:C.card, borderRadius:8, border:`1px solid ${C.border}` }}>{editTarget.nome}</div>
             <div style={{ fontSize:13, color:C.textSub, marginBottom:18, lineHeight:1.6 }}>Deseja editar os dados cadastrais de <strong>{editTarget.nome}</strong>?</div>
             <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
               <button onClick={() => setEditTarget(null)}
                 style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:700, color:C.textSub, cursor:"pointer", fontFamily:F }}>Cancelar</button>
               <button onClick={() => {
-                setF({
-                  nome: editTarget.nome || "", dataNasc: editTarget.dataNasc || "", sexo: editTarget.sexo || "",
-                  profissao: editTarget.profissao || "", convenio: editTarget.convenio || "", telefone: editTarget.telefone || "",
-                  peso: editTarget.peso || "", altura: editTarget.altura || "",
-                });
+                setF({ nome:editTarget.nome||"", dataNasc:editTarget.dataNasc||"", sexo:editTarget.sexo||"", profissao:editTarget.profissao||"", convenio:editTarget.convenio||"", telefone:editTarget.telefone||"", peso:editTarget.peso||"", altura:editTarget.altura||"" });
                 setEditingStudent(editTarget);
                 setEditTarget(null);
                 setShowForm(true);
-              }}
-                style={{ background:C.purple, border:"none", borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:F }}>Continuar</button>
+              }} style={{ background:C.purple, border:"none", borderRadius:10, padding:"10px 24px", fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer", fontFamily:F }}>Continuar</button>
             </div>
           </div>
         </div>
@@ -482,20 +685,22 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
     </div>
   );
 
+  // ── MAIN SCREEN ───────────────────────────────────────────────────────────
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
-      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:60 }}>
+      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding: isMobile ? "0 10px" : "0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height: isMobile ? 50 : 60 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <button onClick={() => setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>← Pacientes</button>
           <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>🤲 Terapia Ocupacional</span>
         </div>
-        <div style={{ display:"flex", gap:4 }}>
-          {[["anamnese","📋","Avaliação"],["biometria","🔬","Biometria"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evolucao","📈","Evolução"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
+        <div style={{ display:"flex", gap:4, overflowX: isMobile ? "auto" : "visible", flexShrink:1, msOverflowStyle:"none", scrollbarWidth:"none" }}>
+          {[["avaliacao","📋",isMobile?"":"Avaliação"],["sessoes","📅",isMobile?"":"Sessões"],["relatorio","📊",isMobile?"":"Relatório"],["evidencias","🔬",isMobile?"":"Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               background: tab === k ? C.purpleBg : "transparent",
               border: `1px solid ${tab === k ? C.purple + "50" : "transparent"}`,
-              borderRadius: 8, padding: "7px 14px", fontSize: 12,
+              borderRadius: 8, padding: isMobile ? "6px 10px" : "7px 14px", fontSize: isMobile ? 10 : 12,
               fontWeight: tab === k ? 700 : 400,
+              whiteSpace:"nowrap",
               color: tab === k ? C.purple : C.textMuted, cursor: "pointer", fontFamily: F,
             }}>{ic} {lb}</button>
           ))}
@@ -503,39 +708,169 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
           {student?.nome && (
             <>
-              <div style={{ width:30, height:30, background:C.purpleBg, border:`1px solid ${C.purple}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.purple }}>
+              <div style={{ width: isMobile ? 24 : 30, height: isMobile ? 24 : 30, background:C.purpleBg, border:`1px solid ${C.purple}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize: isMobile ? 10 : 13, fontWeight:800, color:C.purple }}>
                 {student.nome[0]?.toUpperCase()}
               </div>
-              <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span>
+              {!isMobile && <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span>}
             </>
           )}
         </div>
       </div>
 
-      <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
-        {tab === "anamnese" && (
+      <div style={{ maxWidth:960, margin:"0 auto", padding: isMobile ? "12px 10px" : "20px 16px" }}>
+        {/* ════════ TAB: AVALIAÇÃO ════════ */}
+        {tab === "avaliacao" && (
           <>
-            <Section title="Perfil Ocupacional e Anamnese" icon="📋">
-              <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
-                Preencha os dados do perfil ocupacional, diagnóstico médico e demandas funcionais do paciente.
-              </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
-                <SectionRow label="Diagnóstico médico / Condição principal" value={diagnosticoMedico} onChange={setDiagnosticoMedico} placeholder="Ex: AVC isquêmico hemisfério E, LESÃO MEDULAR T10" />
-                <SectionRow label="Ocupação / Papéis ocupacionais" value={ocupacao} onChange={setOcupacao} placeholder="Ex: Estudante, trabalhador, cuidador, aposentado" />
-              </div>
-              <div style={{ marginTop:12 }}>
-                <SectionRow label="Queixa principal / Demanda do paciente" value={queixaTO} onChange={setQueixaTO} placeholder="Ex: Dificuldade para vestir-se, tomar banho e alimentar-se com independência" type="textarea" />
-              </div>
-              <div style={{ marginTop:12 }}>
-                <SectionRow label="Rotina diária" value={rotina} onChange={setRotina} placeholder="Descreva a rotina típica do paciente (horários, atividades, suporte necessário)" type="textarea" />
-              </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginTop:12 }}>
-                <SectionRow label="Tipo de domicílio" value={domicilio} onChange={setDomicilio} placeholder="Casa, apartamento, escadas, adaptado?" />
-                <SectionRow label="Acompanhante / Cuidador" value={acompanhante} onChange={setAcompanhante} placeholder="Ex: Mãe, esposa, cuidador 24h, sem cuidador" />
+            {/* 📂 Histórico de Avaliações */}
+            <Section title="Histórico de Avaliações" icon="📂">
+              <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                <select value="" onChange={e=>{const idx=Number(e.target.value);if(idx>=0&&assessmentHistory[idx])handleLoadAssessment(assessmentHistory[idx])}} style={{...sel({maxWidth:260,fontSize:12})}}>
+                  <option value="">Selecionar avaliação anterior...</option>
+                  {assessmentHistory.map((a,i)=><option key={a.id} value={i}>{a.data} — {(a.queixa||"").slice(0,50)}</option>)}
+                </select>
+                <button onClick={handleSaveAssessment} style={primaryBtn({padding:"7px 16px",fontSize:12})}>💾 Salvar avaliação</button>
+                <button onClick={handleReset} style={{...ghostBtn({padding:"7px 16px",fontSize:12}),color:C.amber,borderColor:`${C.amber}50`}}>🔄 Nova avaliação</button>
+                {assessmentHistory.length > 0 && <span style={{fontSize:10,color:C.textMuted}}>{assessmentHistory.length} avaliação(ões) salva(s)</span>}
               </div>
             </Section>
 
-            <Section title="Domínios de Desempenho Ocupacional" icon="🎯">
+            {/* 👤 Identificação do Paciente */}
+            <CollapsibleSection title="Identificação do Paciente" icon="👤" expanded={expandedSections.includes("identificacao")} onToggle={()=>toggleSection("identificacao")}>
+              <Row cols={isMobile?"1fr":"1fr 1fr 1fr"} gap="12px 16px">
+                <div style={{gridColumn:isMobile?"1":"span 2"}}>
+                  <span style={lbl()}>Nome completo</span>
+                  <input type="text" value={student?.nome||""} style={inp()} readOnly />
+                </div>
+                <div><span style={lbl()}>Data da avaliação</span><input type="date" style={inp()} defaultValue={new Date().toISOString().slice(0,10)} /></div>
+              </Row>
+              <Row cols={isMobile?"1fr":"1fr 1fr"} gap="12px 16px">
+                <div><span style={lbl()}>Data de nascimento</span><input type="date" value={student?.dataNasc||""} style={inp()} readOnly /></div>
+                <div><span style={lbl()}>Sexo</span><input type="text" value={student?.sexo||""} style={inp()} readOnly /></div>
+              </Row>
+              <CollapsibleSub title="Dados Administrativos e Financeiros">
+                <Row cols={isMobile?"1fr":"1fr 1fr"} gap="12px 16px">
+                  <div><span style={lbl()}>Convênio</span><select value={student?.convenio||""} style={sel()}>{["","Particular","Unimed","Bradesco Saúde","Amil","SulAmérica","Hapvida","NotreDame","IPSEMG","SUS / NASF","Outro"].map(o=><option key={o} value={o}>{o||"Selecionar…"}</option>)}</select></div>
+                  {student?.convenio==="Particular"&&<div><span style={lbl()}>Região CREFITO</span><select value={regiao} onChange={e=>setRegiao(e.target.value)} style={sel()}>{["",...Object.keys(CREFITO_REGIOES)].map(o=><option key={o} value={o}>{o||"Selecionar…"}</option>)}</select></div>}
+                </Row>
+                {student?.convenio==="Particular"&&regiao&&<HonorariosCard convenio="Particular" regiao={regiao} sessoesAuth={student?.sessoesAuth||0} />}
+              </CollapsibleSub>
+            </CollapsibleSection>
+
+            {/* 📝 Queixa Principal e Anamnese */}
+            <CollapsibleSection title="Queixa Principal e Anamnese" icon="📝" expanded={expandedSections.includes("queixa")} onToggle={()=>toggleSection("queixa")}>
+              <Row cols={isMobile ? "1fr" : "1fr 1fr"} gap="12px 16px">
+                <div>
+                  <span style={lbl()}>Diagnóstico médico / Condição principal</span>
+                  <input type="text" value={diagnosticoMedico} onChange={e=>setDiagnosticoMedico(e.target.value)} style={inp()} placeholder="Ex: AVC isquêmico hemisfério E" />
+                </div>
+                <div>
+                  <span style={lbl()}>Ocupação / Papéis ocupacionais</span>
+                  <input type="text" value={ocupacao} onChange={e=>setOcupacao(e.target.value)} style={inp()} placeholder="Ex: Estudante, trabalhador, cuidador" />
+                </div>
+              </Row>
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>Queixa principal / Demanda do paciente</span>
+                <AudioField value={queixaTO} onChange={v=>{const t=typeof v==="function"?v(queixaTO):v;setQueixaTO(t)}}
+                  placeholder="Ex: Dificuldade para vestir-se, tomar banho e alimentar-se com independência" rows={2}
+                  style={{background:C.surface,border:`1px solid ${C.purple}40`,borderRadius:8,color:C.text,fontSize:13,padding:"9px 12px",fontFamily:F,lineHeight:1.5}} />
+              </div>
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>Rotina diária</span>
+                <textarea value={rotina} onChange={e=>setRotina(e.target.value)} rows={2} style={{...inp({resize:"vertical",lineHeight:1.5})}} placeholder="Descreva a rotina típica do paciente (horários, atividades, suporte necessário)" />
+              </div>
+              <Row cols={isMobile ? "1fr" : "1fr 1fr"} gap="12px 16px" style={{marginTop:12}}>
+                <div>
+                  <span style={lbl()}>Tipo de domicílio</span>
+                  <input type="text" value={domicilio} onChange={e=>setDomicilio(e.target.value)} style={inp()} placeholder="Casa, apartamento, escadas?" />
+                </div>
+                <div>
+                  <span style={lbl()}>Acompanhante / Cuidador</span>
+                  <input type="text" value={acompanhante} onChange={e=>setAcompanhante(e.target.value)} style={inp()} placeholder="Ex: Mãe, cuidador 24h" />
+                </div>
+              </Row>
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>Tecnologia assistiva / Adaptações em uso</span>
+                <TagSelect options={["Cadeira de rodas","Andador","Bengala","Muleta","Órtese de MMSS","Órtese de MMII","Prótese","CAA","Adaptação para banho","Adaptação para alimentação"]}
+                  value={tecnologiaAssistiva} onChange={setTecnologiaAssistiva} activeColor={C.purple} />
+              </div>
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>Adaptações necessárias</span>
+                <TagSelect options={["Barra de apoio","Assento sanitário elevado","Cadeira de banho","Rampa","Alargador de porta","Cama hospitalar","Cadeira para box","Tapete antiderrapante"]}
+                  value={adaptacoes} onChange={setAdaptacoes} activeColor={C.purple} />
+              </div>
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>Condições associadas</span>
+                <TagSelect options={["AVC","Paralisia Cerebral","Demência","TEA","Lesão Medular","Osteoartrite","Parkinson","Esclerose Múltipla","TCE","Síndrome de Down","Amputação","Queimaduras"]}
+                  value={condicoesAssociadas} onChange={setCondicoesAssociadas} activeColor={C.purple} />
+              </div>
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>CIF — Classificação Internacional de Funcionalidade</span>
+                {cifKeys.length > 0 && (
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:4 }}>
+                    {cifEntries.slice(0, 10).map(c => (
+                      <span key={c.code} style={{ fontSize:11, color:C.purple, background:C.purpleBg, border:`1px solid ${C.purple}30`, borderRadius:6, padding:"3px 10px", lineHeight:1.6 }}>
+                        <strong>{c.code}</strong>: {c.desc}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div style={{ marginTop:8 }}>
+                  <span style={lbl()}>Diagnóstico Cinesioterapêutico (DCT)</span>
+                  <input type="text" value={diagnosticoCinesio} onChange={e=>setDiagnosticoCinesio(e.target.value)} style={inp()} placeholder="Ex: Dependência em AVDs secundária a AVE com hemiparesia D" />
+                  {!diagnosticoCinesio && dctSuggestion && (
+                    <button onClick={()=>setDiagnosticoCinesio(dctSuggestion)}
+                      style={{...ghostBtn({fontSize:10,marginTop:6}),borderStyle:"dashed"}}>
+                      💡 Sugerir DCT
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div style={{ marginTop:12 }}>
+                <span style={{...lbl({color:C.red})}}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</span>
+                <TagSelect options={mergedRedFlags} value={enhancer.redFlags} onChange={enhancer.setRedFlags} activeColor={C.red} />
+                {enhancer.redFlags.length > 0 && <div style={{fontSize:11,color:C.red,marginTop:4}}>⚠ {enhancer.redFlags.length} red flag(s) selecionada(s)</div>}
+              </div>
+            </CollapsibleSection>
+
+            {/* ⚡ Dor e Funcionalidade */}
+            <CollapsibleSection title="Dor e Funcionalidade" icon="⚡" expanded={expandedSections.includes("dor")} onToggle={()=>toggleSection("dor")}>
+              <Row cols={isMobile ? "1fr" : "1fr 1fr"} gap="12px 16px">
+                <div>
+                  <span style={lbl()}>EVA Movimento</span>
+                  <EvaSlider value={evaMov} onChange={setEvaMov} color={C.purple} />
+                </div>
+                <div>
+                  <span style={lbl()}>EVA Repouso</span>
+                  <EvaSlider value={evaRep} onChange={setEvaRep} color={C.purple} />
+                </div>
+              </Row>
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>Local da dor</span>
+                <SingleSelect options={["Cabeça","Pescoço","Tronco","MMSS D","MMSS E","MMII D","MMII E","Generalizada"]}
+                  value={localDor} onChange={setLocalDor} activeColor={C.purple} />
+              </div>
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>Bandeiras Amarelas</span>
+                <TagSelect options={YELLOW_FLAGS_TO.map(f => f.label)}
+                  value={yellowFlags} onChange={setYellowFlags} activeColor={C.amber} />
+              </div>
+              <CollapsibleSub title="BodyMap — Mapa Corporal de Dor">
+                <BodyMap value={bodyPain} onChange={setBodyPain} colors={{ mark:C.purple, ...C }} />
+              </CollapsibleSub>
+              {kbList.length > 0 && (
+                <div style={{ marginTop:12, background:C.cardAlt, borderRadius:10, padding:"14px 16px" }}>
+                  <div style={{ fontSize:10, fontWeight:800, color:C.purple, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Condições identificadas pelo KB</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+                    {kbList.map(k => (
+                      <span key={k.key} style={{ fontSize:10, background:C.purpleBg, color:C.purple, border:`1px solid ${C.purple}30`, borderRadius:6, padding:"2px 8px" }}>{k.label}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CollapsibleSection>
+
+            {/* 🔬 Exame Físico */}
+            <CollapsibleSection title="Exame Físico" icon="🔬" expanded={expandedSections.includes("exame")} onToggle={()=>toggleSection("exame")}>
               <div style={{ marginBottom:14 }}>
                 <span style={lbl()}>AVDs (Atividades de Vida Diária) comprometidas</span>
                 <TagSelect options={["Banho","Vestuário","Alimentação","Higiene íntima","Transferências","Mobilidade na cama","Deambulação","Uso do banheiro"]}
@@ -556,61 +891,54 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
                 <TagSelect options={["Trabalho formal","Trabalho informal","Estudos","Voluntariado","Atividades domésticas","Cuidado de dependentes"]}
                   value={trabalhoProd} onChange={setTrabalhoProd} activeColor={C.purple} />
               </div>
-            </Section>
 
-            <Section title="Metas Funcionais (COPM)" icon="🎯">
-              <div style={{ fontSize:12, color:C.textMuted, marginBottom:10, lineHeight:1.5 }}>
-                Defina até 5 metas funcionais priorizadas pelo paciente. Cada meta deve ser específica, mensurável e centrada no paciente.
-              </div>
-              {copmGoals.map((g, i) => (
-                <div key={i} style={{ display:"flex", gap:8, alignItems:"center", marginBottom:8, background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, padding:"10px 12px" }}>
-                  <span style={{ fontSize:10, fontWeight:800, color:C.textDim, minWidth:20 }}>{i+1}.</span>
-                  <div style={{ flex:1 }}>
-                    <input type="text" value={g.desc} onChange={e => {
-                      const next = [...copmGoals]; next[i] = { ...next[i], desc: e.target.value }; setCopmGoals(next);
-                    }} style={{ ...inp({ padding:"6px 10px", fontSize:12 }), marginBottom:4 }} placeholder="Descrição da meta..." />
-                    <div style={{ display:"flex", gap:8 }}>
-                      <div style={{ flex:1 }}><span style={{ fontSize:9, color:C.textDim }}>Desempenho (1-10)</span>
-                        <input type="number" min="1" max="10" value={g.desempenho || ""} onChange={e => {
-                          const next = [...copmGoals]; next[i] = { ...next[i], desempenho: e.target.value }; setCopmGoals(next);
-                        }} style={{ ...inp({ padding:"4px 8px", fontSize:11 }), textAlign:"center" }} />
-                      </div>
-                      <div style={{ flex:1 }}><span style={{ fontSize:9, color:C.textDim }}>Satisfação (1-10)</span>
-                        <input type="number" min="1" max="10" value={g.satisfacao || ""} onChange={e => {
-                          const next = [...copmGoals]; next[i] = { ...next[i], satisfacao: e.target.value }; setCopmGoals(next);
-                        }} style={{ ...inp({ padding:"4px 8px", fontSize:11 }), textAlign:"center" }} />
+              <Section title="Metas Funcionais (COPM)" icon="🎯">
+                <div style={{ fontSize:12, color:C.textMuted, marginBottom:10, lineHeight:1.5 }}>
+                  Defina até 5 metas funcionais priorizadas pelo paciente.
+                </div>
+                {copmGoals.map((g, i) => (
+                  <div key={i} style={{ display:"flex", gap:8, alignItems:"center", marginBottom:8, background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, padding:"10px 12px" }}>
+                    <span style={{ fontSize:10, fontWeight:800, color:C.textDim, minWidth:20 }}>{i+1}.</span>
+                    <div style={{ flex:1 }}>
+                      <input type="text" value={g.desc} onChange={e => { const next = [...copmGoals]; next[i] = { ...next[i], desc: e.target.value }; setCopmGoals(next); }}
+                        style={{ ...inp({ padding:"6px 10px", fontSize:12 }), marginBottom:4 }} placeholder="Descrição da meta..." />
+                      <div style={{ display:"flex", gap:8 }}>
+                        <div style={{ flex:1 }}><span style={{ fontSize:9, color:C.textDim }}>Desempenho (1-10)</span>
+                          <input type="number" min="1" max="10" value={g.desempenho || ""} onChange={e => { const next = [...copmGoals]; next[i] = { ...next[i], desempenho: e.target.value }; setCopmGoals(next); }}
+                            style={{ ...inp({ padding:"4px 8px", fontSize:11 }), textAlign:"center" }} />
+                        </div>
+                        <div style={{ flex:1 }}><span style={{ fontSize:9, color:C.textDim }}>Satisfação (1-10)</span>
+                          <input type="number" min="1" max="10" value={g.satisfacao || ""} onChange={e => { const next = [...copmGoals]; next[i] = { ...next[i], satisfacao: e.target.value }; setCopmGoals(next); }}
+                            style={{ ...inp({ padding:"4px 8px", fontSize:11 }), textAlign:"center" }} />
+                        </div>
                       </div>
                     </div>
+                    <button onClick={() => setCopmGoals(copmGoals.filter((_, j) => j !== i))}
+                      style={{ background:"none", border:"none", color:C.red, fontSize:16, cursor:"pointer", padding:"0 4px" }}>×</button>
                   </div>
-                  <button onClick={() => setCopmGoals(copmGoals.filter((_, j) => j !== i))}
-                    style={{ background:"none", border:"none", color:C.red, fontSize:16, cursor:"pointer", padding:"0 4px" }}>×</button>
-                </div>
-              ))}
-              {copmGoals.length < 5 && (
-                <button onClick={() => setCopmGoals([...copmGoals, { desc:"", desempenho:"", satisfacao:"" }])}
-                  style={{ background:"transparent", border:`1px dashed ${C.border}`, borderRadius:8, padding:"8px 12px", fontSize:12, color:C.textMuted, cursor:"pointer", width:"100%", fontFamily:F }}>
-                  + Adicionar meta
-                </button>
-              )}
-              {copmGoals.length > 0 && (
-                <div style={{ marginTop:12, background:C.purpleBg, border:`1px solid ${C.purple}40`, borderRadius:8, padding:"10px 12px" }}>
-                  <div style={{ fontSize:10, fontWeight:700, color:C.purple, marginBottom:4 }}>COPM — Média de desempenho: {copmGoals.filter(g=>g.desempenho).length > 0 ? (copmGoals.filter(g=>g.desempenho).reduce((a,g)=>a+Number(g.desempenho),0)/copmGoals.filter(g=>g.desempenho).length).toFixed(1) : "—"} | Satisfação: {copmGoals.filter(g=>g.satisfacao).length > 0 ? (copmGoals.filter(g=>g.satisfacao).reduce((a,g)=>a+Number(g.satisfacao),0)/copmGoals.filter(g=>g.satisfacao).length).toFixed(1) : "—"}</div>
-                </div>
-              )}
-            </Section>
+                ))}
+                {copmGoals.length < 5 && (
+                  <button onClick={() => setCopmGoals([...copmGoals, { desc:"", desempenho:"", satisfacao:"" }])}
+                    style={{ background:"transparent", border:`1px dashed ${C.border}`, borderRadius:8, padding:"8px 12px", fontSize:12, color:C.textMuted, cursor:"pointer", width:"100%", fontFamily:F }}>
+                    + Adicionar meta
+                  </button>
+                )}
+                {copmGoals.filter(g => g.desempenho).length > 0 && (
+                  <div style={{ marginTop:12, background:C.purpleBg, border:`1px solid ${C.purple}40`, borderRadius:8, padding:"10px 12px" }}>
+                    <div style={{ fontSize:10, fontWeight:700, color:C.purple }}>
+                      COPM — Desempenho: {(copmGoals.filter(g=>g.desempenho).reduce((a,g)=>a+Number(g.desempenho),0)/copmGoals.filter(g=>g.desempenho).length).toFixed(1)} | Satisfação: {(copmGoals.filter(g=>g.satisfacao).reduce((a,g)=>a+Number(g.satisfacao),0)/copmGoals.filter(g=>g.satisfacao).length).toFixed(1)}
+                    </div>
+                  </div>
+                )}
+              </Section>
 
-            <Section title="Escalas Funcionais" icon="📊">
               <Accordion title="Índice de Barthel (AVDs)" icon="🛁" defaultOpen>
-                <div style={{ fontSize:12, color:C.textMuted, marginBottom:10, lineHeight:1.5 }}>
-                  Avalia o nível de independência funcional nas AVDs básicas. Quanto maior a pontuação, maior a independência.
-                </div>
                 {BARTHEL_QUESTIONS.map(q => (
                   <div key={q.id} style={{ marginBottom:8 }}>
                     <span style={{ ...lbl({ fontSize:10, marginBottom:3 }) }}>{q.label}</span>
                     <SingleSelect options={q.options.map(o => ({ value:String(o.s), label:o.t }))} value={barthelAnswers[q.id] || ""} onChange={v => {
                       const next = { ...barthelAnswers, [q.id]: v };
                       setBarthelAnswers(next);
-                      setBarthelResult(calcBarthel(next));
                     }} activeColor={C.purple} />
                   </div>
                 ))}
@@ -622,18 +950,13 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
                   </div>
                 )}
               </Accordion>
-
               <Accordion title="Escala Lawton & Brody (AIVDs)" icon="🏠">
-                <div style={{ fontSize:12, color:C.textMuted, marginBottom:10, lineHeight:1.5 }}>
-                  Avalia a capacidade para realizar atividades instrumentais de vida diária. Pontuação máxima 24 (independente).
-                </div>
                 {LAWTON_QUESTIONS.map(q => (
                   <div key={q.id} style={{ marginBottom:8 }}>
                     <span style={{ ...lbl({ fontSize:10, marginBottom:3 }) }}>{q.label}</span>
                     <SingleSelect options={q.options.map(o => ({ value:String(o.s), label:o.t }))} value={lawtonAnswers[q.id] || ""} onChange={v => {
                       const next = { ...lawtonAnswers, [q.id]: v };
                       setLawtonAnswers(next);
-                      setLawtonResult(calcLawton(next));
                     }} activeColor={C.purple} />
                   </div>
                 ))}
@@ -645,39 +968,37 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
                   </div>
                 )}
               </Accordion>
-            </Section>
 
-            <Section title="Função Manual e Sensorial" icon="🤚">
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
-                <NumericField label="Força de preensão palmar D (kgf)" value={forcaPreensao.D} onChange={v => setForcaPreensao(p=>({...p,D:v}))} unit="kgf" min={0} max={80} step={0.5} />
-                <NumericField label="Força de preensão palmar E (kgf)" value={forcaPreensao.E} onChange={v => setForcaPreensao(p=>({...p,E:v}))} unit="kgf" min={0} max={80} step={0.5} />
-                <NumericField label="Força de pinça polpa-polegar D (kgf)" value={forcaPinça.D} onChange={v => setForcaPinça(p=>({...p,D:v}))} unit="kgf" min={0} max={20} step={0.1} />
-                <NumericField label="Força de pinça polpa-polegar E (kgf)" value={forcaPinça.E} onChange={v => setForcaPinça(p=>({...p,E:v}))} unit="kgf" min={0} max={20} step={0.1} />
-              </div>
-              <div style={{ marginBottom:14 }}>
+              <Row cols={isMobile ? "1fr" : "1fr 1fr"} gap="12px 16px" style={{marginTop:14}}>
+                <NumericField label="Preensão palmar D (kgf)" value={forcaPreensao.D} onChange={v => setForcaPreensao(p=>({...p,D:v}))} unit="kgf" min={0} max={80} step={0.5} />
+                <NumericField label="Preensão palmar E (kgf)" value={forcaPreensao.E} onChange={v => setForcaPreensao(p=>({...p,E:v}))} unit="kgf" min={0} max={80} step={0.5} />
+                <NumericField label="Pinça polpa-polegar D (kgf)" value={forcaPinça.D} onChange={v => setForcaPinça(p=>({...p,D:v}))} unit="kgf" min={0} max={20} step={0.1} />
+                <NumericField label="Pinça polpa-polegar E (kgf)" value={forcaPinça.E} onChange={v => setForcaPinça(p=>({...p,E:v}))} unit="kgf" min={0} max={20} step={0.1} />
+              </Row>
+              <div style={{ marginTop:12 }}>
                 <span style={lbl()}>Sensibilidade / Estereognosia</span>
                 <TagSelect options={["Tátil normal","Hipoestesia","Hiperestesia","Alodinia","Estereognosia preservada","Estereognosia prejudicada","Ausência de sensibilidade"]}
-                  value={sensibilidade} onChange={v => setSensibilidade(v)} activeColor={C.purple} />
+                  value={sensibilidade} onChange={setSensibilidade} activeColor={C.purple} />
               </div>
-              <div style={{ marginBottom:14 }}>
+              <div style={{ marginTop:12 }}>
                 <span style={lbl()}>Manipulação fina comprometida</span>
                 <TagSelect options={["Abrir/fechar botões","Amarrar cadarços","Escrever","Usar talheres","Pegar moedas","Enfiar agulha","Usar chave","Recortar"]}
                   value={manipulacaoFina} onChange={setManipulacaoFina} activeColor={C.purple} />
               </div>
-            </Section>
-
-            <Section title="Avaliação Cognitiva" icon="🧠">
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
-                <SectionRow label="MEEM / Mini-Mental (0-30)" value={miniMental} onChange={setMiniMental} placeholder="Ex: 24" />
+              <div style={{ marginTop:14 }}>
+                <span style={lbl()}>MEEM / Mini-Mental (0-30)</span>
+                <Row cols={isMobile ? "1fr" : "1fr 1fr"} gap="12px 16px">
+                  <NumericField label="" value={miniMental} onChange={setMiniMental} min={0} max={30} />
+                </Row>
+                {miniMental && (
+                  <div style={{ background: Number(miniMental) >= 24 ? C.greenBg : Number(miniMental) >= 18 ? C.amberBg : C.redBg, border:`1px solid ${Number(miniMental) >= 24 ? C.green : Number(miniMental) >= 18 ? C.amber : C.red}40`, borderRadius:8, padding:"8px 12px", marginTop:8 }}>
+                    <span style={{ fontSize:12, fontWeight:700, color: Number(miniMental) >= 24 ? C.green : Number(miniMental) >= 18 ? C.amber : C.red }}>
+                      {Number(miniMental) >= 24 ? "🟢 Normal (≥24)" : Number(miniMental) >= 18 ? "🟡 Leve comprometimento (18-23)" : "🔴 Comprometimento significativo (<18)"}
+                    </span>
+                  </div>
+                )}
               </div>
-              {miniMental && (
-                <div style={{ marginBottom:14, background: Number(miniMental) >= 24 ? C.greenBg : Number(miniMental) >= 18 ? C.amberBg : C.redBg, border:`1px solid ${Number(miniMental) >= 24 ? C.green : Number(miniMental) >= 18 ? C.amber : C.red}40`, borderRadius:8, padding:"8px 12px" }}>
-                  <span style={{ fontSize:12, fontWeight:700, color: Number(miniMental) >= 24 ? C.green : Number(miniMental) >= 18 ? C.amber : C.red }}>
-                    {Number(miniMental) >= 24 ? "🟢 Normal (≥24)" : Number(miniMental) >= 18 ? "🟡 Leve comprometimento (18-23)" : "🔴 Comprometimento significativo (<18)"}
-                  </span>
-                </div>
-              )}
-              <div style={{ marginBottom:14 }}>
+              <div style={{ marginTop:12 }}>
                 <span style={lbl()}>Domínios cognitivos comprometidos</span>
                 <TagSelect options={["Memória recente","Memória remota","Atenção sustentada","Atenção seletiva","Função executiva","Linguagem","Orientação","Praxia","Gnosia"]}
                   value={[...memoria, ...atencao, ...funcaoExecutiva]} onChange={v => {
@@ -686,83 +1007,112 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
                     setFuncaoExecutiva(v.filter(x => ["Função executiva","Linguagem","Praxia","Gnosia"].includes(x)));
                   }} activeColor={C.purple} />
               </div>
-            </Section>
-
-            <Section title="Fatores Ambientais" icon="🏡">
-              <div style={{ marginBottom:14 }}>
+              <div style={{ marginTop:14 }}>
                 <span style={lbl()}>Barreiras ambientais identificadas</span>
                 <TagSelect options={["Degraus / escadas sem corrimão","Banheiro sem adaptação","Portas estreitas","Tapetes soltos","Iluminação inadequada","Móveis inadequados","Acesso externo difícil","Piso escorregadio"]}
                   value={barreiras} onChange={setBarreiras} activeColor={C.purple} />
               </div>
-              <div style={{ marginBottom:14 }}>
+              <div style={{ marginTop:12 }}>
                 <span style={lbl()}>Risco de quedas</span>
                 <SingleSelect options={["Baixo","Moderado","Alto","Muito alto"]} value={riscoQueda} onChange={setRiscoQueda} activeColor={C.purple} />
               </div>
-              <div style={{ marginBottom:14 }}>
+              <div style={{ marginTop:12 }}>
                 <span style={lbl()}>Tecnologia assistiva / Adaptações em uso</span>
-                <TagSelect options={["Cadeira de rodas","Andador","Bengala","Muleta","Órtese de MMSS","Órtese de MMII","Prótese","Comunicação alternativa","Adaptação para banho","Adaptação para alimentação"]}
+                <TagSelect options={["Cadeira de rodas","Andador","Bengala","Muleta","Órtese de MMSS","Órtese de MMII","Prótese","CAA","Adaptação para banho","Adaptação para alimentação"]}
                   value={tecnologiaAssistiva} onChange={setTecnologiaAssistiva} activeColor={C.purple} />
               </div>
-              <div style={{ marginBottom:14 }}>
+              <div style={{ marginTop:12 }}>
                 <span style={lbl()}>Adaptações necessárias</span>
                 <TagSelect options={["Barra de apoio","Assento sanitário elevado","Cadeira de banho","Rampa","Alargador de porta","Cama hospitalar","Cadeira para box","Tapete antiderrapante"]}
                   value={adaptacoes} onChange={setAdaptacoes} activeColor={C.purple} />
               </div>
-            </Section>
+            </CollapsibleSection>
+
+            {/* 📐 Goniometria */}
+            <CollapsibleSection title="Goniometria" icon="📐" expanded={expandedSections.includes("goniometria")} onToggle={()=>toggleSection("goniometria")}>
+              <Section title="Goniometria (MMSS)" icon="📐">
+                {gonioRows.map((row, i) => (
+                  <GonioRow key={i} joint={row.joint} ref={row.ref} l={row.l} r={row.r} index={i}
+                    onChange={(idx, side, val) => setGonioRows(prev => { const p=[...prev]; p[idx]={...p[idx],[side]:val}; return p; })}
+                    style={{ marginBottom:4 }} />
+                ))}
+              </Section>
+              <Section title="Força Muscular (MRC 0-5)" icon="💪">
+                {mrcRows.map((row, i) => (
+                  <MRCRow key={i} muscle={row.muscle} value={row.value} index={i}
+                    onChange={(idx, val) => setMrcRows(prev => { const p=[...prev]; p[idx]={...p[idx],value:val}; return p; })}
+                    style={{ marginBottom:4 }} />
+                ))}
+              </Section>
+              <Section title="Testes Especiais em TO" icon="🔬">
+                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                  {TO_TESTES.map(test => {
+                    const active = testResults.some(t => t.id === test.id);
+                    return (
+                      <TestCard key={test.id} test={test} active={active}
+                        onToggle={() => toggleTest(test.id)}
+                        onNotes={(id, notes) => setTestResults(prev => prev.map(t => t.id===id?{...t,notes}:t))}
+                        colors={{ accent:C.purple, ...C }} />
+                    );
+                  })}
+                </div>
+              </Section>
+            </CollapsibleSection>
+
+            {/* 💬 Observações Clínicas */}
+            <CollapsibleSection title="Observações Clínicas" icon="💬" expanded={expandedSections.includes("observacoes")} onToggle={()=>toggleSection("observacoes")}>
+              <span style={lbl()}>Evolução clínica / Observações</span>
+              <textarea value={evolucao} onChange={e=>setEvolucao(e.target.value)} rows={4}
+                style={{...inp({resize:"vertical",lineHeight:1.6})}}
+                placeholder="Descreva a evolução desde a última sessão, resposta às intervenções, mudanças no desempenho ocupacional..." />
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>Metas para próximas sessões</span>
+                <textarea value={metas} onChange={e=>setMetas(e.target.value)} rows={3}
+                  style={{...inp({resize:"vertical",lineHeight:1.6})}}
+                  placeholder="Plano de tratamento, adaptações a serem implementadas, orientações para o paciente/cuidador..." />
+              </div>
+              {kbList.length > 0 && (
+                <div style={{background:C.cardAlt,borderRadius:10,padding:"14px 16px",marginTop:12}}>
+                  <div style={{fontSize:10,fontWeight:800,color:C.purple,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8}}>Condições identificadas</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                    {kbList.map(k => (
+                      <span key={k.key} style={{fontSize:11,color:C.purple,background:C.purpleBg,border:`1px solid ${C.purple}30`,borderRadius:6,padding:"2px 8px"}}>{k.label}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {barthelResult && (
+                <div style={{background:C.cardAlt,borderRadius:10,padding:"14px 16px",marginTop:12}}>
+                  <div style={{fontSize:10,fontWeight:800,color:C.purple,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8}}>Última avaliação</div>
+                  <div style={{fontSize:13,color:C.textSub,lineHeight:1.7}}>
+                    Barthel: <strong style={{color:barthelResult.color}}>{barthelResult.total}/100</strong> · Lawton: <strong style={{color:lawtonResult?.color}}>{lawtonResult?.total || "—"}/{lawtonResult?.max || "—"}</strong> · MEEM: <strong style={{color:Number(miniMental)>=24?C.green:Number(miniMental)>=18?C.amber:C.red}}>{miniMental || "—"}/30</strong>
+                  </div>
+                </div>
+              )}
+            </CollapsibleSection>
+
+            {/* 🤖 Análise por IA */}
+            <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
+              summaryText={`Paciente: ${student?.nome || "—"}\nDiagnóstico: ${diagnosticoMedico}\nQueixa: ${queixaTO}\nOcupação: ${ocupacao}\nAVDs: ${avds.join(", ")}\nAIVDs: ${aivds.join(", ")}\nTecnologia assistiva: ${tecnologiaAssistiva.join(", ")}\nBarreiras: ${barreiras.join(", ")}\nBarthel: ${barthelResult?.total || "—"}/100\nLawton: ${lawtonResult?.total || "—"}/24\nMEEM: ${miniMental || "—"}/30\nEVA Mov: ${evaMov}/10\nEVA Rep: ${evaRep}/10\nDor local: ${localDor}\nYellow Flags: ${yellowFlags.join(", ")}\nDCT: ${diagnosticoCinesio}\nEvolução: ${evolucao}`}
+              colors={toColors} />
 
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
-              <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Avaliação</button>
+              <button onClick={handleReset} style={ghostBtn({ color:C.red, borderColor:C.red+"50", padding:"10px 20px" })}>🔄 Resetar</button>
+              <button onClick={handleSaveAssessment} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Avaliação</button>
+              <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar</button>
             </div>
           </>
         )}
 
-        {tab === "biometria" && (
-          <>
-            <Section title="Bioimpedância (BIA)" icon="⚡">
-              <div style={{ fontSize:12, color:C.textMuted, marginBottom:12, lineHeight:1.5 }}>
-                Valores obtidos do aparelho de bioimpedância para avaliação da composição corporal.
-              </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                <NumericField label="Peso (kg)" value={pesoBia} onChange={setPesoBia} unit="kg" min={20} max={300} step={0.1} />
-                <NumericField label="Altura (cm)" value={alturaBia} onChange={setAlturaBia} unit="cm" min={50} max={250} step={0.5} />
-                <NumericField label="Resistência (R)" value={biaResistencia} onChange={setBiaResistencia} unit="Ω" min={200} max={900} step={1} />
-                <NumericField label="Reactância (Xc)" value={biaReactancia} onChange={setBiaReactancia} unit="Ω" min={10} max={200} step={1} />
-              </div>
-              {biaResult && (
-                <div style={{ marginTop:12, background:C.purpleBg, border:`1px solid ${C.purple}40`, borderRadius:10, padding:"14px 16px" }}>
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:10 }}>
-                    <div style={{ textAlign:"center" }}>
-                      <div style={{ fontSize:9, color:C.textMuted, fontWeight:700, textTransform:"uppercase" }}>% Gordura</div>
-                      <div style={{ fontSize:24, fontWeight:900, color:C.purple }}>{biaResult.percentualGordura}<span style={{ fontSize:12, color:C.textMuted }}>%</span></div>
-                    </div>
-                    <div style={{ textAlign:"center" }}>
-                      <div style={{ fontSize:9, color:C.textMuted, fontWeight:700, textTransform:"uppercase" }}>M. Magra</div>
-                      <div style={{ fontSize:18, fontWeight:700, color:C.text }}>{biaResult.massaMagra} <span style={{ fontSize:10, color:C.textMuted }}>kg</span></div>
-                    </div>
-                    <div style={{ textAlign:"center" }}>
-                      <div style={{ fontSize:9, color:C.textMuted, fontWeight:700, textTransform:"uppercase" }}>Ângulo de Fase</div>
-                      <div style={{ fontSize:16, fontWeight:700, color:C.amber }}>{biaResult.anguloFase}°</div>
-                    </div>
-                    <div style={{ textAlign:"center" }}>
-                      <div style={{ fontSize:9, color:C.textMuted, fontWeight:700, textTransform:"uppercase" }}>Água Total</div>
-                      <div style={{ fontSize:14, fontWeight:700, color:C.blue }}>{biaResult.aguaTotal} <span style={{ fontSize:10, color:C.textMuted }}>L</span></div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </Section>
-          </>
-        )}
-
+        {/* ════════ TAB: SESSÕES ════════ */}
         {tab === "sessoes" && (
           <>
             <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={toColors} />
             <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
-              flags={["Dor súbita + perda de função","Parestesia progressiva","Ferida/úlcera com sinais de infecção","Queda recente + fratura suspeita","Disfagia + tosse/engasgo","Agitação psicomotora grave","Ideação suicida relatada","Alucinações visuais/auditivas recentes"]}
-              colors={toColors} />
+              flags={mergedRedFlags} colors={toColors} />
             <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={toColors} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
-              summaryText={`Paciente: ${student?.nome || "—"}\nDiagnóstico: ${diagnosticoMedico}\nQueixa: ${queixaTO}\nOcupação: ${ocupacao}\nAVDs: ${avds.join(", ")}\nAIVDs: ${aivds.join(", ")}\nTecnologia assistiva: ${tecnologiaAssistiva.join(", ")}\nBarreiras: ${barreiras.join(", ")}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nEvolução: ${evolucao}`}
+              summaryText={`Paciente: ${student?.nome || "—"}\nDiagnóstico: ${diagnosticoMedico}\nQueixa: ${queixaTO}\nOcupação: ${ocupacao}\nAVDs: ${avds.join(", ")}\nAIVDs: ${aivds.join(", ")}\nTecnologia assistiva: ${tecnologiaAssistiva.join(", ")}\nBarreiras: ${barreiras.join(", ")}\nBarthel: ${barthelResult?.total || "—"}/100\nLawton: ${lawtonResult?.total || "—"}/24\nMEEM: ${miniMental || "—"}/30\nEVA Mov: ${enhancer.pain.evaMov || evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep || evaRep}/10\nDor local: ${enhancer.pain.localDor || localDor}\nYellow Flags: ${yellowFlags.join(", ")}\nDCT: ${diagnosticoCinesio}\nEvolução: ${evolucao}`}
               colors={toColors} />
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
               <button onClick={handleSave} style={primaryBtn({ padding:"11px 26px", fontSize:14 })}>💾 Salvar Tudo</button>
@@ -770,28 +1120,20 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
           </>
         )}
 
+        {/* ════════ TAB: RELATÓRIO ════════ */}
         {tab === "relatorio" && (
           <ReportSection pain={enhancer.pain} logs={enhancer.logs} redFlags={enhancer.redFlags}
             aiRes={enhancer.aiRes} patientName={student?.nome || "—"}
             moduleLabel="Terapia Ocupacional" colors={toColors} />
         )}
 
+        {/* ════════ TAB: EVIDÊNCIAS ════════ */}
         {tab === "evidencias" && (
-          <Section title="Diretrizes e Evidências em Terapia Ocupacional" icon="🔬">
-            <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
-              Baseado nas condições identificadas, as diretrizes abaixo representam as recomendações de prática clínica baseada em evidências.
-            </div>
+          <Section title="Evidências em Terapia Ocupacional" icon="🔬">
             {Object.entries(TO_EVIDENCE).map(([key, condition]) => {
-              const active = diagnosticoMedico.toLowerCase().includes(key.replace(/_/g," ")) || queixaTO.toLowerCase().includes(key.replace(/_/g," "));
+              const active = condicoesAssociadas.some(c => c.toLowerCase().includes(key.replace(/_/g," "))) || diagnosticoMedico.toLowerCase().includes(key.replace(/_/g," ")) || queixaTO.toLowerCase().includes(key.replace(/_/g," "));
               return (
-                <div key={key} style={{
-                  ...card(),
-                  border: active ? `1px solid ${C.purple}50` : `1px solid ${C.border}`,
-                  opacity: active ? 1 : 0.6,
-                  cursor:"pointer"
-                }} onClick={() => {
-                  if (!active) setQueixaTO(prev => prev + " " + condition.label);
-                }}>
+                <div key={key} style={{ ...card({ marginBottom:8 }), border: active ? `1px solid ${C.purple}50` : `1px solid ${C.border}`, opacity: active ? 1 : 0.6 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
                     {active && <span style={{ fontSize:10, fontWeight:800, color:C.purple, background:C.purpleBg, padding:"2px 8px", borderRadius:6 }}>Condição identificada ✓</span>}
                     <span style={{ fontWeight:700, fontSize:14, color:C.text }}>{condition.label}</span>
@@ -812,44 +1154,6 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
                 </div>
               );
             })}
-          </Section>
-        )}
-
-        {tab === "evolucao" && (
-          <Section title="Evolução e Reavaliação" icon="📈">
-            <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
-              Registre a evolução do paciente, reavaliação das metas funcionais e planejamento das próximas sessões.
-            </div>
-            <div style={{ marginBottom:14 }}>
-              <span style={lbl()}>Evolução clínica / Observações</span>
-              <textarea value={evolucao} onChange={e => setEvolucao(e.target.value)} rows={4}
-                style={{ ...inp({ resize:"vertical", lineHeight:1.6 }) }}
-                placeholder="Descreva a evolução desde a última sessão, resposta às intervenções, mudanças no desempenho ocupacional..." />
-            </div>
-            <div style={{ marginBottom:14 }}>
-              <span style={lbl()}>Metas para próximas sessões</span>
-              <textarea value={metas} onChange={e => setMetas(e.target.value)} rows={3}
-                style={{ ...inp({ resize:"vertical", lineHeight:1.6 }) }}
-                placeholder="Plano de tratamento, adaptações a serem implementadas, orientações para o paciente/cuidador..." />
-            </div>
-
-            {copmGoals.filter(g => g.desc).length > 0 && (
-              <div style={{ background:C.cardAlt, borderRadius:10, padding:"14px 16px", marginBottom:14 }}>
-                <div style={{ fontSize:10, fontWeight:800, color:C.purple, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Reavaliação das Metas COPM</div>
-                {copmGoals.filter(g => g.desc).map((g, i) => (
-                  <div key={i} style={{ display:"flex", gap:8, alignItems:"center", marginBottom:6, fontSize:12 }}>
-                    <span style={{ color:C.textDim, fontWeight:700 }}>{i+1}.</span>
-                    <span style={{ flex:1, color:C.text }}>{g.desc}</span>
-                    <span style={{ color:C.purple, fontWeight:700 }}>D: {g.desempenho || "—"}</span>
-                    <span style={{ color:C.green, fontWeight:700 }}>S: {g.satisfacao || "—"}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
-              <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Evolução</button>
-            </div>
           </Section>
         )}
       </div>

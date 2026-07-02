@@ -17,6 +17,26 @@ import EvidencePanel from "./components/EvidencePanel";
 import { detectKB, detectMultipleKB } from "./utils/clinicalDetection";
 import Pediatria from "./screens/Pediatria";
 import Neuro from "./screens/Neuro";
+import CardioRespiratory from "./screens/CardioRespiratory";
+import UroGynecology from "./screens/UroGynecology";
+import Geriatria from "./screens/Geriatria";
+import DermatoFunctional from "./screens/DermatoFunctional";
+import Rheumatology from "./screens/Rheumatology";
+import SportsPhysio from "./screens/SportsPhysio";
+import Oncology from "./screens/Oncology";
+import { FISIO_SUB_MODULES, FISIO_MODULE_MAP } from "./data/modules";
+
+const FISIO_SCREEN_MAP = {
+  Neuro,
+  Pediatria,
+  CardioRespiratory,
+  UroGynecology,
+  Geriatria,
+  DermatoFunctional,
+  Rheumatology,
+  SportsPhysio,
+  Oncology,
+};
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -1329,11 +1349,6 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChan
 // ── Fisioterapia SubModule Picker ──
 function FisioSubModulePicker({ user, onSelect, onLogout, theme, onToggleTheme }) {
   const { t } = useTranslation();
-  const subs = [
-    { id:"ortopedica", icon:"🦴", title:"Fisioterapia Ortopédica", desc:"Avaliação musculoesquelética, escalas funcionais, CIF, diário de evolução e prescrição baseada em evidências", color:C.green },
-    { id:"neurologica", icon:"🧠", title:"Fisioterapia Neurológica", desc:"Reabilitação neurológica: escalas (MAS, BBS, MIF), avaliação de marcha, tônus, coordenação e treino funcional", color:C.purple },
-    { id:"pediatrica", icon:"👶", title:"Fisioterapia Pediátrica", desc:"Desenvolvimento motor, escalas GMFCS/AIMS/M-CHAT, marcos motores e plano terapêutico infantil", color:C.blue },
-  ];
   return (
     <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:F, padding:24, position:"relative" }}>
       <div style={{ maxWidth:500, width:"100%", textAlign:"center" }}>
@@ -1359,20 +1374,23 @@ function FisioSubModulePicker({ user, onSelect, onLogout, theme, onToggleTheme }
           <div style={{ fontSize:13, color:C.textMuted }}>Fisioterapeuta · {user.crefito ? `${user.crefito}` : ""}</div>
         </div>
         <p style={{ color:C.textMuted, fontSize:14, marginBottom:24, lineHeight:1.6 }}>Selecione a área de atuação:</p>
-        {subs.map(s => (
-          <button key={s.id} onClick={() => onSelect(s.id)}
+        {FISIO_SUB_MODULES.map(s => (
+          <button key={s.id} onClick={() => !s.comingSoon && onSelect(s.id)}
             style={{
               width:"100%", display:"flex", alignItems:"center", gap:16, textAlign:"left", padding:"18px 20px", marginBottom:12,
               background: C.card,
-              border: `1px solid ${C.border}`,
-              borderRadius:14, cursor:"pointer", fontFamily:F, color:C.text, transition:"all 0.12s",
+              border: s.comingSoon ? `1px solid ${C.amber}40` : `1px solid ${C.border}`,
+              borderRadius:14, cursor:"pointer", fontFamily:F, color:C.text, transition:"all 0.12s", opacity: s.comingSoon ? 0.75 : 1,
             }}>
             <div style={{ fontSize:28, flexShrink:0 }}>{s.icon}</div>
             <div style={{ flex:1 }}>
-              <div style={{ fontSize:16, fontWeight:700, color: s.color, marginBottom:3 }}>{s.title}</div>
+              <div style={{ fontSize:16, fontWeight:700, color: s.color, marginBottom:3 }}>
+                {s.title}
+                {s.comingSoon && <span style={{ fontSize:10, fontWeight:700, color:C.amber, background:C.amberBg, borderRadius:6, padding:"1px 8px", marginLeft:8, verticalAlign:"middle" }}>Em breve</span>}
+              </div>
               <div style={{ fontSize:12, color:C.textMuted, lineHeight:1.5 }}>{s.desc}</div>
             </div>
-            <span style={{ fontSize:18, color:s.color }}>→</span>
+            <span style={{ fontSize:18, color:s.comingSoon ? C.textMuted : s.color }}>{s.comingSoon ? "⏳" : "→"}</span>
           </button>
         ))}
         <div style={{ marginTop:16 }}>
@@ -1734,28 +1752,55 @@ export default function Sasyra() {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
-          model:"claude-sonnet-4-6", max_tokens:1000,
+          model:"claude-sonnet-4-6", max_tokens:2800,
           _patientName: pt.nome,
           _queixa: queixa,
-          system:"A saída deve ser gerada estritamente em Português do Brasil (pt-BR). Use terminologia clínica humanizada adotada no Brasil (ex: usar 'fisioterapeuta' e não 'fisioterapeuta', 'paciente' e não 'utente', 'joelho' e não 'rótula'). É terminantemente proibido responder em inglês ou português de Portugal.",
+          system:"A saída deve ser gerada estritamente em Português do Brasil (pt-BR). Use terminologia clínica humanizada adotada no Brasil. É terminantemente proibido responder em inglês ou português de Portugal.",
           messages:[{role:"user",content:
 `Você é fisioterapeuta ortopédico especialista em medicina baseada em evidências (PEDro, Cochrane, CPGs internacionais).
-Com base nos dados clínicos abaixo, forneça análise estruturada e atualizada:
+Com base nos dados clínicos abaixo, forneça análise completa e estruturada:
 
-1. HIPÓTESE DIAGNÓSTICA FUNCIONAL (CIF — lista códigos com qualificadores)
-2. OBJETIVOS TERAPÊUTICOS (curto ≤4 sem / médio 4–12 sem / longo prazo)
-3. PLANO DE TRATAMENTO PADRÃO-OURO (cite ensaios RCT/meta-análise com autor, ano e nível de evidência)
-4. FREQUÊNCIA, DURAÇÃO E Nº DE SESSÕES SUGERIDAS (baseado em evidência)
-5. PROGRESSÃO DO TRATAMENTO (critérios de avanço de fase)
-6. CRITÉRIOS DE ALTA FISIOTERAPÊUTICA
-7. ESCALAS FUNCIONAIS RECOMENDADAS (para mensuração de desfecho)
-8. ALERTAS, CONTRAINDICAÇÕES E QUANDO ENCAMINHAR (médico, psicólogo, nutricionista)
-9. ESTIMATIVA DE PROGNÓSTICO (favorável / reservado — justifique com fatores de risco)
+1. HIPÓTESE DIAGNÓSTICA FUNCIONAL
+   - Diagnóstico fisioterapêutico principal
+   - Diagnósticos diferenciais relevantes
+   - Fatores contribuintes (biomecânicos, psicossociais, ocupacionais)
+   - Códigos CIF com qualificadores (mínimo 4)
+
+2. PLANO DE TRATAMENTO — DIVIDIDO EM FASES
+   Para CADA fase, informe:
+   • Nome da fase (ex: Fase 1 — Analgesia e Proteção)
+   • Sessões: intervalo numérico (ex: Sessões 1-4)
+   • Frequência: (ex: 2x/semana)
+   • Duração: tempo total da fase em semanas
+   • Objetivos específicos (2-3 por fase)
+   • Intervenções com dose: série, repetições, carga, tempo
+   • Evidência que suporta cada intervenção (Autor, Ano — Nível)
+   • Critérios para avançar à próxima fase
+
+3. RESUMO DO TRATAMENTO
+   - Número total de sessões previsto
+   - Frequência semanal
+   - Intervalo ideal entre sessões (ex: 48-72h)
+   - Duração total estimada do tratamento
+
+4. CRITÉRIOS DE ALTA
+   - Parâmetros objetivos de retorno à função
+   - Testes funcionais para liberação
+
+5. ESCALAS RECOMENDADAS (para mensuração de desfecho)
+
+6. PROGNÓSTICO
+   - Expectativa realista de melhora (semanas/meses)
+   - Fatores de risco para mau prognóstico
+   - Recomendações ao paciente
 
 DADOS CLÍNICOS:
 ${summary}
 
-Responda em tópicos claros e objetivos. Seja preciso, clínico e baseado em evidências. Quando citar estudos, informe: Autor (Ano) – Nível de evidência.`
+Seja preciso, clínico e baseado em evidências. Cada intervenção DEVE ter citação com Autor (Ano) e nível de evidência.
+
+⚠ REGRA FUNDAMENTAL: Cite APENAS referências de intervenções FISIOTERAPÊUTICAS — cinesioterapia, terapia manual, eletrotermofototerapia, hidroterapia, agulhamento seco, bandagem, educação em dor, etc.
+NÃO cite nem recomende cirurgias, medicamentos, infiltrações ou qualquer procedimento fora do escopo da Fisioterapia.`
           }]
         })
       });
@@ -1792,44 +1837,41 @@ Responda em tópicos claros e objetivos. Seja preciso, clínico e baseado em evi
       onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")}
       onSelect={(sm) => {
         setSubModule(sm);
-        if (sm === "ortopedica") {
-          setPatientView(true);
-        } else {
-          setPatientView(false);
-        }
+        const mod = FISIO_MODULE_MAP[sm];
+        setPatientView(mod?.hasPatientList || false);
       }}
       onLogout={handleLogout}
     />
   );
 
-  // ── Fisioterapia sub-modules ──
-  if (module === "fisioterapia" && subModule === "neurologica") return (
-    <SubModuleLayout title="Fisioterapia Neurológica" onBack={() => setSubModule(null)} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")}>
-      <Neuro
-        students={patients}
-        student={pt}
-        onSelectStudent={selectPatient}
-        onAddStudent={addPatient}
-        onUpdateStudent={up}
-        onDeleteStudent={deletePatient}
-        onUpdateStudentById={updatePatientById}
-      />
-    </SubModuleLayout>
-  );
-
-  if (module === "fisioterapia" && subModule === "pediatrica") return (
-    <SubModuleLayout title="Fisioterapia Pediátrica" onBack={() => setSubModule(null)} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")}>
-      <Pediatria
-        students={patients}
-        student={pt}
-        onSelectStudent={selectPatient}
-        onAddStudent={addPatient}
-        onUpdateStudent={up}
-        onDeleteStudent={deletePatient}
-        onUpdateStudentById={updatePatientById}
-      />
-    </SubModuleLayout>
-  );
+  // ── Fisioterapia sub-modules (data-driven) ──
+  if (module === "fisioterapia" && subModule && subModule !== "ortopedica") {
+    const mod = FISIO_MODULE_MAP[subModule];
+    if (mod && mod.screen && FISIO_SCREEN_MAP[mod.screen]) {
+      const Comp = FISIO_SCREEN_MAP[mod.screen];
+      return (
+        <SubModuleLayout title={mod.title} onBack={() => setSubModule(null)} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")}>
+          <Comp
+            students={patients}
+            student={pt}
+            onSelectStudent={selectPatient}
+            onAddStudent={addPatient}
+            onUpdateStudent={up}
+            onDeleteStudent={deletePatient}
+            onUpdateStudentById={updatePatientById}
+            plan={plan}
+            onUpgrade={() => { setAppView("plans"); }}
+            canUseFeature={canUseFeature}
+            tryFeature={tryFeature}
+            aiRemaining={aiRemaining}
+            aiLimit={aiLimit}
+            hasExpansion={hasExpansion}
+            purchaseAIExpansion={purchaseAIExpansion}
+          />
+        </SubModuleLayout>
+      );
+    }
+  }
 
   if (appView === "agenda") return (
     <Agenda patients={patients} onNavigateToPatient={navigateToPatientFromAgenda} onNavigate={(v) => setAppView(v)} />
@@ -1850,7 +1892,10 @@ Responda em tópicos claros e objetivos. Seja preciso, clínico e baseado em evi
         {renderExpressModal()}
       </>
     );
-    if (subModule === "ortopedica") return <SubModuleLayout title="Fisioterapia Ortopédica" onBack={() => setSubModule(null)} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")}>{content}</SubModuleLayout>;
+    if (subModule === "ortopedica") {
+      const mod = FISIO_MODULE_MAP["ortopedica"];
+      return <SubModuleLayout title={mod?.title || "Fisioterapia Ortopédica"} onBack={() => setSubModule(null)} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")}>{content}</SubModuleLayout>;
+    }
     return content;
   }
 

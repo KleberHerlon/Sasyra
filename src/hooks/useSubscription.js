@@ -92,9 +92,12 @@ export function useSubscription() {
   const canUseFeature = useCallback((feature) => {
     if (plan === "avulso") return false;
     if (isTrial) return true;
-    if (feature === "ai" || feature === "cif") {
+    if (feature === "ai") {
       if (hasQuota && aiRemaining > 0) return true;
       return false;
+    }
+    if (feature === "cif") {
+      return plan === "evidencia" || plan === "clinicas";
     }
     if (feature === "voiceUnlimited") return limits.voiceMinutes === Infinity;
     if (feature === "extraUsers") return plan === "clinicas";

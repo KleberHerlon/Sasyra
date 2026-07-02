@@ -17,6 +17,9 @@ import { gerarPDFPerformance } from "../utils/pdfGenerator";
 import { readFisioterapiaRestrictions, getBlockedExercises, getRestrictionWarning, isAvaliacaoDesatualizada } from "../data/transitionBridge";
 import { generatePatientCode, getPatientCode, getPatientAppData, getPatientPlanStatus, activatePatientPlan } from "../data/patientApp";
 import PatientView from "./PatientView";
+import { BodyMap, GonioRow, MRCRow, TestCard } from "../components";
+import { useMediaQuery } from "../components";
+import { CIF } from "../data/cif.js";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -235,7 +238,107 @@ function Section({ title, icon, children }) {
   );
 }
 
-export default function PhysicalEducation({ student, students, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById }) {
+function CollapsibleSection({ title, icon, expanded, onToggle, children }) {
+  return (
+    <div style={{ ...card(), cursor:"pointer" }} onClick={onToggle}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:16 }}>{icon}</span>
+          <span style={{ fontWeight:700, fontSize:13, color:C.text }}>{title}</span>
+        </div>
+        <span style={{ fontSize:12, color:C.textMuted, transition:"transform 0.2s", transform:expanded?"rotate(180deg)":"rotate(0deg)" }}>▼</span>
+      </div>
+      {expanded && <div style={{ marginTop:14 }}>{children}</div>}
+    </div>
+  );
+}
+
+const PE_GONIO_DEFAULT = [
+  { joint:"Ombro — Flexão", ref:"180° (170-190)", l:"", r:"" },
+  { joint:"Ombro — Abdução", ref:"180° (170-190)", l:"", r:"" },
+  { joint:"Ombro — Rotação externa", ref:"90° (80-100)", l:"", r:"" },
+  { joint:"Ombro — Rotação interna", ref:"70° (60-80)", l:"", r:"" },
+  { joint:"Cotovelo — Flexão", ref:"145° (130-160)", l:"", r:"" },
+  { joint:"Cotovelo — Extensão", ref:"0° (-5-0)", l:"", r:"" },
+  { joint:"Punho — Flexão", ref:"80° (70-90)", l:"", r:"" },
+  { joint:"Punho — Extensão", ref:"70° (60-80)", l:"", r:"" },
+  { joint:"Quadril — Flexão", ref:"120° (110-130)", l:"", r:"" },
+  { joint:"Quadril — Extensão", ref:"30° (20-40)", l:"", r:"" },
+  { joint:"Quadril — Abdução", ref:"45° (40-50)", l:"", r:"" },
+  { joint:"Joelho — Flexão", ref:"140° (130-150)", l:"", r:"" },
+  { joint:"Joelho — Extensão", ref:"0° (-5-0)", l:"", r:"" },
+  { joint:"Tornozelo — Flexão plantar", ref:"50° (40-60)", l:"", r:"" },
+  { joint:"Tornozelo — Flexão dorsal", ref:"20° (15-25)", l:"", r:"" },
+  { joint:"Coluna Lombar — Flexão", ref:"60° (50-70)", l:"", r:"" },
+];
+
+const PE_MRC_DEFAULT = [
+  { muscle:"Flexores de ombro (C5-C6)", value:5 },
+  { muscle:"Abdutores de ombro (C5-C6)", value:5 },
+  { muscle:"Flexores de cotovelo (C5-C6)", value:5 },
+  { muscle:"Extensores de cotovelo (C7-C8)", value:5 },
+  { muscle:"Flexores de punho (C6-C7)", value:5 },
+  { muscle:"Extensores de punho (C6-C7)", value:5 },
+  { muscle:"Flexores de quadril (L2-L3)", value:5 },
+  { muscle:"Extensores de quadril (L5-S1)", value:5 },
+  { muscle:"Abdutores de quadril (L4-L5)", value:5 },
+  { muscle:"Flexores de joelho (L4-S1)", value:5 },
+  { muscle:"Extensores de joelho (L3-L4)", value:5 },
+  { muscle:"Flexores plantares (S1-S2)", value:5 },
+  { muscle:"Flexores dorsais (L4-L5)", value:5 },
+];
+
+const PE_TESTES = [
+  { id:"y_balance", name:"Y-Balance Test (Lower Quarter)", area:"Equilíbrio Dinâmico", desc:"Avalia o equilíbrio dinâmico e risco de lesão em MMII. O indivíduo mantém equilíbrio unipodal enquanto alcança com o pé oposto em 3 direções (anterior, posteromedial, posterolateral). Assimetria >4cm entre membros indica risco elevado de lesão.", video:"https://www.youtube.com/watch?v=8s6sPj_YlNM" },
+  { id:"hop_test", name:"Single-Leg Hop for Distance", area:"Potência MMII", desc:"Salto horizontal unipodal medindo a distância percorrida. Diferença >10% entre lados indica risco de lesão de LCA. O paciente realiza 3 tentativas com cada perna e registra-se a melhor marca.", video:"https://www.youtube.com/watch?v=w1WLVkjBmqE" },
+  { id:"functional_movement", name:"Functional Movement Screen (FMS)", area:"Qualidade de Movimento", desc:"Bateria de 7 padrões de movimento (agachamento profundo, step, afundo, mobilidade de ombro, elevação ativa de perna, flexão de tronco, estabilidade rotatória) pontuados de 0 a 3. Escore composto <14 indica risco de lesão.", video:"https://www.youtube.com/watch?v=eR2s8y3EHz0" },
+  { id:"tuck_jump", name:"Tuck Jump Assessment", area:"Controle Neuromuscular", desc:"Avalia o controle neuromuscular durante saltos repetidos. O paciente realiza saltos com elevação dos joelhos ao peito por 10 segundos. Observa-se pouso, alinhamento de MMII e simetria.", video:"https://www.youtube.com/watch?v=VYwXGDMRtW0" },
+  { id:"less_test", name:"Landing Error Scoring System (LESS)", area:"Biomecânica de Aterrissagem", desc:"Avalia erros na biomecânica de aterrissagem durante salto de 30cm. Pontua-se de 0 a 19, onde >5 erros indica risco elevado de lesão de LCA. Observa-se ângulo de joelho, simetria, posição de tronco e pé.", video:"https://www.youtube.com/watch?v=lWVmO0MkZjk" },
+  { id:"sit_reach", name:"Sit and Reach Test (Banco de Wells)", area:"Flexibilidade", desc:"Avalia a flexibilidade da cadeia posterior (isquiotibiais e coluna lombar). O paciente senta-se com pernas estendidas e inclina o tronco à frente empurrando o marcador sobre o banco. Referência: homens 20-40cm, mulheres 24-44cm.", video:"https://www.youtube.com/watch?v=7C-U5hYltV0" },
+  { id:"standing_stork", name:"Stork Balance Stand Test", area:"Equilíbrio Estático", desc:"Avalia o equilíbrio estático. O paciente fica em apoio unipodal com as mãos na cintura e o pé oposto apoiado no joelho de apoio. Cronometra-se o tempo de manutenção do equilíbrio (olhos abertos e fechados). >45s é excelente.", video:"https://www.youtube.com/watch?v=vwRXQ72pxns" },
+  { id:"iliotibial", name:"Ober Test (Fita Iliotibial)", area:"Flexibilidade/MMII", desc:"Paciente em decúbito lateral. O examinador abduz e estende o quadril, depois solta lentamente. Se a perna permanecer abduzida sem descer, indica contratura da banda iliotibial. Teste positivo sugere encurtamento.", video:"https://www.youtube.com/watch?v=fEX_MAxmY2M" },
+  { id:"thompson_test", name:"Thompson Test (Aquiles)", area:"Integridade Tendínea", desc:"Paciente em decúbito ventral com pés para fora da maca. Aperta-se a panturrilha. Se não houver flexão plantar, há ruptura do tendão de Aquiles (teste positivo). Especificidade >95% para ruptura completa.", video:"https://www.youtube.com/watch?v=5gKBVx06cns" },
+];
+
+const YELLOW_FLAGS_PE = [
+  { id:"medo_lesao", label:"Medo de nova lesão / reinjúria" },
+  { id:"baixa_adesao", label:"Baixa adesão ao treino prescrito" },
+  { id:"expectativa_irreal", label:"Expectativas irreais de performance" },
+  { id:"catastrofizacao", label:"Catastrofização da dor / limitação" },
+  { id:"sedentarismo", label:"Sedentarismo / descondicionamento severo" },
+  { id:"ansiedade_desempenho", label:"Ansiedade relacionada ao desempenho" },
+  { id:"litigio", label:"Litígio / processo judicial relacionado" },
+  { id:"isolamento_social", label:"Isolamento social / baixa rede de apoio" },
+];
+
+function autoCIFKeysPE({ condicoesDetectadas, restricoes, objetivo, queixa, enhancer }) {
+  const keys = [];
+  if (condicoesDetectadas.some(c => c.includes("obesidade") || c.includes("sobrepeso"))) keys.push("b530", "d570");
+  if (condicoesDetectadas.some(c => c.includes("hipertensao") || c.includes("has"))) keys.push("b420", "d570");
+  if (condicoesDetectadas.some(c => c.includes("diabetes") || c.includes("dm"))) keys.push("b540", "d570");
+  if (condicoesDetectadas.some(c => c.includes("lombalgia") || c.includes("lombar"))) keys.push("b28013", "d410");
+  if (condicoesDetectadas.some(c => c.includes("condromalacia") || c.includes("joelho"))) keys.push("b28015", "d455");
+  if (condicoesDetectadas.some(c => c.includes("cardio") || c.includes("cardiovascular"))) keys.push("b410", "d455");
+  if (restricoes.some(r => r.local?.toLowerCase().includes("ombro") || r.local?.toLowerCase().includes("shoulder"))) keys.push("b28014", "d445");
+  if (enhancer?.pain?.evaRep > 0 || enhancer?.pain?.evaMov > 0) keys.push("b280");
+  if (objetivo === "emagrecimento" || objetivo === "recomposicao") keys.push("d570", "b530");
+  if (objetivo === "cardio" || objetivo === "aerobico_saude") keys.push("b410", "b440");
+  if (queixa?.toLowerCase().includes("quedas") || queixa?.toLowerCase().includes("equilibrio")) keys.push("b235", "d450");
+  return [...new Set(keys)];
+}
+
+function suggestDCT_PE(condicoesDetectadas, objetivo, restricoes) {
+  const text = condicoesDetectadas.join(" ").toLowerCase();
+  if (text.includes("obesidade") || text.includes("sobrepeso")) return "Programa de exercícios para redução de peso e composição corporal, com ênfase em treino aeróbico e resistido, visando déficit calórico e melhora metabólica associada a reeducação alimentar.";
+  if (text.includes("hipertensão") || text.includes("has") || text.includes("cardio")) return "Prescrição de treino aeróbico moderado a intenso para condicionamento cardiorrespiratório com monitoramento de FC e PSE, progredindo para treino intervalado conforme tolerância cardiovascular.";
+  if (text.includes("diabetes") || text.includes("dm")) return "Treino combinado aeróbico e resistido para controle glicêmico e sensibilidade à insulina, com ênfase em grandes grupos musculares, séries moderadas e supervisão de glicemia pré/pós treino.";
+  if (text.includes("lombalgia") || text.includes("lombar")) return "Recondicionamento físico com ênfase em estabilização central, fortalecimento de core e cadeia posterior, progredindo para treino funcional conforme ausência de dor e melhora do controle motor lombar.";
+  if (text.includes("condromalacia") || text.includes("joelho") || restricoes.some(r => r.local?.toLowerCase().includes("joelho"))) return "Treino com descarga articular progressiva para joelho, priorizando cadeia cinética fechada, fortalecimento de quadríceps e glúteos, evitando impacto excessivo e amplitude final de flexão/extensão dolorosa.";
+  if (objetivo === "forca" || objetivo === "hipertrofia") return "Programa periodizado de treino resistido para ganho de força/hipertrofia com progressão de carga baseada em 1RM, periodização linear ou ondulatória conforme nível do aluno, com ênfase em exercícios multiarticulares.";
+  return "";
+}
+
+export default function PhysicalEducation({ student, students, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById, plan, onUpgrade, canUseFeature, tryFeature, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion }) {
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -322,6 +425,21 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
   const [pesoBia, setPesoBia] = useState(student?.peso || "");
   const [alturaBia, setAlturaBia] = useState(student?.altura || "");
 
+  const isMobile = useMediaQuery("(max-width:767px)");
+  const [bodyPain, setBodyPain] = useState([]);
+  const [gonioRows, setGonioRows] = useState(JSON.parse(JSON.stringify(PE_GONIO_DEFAULT)));
+  const [mrcRows, setMrcRows] = useState(JSON.parse(JSON.stringify(PE_MRC_DEFAULT)));
+  const [testResults, setTestResults] = useState([]);
+  const [yellowFlags, setYellowFlags] = useState([]);
+  const [diagnosticoCinesio, setDiagnosticoCinesio] = useState("");
+  const [expandedSections, setExpandedSections] = useState(["cif", "bodymap", "gonio", "mrc", "testes"]);
+  const toggleSection = (s) => setExpandedSections(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+
+  const cifKeys = useMemo(() => autoCIFKeysPE({ condicoesDetectadas, restricoes, objetivo, queixa, enhancer }), [condicoesDetectadas, restricoes, objetivo, queixa, enhancer.pain]);
+  const cifEntries = useMemo(() => CIF.filter(c => cifKeys.includes(c.code)), [cifKeys]);
+
+  const dctSuggestion = useMemo(() => suggestDCT_PE(condicoesDetectadas, objetivo, restricoes), [condicoesDetectadas, objetivo, restricoes]);
+
   useEffect(() => {
     if (student?.id || student?.nome) {
       const sid = student.id || student.nome;
@@ -339,6 +457,18 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
         if (enhancerData.redFlags) enhancer.setRedFlags(enhancerData.redFlags);
         if (enhancerData.aiRes) enhancer.setAiRes(enhancerData.aiRes);
       }
+      const savedGonio = localStorage.getItem(`pe_gonio_${sid}`);
+      if (savedGonio) try { setGonioRows(JSON.parse(savedGonio)); } catch {}
+      const savedMrc = localStorage.getItem(`pe_mrc_${sid}`);
+      if (savedMrc) try { setMrcRows(JSON.parse(savedMrc)); } catch {}
+      const savedTests = localStorage.getItem(`pe_testes_${sid}`);
+      if (savedTests) try { setTestResults(JSON.parse(savedTests)); } catch {}
+      const savedBodyPain = localStorage.getItem(`pe_bodyPain_${sid}`);
+      if (savedBodyPain) try { setBodyPain(JSON.parse(savedBodyPain)); } catch {}
+      const savedYellowFlags = localStorage.getItem(`pe_yellowFlags_${sid}`);
+      if (savedYellowFlags) try { setYellowFlags(JSON.parse(savedYellowFlags)); } catch {}
+      const savedDCT = localStorage.getItem(`pe_dct_${sid}`);
+      if (savedDCT) try { setDiagnosticoCinesio(JSON.parse(savedDCT)); } catch {}
     }
   }, [student?.id, student?.nome]);
 
@@ -426,6 +556,14 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
     if (!fc || !student.sexo) { setFcZonas(null); return; }
     setFcZonas(calcFCRegistro(fc, idade, student.sexo));
   }, [fcRepousoInput, student.sexo, idade]);
+
+  // Auto-save new state variables
+  useEffect(() => { if (sid) localStorage.setItem(`pe_gonio_${sid}`, JSON.stringify(gonioRows)); }, [gonioRows, sid]);
+  useEffect(() => { if (sid) localStorage.setItem(`pe_mrc_${sid}`, JSON.stringify(mrcRows)); }, [mrcRows, sid]);
+  useEffect(() => { if (sid) localStorage.setItem(`pe_testes_${sid}`, JSON.stringify(testResults)); }, [testResults, sid]);
+  useEffect(() => { if (sid) localStorage.setItem(`pe_bodyPain_${sid}`, JSON.stringify(bodyPain)); }, [bodyPain, sid]);
+  useEffect(() => { if (sid) localStorage.setItem(`pe_yellowFlags_${sid}`, JSON.stringify(yellowFlags)); }, [yellowFlags, sid]);
+  useEffect(() => { if (sid) localStorage.setItem(`pe_dct_${sid}`, JSON.stringify(diagnosticoCinesio)); }, [diagnosticoCinesio, sid]);
 
   const handleSaveAssessment = (assessmentData) => {
     const sid = student.id || student.nome;
@@ -532,7 +670,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
   };
 
   if (studentListView) return (
-    <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text, padding:24 }}>
+    <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text, padding: isMobile ? 14 : 24 }}>
       <div style={{ maxWidth:680, margin:"0 auto" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
           <span style={{ fontSize:16, fontWeight:800, color:C.text, letterSpacing:"0.05em" }}>🏋️ Educação Física / Performance</span>
@@ -552,7 +690,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
             <div style={{ fontSize:14, fontWeight:700, color:C.green, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
               {editingStudent ? "✏️ Editar Aluno" : "➕ Novo Aluno"}
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
+            <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
               {[
                 {k:"nome",l:"Nome completo",pl:"Nome do aluno"},
                 {k:"dataNasc",l:"Nascimento",pl:"",type:"date"},
@@ -716,23 +854,24 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
 
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
-      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:60 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding: isMobile ? "0 12px" : "0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height: isMobile ? 52 : 60, flexWrap:"nowrap", overflowX:"auto" }}>
+        <div style={{ display:"flex", alignItems:"center", gap: isMobile ? 6 : 12, flexShrink:0 }}>
           <button onClick={() => setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>← Alunos</button>
-          <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>
+          {!isMobile && <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>
             🏋️ Educação Física / Performance
-          </span>
+          </span>}
         </div>
-        <div style={{ display:"flex", gap:4 }}>
+        <div style={{ display:"flex", gap: isMobile ? 2 : 4, overflowX:"auto", flexShrink:0 }}>
           {[["anamnese","📋","Anamnese",bridgeExibidas.length],["avaliacao","🔬","Avaliação Física"],["prescricao","📝","Prescrição"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["dashboard","📊","Dashboard"],["evidencias","🔬","Evidências"]].map(([k,ic,lb,badge]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               background: tab === k ? C.greenBg : "transparent",
               border: `1px solid ${tab === k ? C.green + "50" : "transparent"}`,
-              borderRadius: 8, padding: "7px 14px", fontSize: 12,
+              borderRadius: 8, padding: isMobile ? "6px 10px" : "7px 14px", fontSize: isMobile ? 11 : 12,
               fontWeight: tab === k ? 700 : 400,
               color: tab === k ? C.green : C.textMuted, cursor: "pointer", fontFamily: F,
               position:"relative",
-            }}>{ic} {lb}{badge > 0 && (
+              whiteSpace:"nowrap",
+            }}>{ic}{isMobile ? "" : " "}{isMobile ? "" : lb}{badge > 0 && (
               <span style={{
                 position:"absolute", top:-4, right:-4, background:C.amber, color:"#061A0C",
                 fontSize:9, fontWeight:800, borderRadius:"50%", width:18, height:18,
@@ -774,7 +913,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
         </div>
       </div>
 
-      <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
+      <div style={{ maxWidth:960, margin:"0 auto", padding: isMobile ? "12px 10px" : "20px 16px" }}>
 
         {tab === "anamnese" && (
           <Section title="Anamnese e Mapeamento de Objetivos" icon="📋">
@@ -907,6 +1046,42 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
               <SingleSelect options={[{ value:"iniciante", label:"Iniciante" }, { value:"intermediario", label:"Intermediário" }, { value:"avancado", label:"Avançado" }]}
                 value={nivel} onChange={setNivel} />
             </div>
+
+            <Section title="CIF — Classificação Internacional de Funcionalidade" icon="🏛️">
+              {cifKeys.length > 0 && (
+                <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                  {cifEntries.slice(0, 12).map(c => (
+                    <span key={c.code} style={{ fontSize:11, color:C.green, background:C.greenBg, border:`1px solid ${C.green}30`, borderRadius:6, padding:"3px 10px", lineHeight:1.6 }}>
+                      <strong>{c.code}</strong>: {c.desc}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {cifKeys.length === 0 && (
+                <div style={{ fontSize:12, color:C.textMuted }}>Preencha a anamnese acima para gerar sugestões de CIF automaticamente.</div>
+              )}
+
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>Diagnóstico Cinesioterapêutico (DCT)</span>
+                <input type="text" value={diagnosticoCinesio} onChange={e => setDiagnosticoCinesio(e.target.value)} style={inp()} placeholder="Ex: Programa de exercícios para condicionamento cardiorrespiratório e redução de peso" />
+                {!diagnosticoCinesio && dctSuggestion && (
+                  <button onClick={() => setDiagnosticoCinesio(dctSuggestion)}
+                    style={{ ...ghostBtn({ fontSize:10, marginTop:6 }), borderStyle:"dashed" }}>
+                    💡 Sugerir DCT
+                  </button>
+                )}
+              </div>
+            </Section>
+
+            <div style={{ marginTop:14 }}>
+              <span style={lbl()}>Bandeiras Amarelas (Yellow Flags)</span>
+              <TagSelect options={YELLOW_FLAGS_PE.map(f => f.label)}
+                value={yellowFlags} onChange={setYellowFlags} activeColor={C.amber} />
+            </div>
+
+            <CollapsibleSection title="BodyMap — Mapa Corporal de Dor" icon="🧍" expanded={expandedSections.includes("bodymap")} onToggle={() => toggleSection("bodymap")}>
+              <BodyMap value={bodyPain} onChange={setBodyPain} colors={{ mark:C.green, ...C }} />
+            </CollapsibleSection>
           </Section>
         )}
 
@@ -921,7 +1096,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                 <SingleSelect options={[{ value:"7", label:"Pollock 7 Dobras (completo)" }, { value:"3", label:"Pollock 3 Dobras (abdominal, coxa, peitoral)" }]}
                   value={protocoloDobras} onChange={setProtocoloDobras} />
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))", gap:10 }}>
+              <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(auto-fill, minmax(200px, 1fr))", gap:10 }}>
                 {(protocoloDobras === "7" ? DOBRAS_LOCATIONS : DOBRAS_LOCATIONS.filter(d => ["peitoral","abdominal","coxa"].includes(d.id))).map(d => (
                   <NumericField key={d.id} label={d.label} value={dobras[d.id]} onChange={v => setDobras(p => ({ ...p, [d.id]: v }))} unit="mm" min={0} max={80} step={0.5} />
                 ))}
@@ -958,7 +1133,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
               <div style={{ marginBottom:10 }}>
                 <NumericField label="Peso do Aluno" value={pesoIsak} onChange={setPesoIsak} unit="kg" min={30} max={300} step={0.1} />
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))", gap:10 }}>
+              <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(auto-fill, minmax(200px, 1fr))", gap:10 }}>
                 {[
                   { id:"tricipital", label:"Tricipital", desc:"Ponto médio entre acrômio e olécrano, face posterior" },
                   { id:"subescapular", label:"Subescapular", desc:"2 cm abaixo do ângulo inferior da escápula, diagonal 45°" },
@@ -1003,7 +1178,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
               <div style={{ fontSize:12, color:C.textMuted, marginBottom:12, lineHeight:1.6 }}>
                 Valores obtidos do aparelho de bioimpedância. Preencha peso, altura, resistência (R) e reactância (Xc).
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+              <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr", gap:10 }}>
                 <NumericField label="Peso (kg)" value={pesoBia} onChange={setPesoBia} unit="kg" min={20} max={300} step={0.1} />
                 <NumericField label="Altura (cm)" value={alturaBia} onChange={setAlturaBia} unit="cm" min={50} max={250} step={0.5} />
                 <NumericField label="Resistência (R)" value={biaResistencia} onChange={setBiaResistencia} unit="Ω" min={200} max={900} step={1} />
@@ -1066,6 +1241,43 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
               </Accordion>
             )}
 
+            <Accordion title="Goniometria (ADM)" icon="📐">
+              <div style={{ display:"grid", gridTemplateColumns:"minmax(0,1fr)", gap:2 }}>
+                {gonioRows.map((row, i) => (
+                  <GonioRow key={i} joint={row.joint} ref={row.ref} l={row.l} r={row.r} index={i}
+                    onChange={(idx, side, val) => setGonioRows(prev => { const p=[...prev]; p[idx]={...p[idx],[side]:val}; return p; })}
+                    colors={{ accent:C.green, ...C }} />
+                ))}
+              </div>
+            </Accordion>
+
+            <Accordion title="Força Muscular (MRC 0-5)" icon="💪">
+              <div style={{ display:"grid", gridTemplateColumns:"minmax(0,1fr)", gap:2 }}>
+                {mrcRows.map((row, i) => (
+                  <MRCRow key={i} muscle={row.muscle} value={row.value} index={i}
+                    onChange={(idx, val) => setMrcRows(prev => { const p=[...prev]; p[idx]={...p[idx],value:val}; return p; })}
+                    colors={{ accent:C.green, ...C }} />
+                ))}
+              </div>
+            </Accordion>
+
+            <Accordion title="Testes Especiais em Performance" icon="🔬">
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                {PE_TESTES.map(test => {
+                  const active = testResults.some(t => t.id === test.id);
+                  return (
+                    <TestCard key={test.id} test={test} active={active}
+                      onToggle={() => setTestResults(prev => {
+                        if (prev.some(t => t.id === test.id)) return prev.filter(t => t.id !== test.id);
+                        return [...prev, { ...test, result:"+", notes:"" }];
+                      })}
+                      onNotes={(id, notes) => setTestResults(prev => prev.map(t => t.id===id?{...t,notes}:t))}
+                      colors={{ accent:C.green, ...C }} />
+                  );
+                })}
+              </div>
+            </Accordion>
+
             <div style={{ marginTop:12, display:"flex", gap:8, justifyContent:"flex-end" }}>
               <button onClick={() => handleSaveAssessment({
                 protocolo: "pollock",
@@ -1076,6 +1288,12 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
                 ...(cooperResult ? { cooper: cooperResult } : {}),
                 ...(rockportResult ? { rockport: rockportResult } : {}),
                 ...(rmResult ? { rm: rmResult } : {}),
+                gonio: gonioRows,
+                mrc: mrcRows,
+                testes: testResults,
+                bodyPain,
+                yellowFlags,
+                diagnosticoCinesio,
               })} style={ghostBtn({ fontSize:11 })}>💾 Salvar Avaliação</button>
             </div>
 
@@ -1129,7 +1347,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
               <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:16 }}>
                 <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:8 }}>Teste de Rockport (1 milha / 1600m)</div>
                 <div style={{ fontSize:12, color:C.textMuted, marginBottom:10 }}>Caminhar 1 milha (1600m) o mais rápido possível, registrar tempo e FC ao final.</div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr", gap:10 }}>
                   <NumericField label="Peso (kg)" value={rockportPeso} onChange={setRockportPeso} unit="kg" min={30} max={250} />
                   <div>
                     <span style={lbl()}>Sexo</span>
@@ -1218,7 +1436,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
             </Accordion>
 
             <Accordion title="Avaliação Antropométrica — IMC e RCQ" icon="📐">
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
+              <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr", gap:14, marginBottom:14 }}>
                 <NumericField label="Peso (kg)" value={pesoImc} onChange={setPesoImc} unit="kg" min={20} max={300} step={0.1} />
                 <NumericField label="Altura (cm)" value={alturaImc} onChange={setAlturaImc} unit="cm" min={50} max={250} step={0.5} />
                 <NumericField label="Cintura (cm)" value={cintura} onChange={setCintura} unit="cm" min={40} max={200} step={0.5} />
@@ -1297,7 +1515,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
           <>
             <div style={{ marginBottom:14 }}>
               <div style={{ fontWeight:700, fontSize:13, color:C.text, marginBottom:8 }}>Montagem do Treino</div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
+              <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:14, marginBottom:14 }}>
                 <div>
                   <span style={lbl()}>Divisão de Treino</span>
                   <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:6 }}>
@@ -1481,7 +1699,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
               <div style={{ fontSize:12, color:C.textMuted, marginBottom:12, lineHeight:1.6 }}>
                 Escala CR-10 de Foster para registro da Percepção Subjetiva de Esforço (PSE) pós-sessão.
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
+              <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:10, marginBottom:12 }}>
                 <div>
                   <span style={lbl()}>PSE da Sessão (CR-10)</span>
                   <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginTop:4 }}>
@@ -1714,7 +1932,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
               colors={peColors} />
             <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={peColors} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
-              summaryText={`Aluno: ${student?.nome || "—"}\nObjetivo: ${objetivo}\nQueixa: ${queixa}\nRestrições: ${restricoes.map(r=>r.local).join(", ")}\nNível: ${nivel}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nTreinos prescritos: ${estruturaTreino.length}\nPSE médio: ${pseSessoes.length > 0 ? (pseSessoes.reduce((a,b)=>a+Number(b.rpe||0),0)/pseSessoes.length).toFixed(1) : "—"}/10\nAvaliações: ${savedAssessments.length}`}
+              summaryText={`Aluno: ${student?.nome || "—"}\nObjetivo: ${objetivo}\nQueixa: ${queixa}\nRestrições: ${restricoes.map(r=>r.local).join(", ")}\nNível: ${nivel}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nBodyPain: ${bodyPain.join(", ")}\nTreinos prescritos: ${estruturaTreino.length}\nPSE médio: ${pseSessoes.length > 0 ? (pseSessoes.reduce((a,b)=>a+Number(b.rpe||0),0)/pseSessoes.length).toFixed(1) : "—"}/10\nAvaliações: ${savedAssessments.length}\nCIF: ${cifKeys.join(", ")}\nDCT: ${diagnosticoCinesio}\nYellow Flags: ${yellowFlags.join(", ")}\nGoniometria: ${gonioRows.filter(g=>g.l||g.r).map(g=>`${g.joint}: ${g.l||"-"}/${g.r||"-"}`).join("; ")}\nMRC: ${mrcRows.map(m=>`${m.muscle}: ${m.value}`).join(", ")}\nTestes: ${testResults.map(t=>t.name).join(", ")}`}
               colors={peColors} />
           </>
         )}

@@ -133,14 +133,17 @@ export function useEnhancer(moduleName, studentId, storageKey) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-6", max_tokens: 1500,
+          model: "claude-sonnet-4-6", max_tokens: 2800,
           _patientName: studentId,
           _queixa: pain.localDor.join(", "),
           _plan: plan,
           _aiAnalysesUsed: aiAnalysesUsed + 1,
           _aiLimit: aiLimit,
           system: `Você é um profissional de ${moduleName} especialista em medicina baseada em evidências. Responda em português.`,
-          messages: [{ role: "user", content: `Com base nos dados abaixo, forneça:\n1. Hipótese diagnóstica funcional\n2. Plano de tratamento padrão-ouro\n3. Prognóstico\n\nDADOS:\n${summaryText}` }],
+          messages: [{ role: "user", content: `Com base nos dados clínicos abaixo, gere uma análise completa seguindo a estrutura solicitada no system prompt.
+
+DADOS DO PACIENTE:
+${summaryText}` }],
         }),
       });
       const d = await res.json();
@@ -353,13 +356,49 @@ export function SessionLogSection({ logs, addLog, colors }) {
   );
 }
 
-export function AIAnalysisSection({ aiRes, runAI, summaryText, colors }) {
+export function AIAnalysisSection({ aiRes, runAI, summaryText, patientName, moduleLabel, colors }) {
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleRun = async () => {
     setLoading(true);
     await runAI(summaryText);
     setLoading(false);
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(aiRes || "").then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const handlePrintAi = () => {
+    const w = window.open("", "_blank");
+    w.document.write(`
+      <html><head><title>Análise IA — SASYRA</title>
+      <style>body{font-family:Inter,sans-serif;padding:40px;color:#1a202c;line-height:1.8;font-size:14px;max-width:800px;margin:0 auto}
+      pre{white-space:pre-wrap;margin:0;font-family:Inter,sans-serif}h1{color:#0e141b;font-size:20px;border-bottom:2px solid #0f6e56;padding-bottom:8px}
+      .header{color:#7c8fa6;font-size:12px;margin:8px 0 24px}
+      .footer{text-align:center;color:#7c8fa6;font-size:11px;margin-top:40px;padding-top:16px;border-top:1px solid #e2e8f0}
+      @media print{body{padding:20px}}</style></head><body>
+      <h1>🤖 Análise Clínica — SASYRA IA</h1>
+      <div class="header">Paciente: ${patientName || "—"} | ${moduleLabel || "Clínico"} | ${new Date().toLocaleDateString("pt-BR")}</div>
+      <pre>${aiRes || "Nenhuma análise disponível."}</pre>
+      <div class="footer">SASYRA — Sistema de Assistência e Análise em Saúde<br/>Documento gerado em ${new Date().toLocaleString("pt-BR")}</div>
+      </body></html>
+    `);
+    w.document.close();
+    setTimeout(() => w.print(), 500);
+  };
+
+  const handleShare = async () => {
+    const text = `SASYRA — Análise IA (${moduleLabel || "Clínico"})\nPaciente: ${patientName || "—"}\n\n${aiRes || ""}`;
+    if (navigator.share) {
+      await navigator.share({ title: `Análise IA — ${moduleLabel}`, text });
+    } else {
+      handleCopy();
+    }
   };
 
   return (
@@ -389,6 +428,20 @@ export function AIAnalysisSection({ aiRes, runAI, summaryText, colors }) {
           ) : (
             <pre style={{ fontSize: 12, color: colors.text, whiteSpace: "pre-wrap", margin: 0, lineHeight: 1.7, fontFamily: colors.font || "'Inter',sans-serif" }}>{aiRes}</pre>
           )}
+          <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+            <button type="button" onClick={handlePrintAi}
+              style={{ background: colors.text, color: colors.card, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif" }}>
+              🖨️ Imprimir
+            </button>
+            <button type="button" onClick={handleCopy}
+              style={{ background: "transparent", color: colors.accent || colors.green, border: `1px solid ${(colors.accent || colors.green)}50`, borderRadius: 8, padding: "7px 14px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif" }}>
+              {copied ? "✓ Copiado!" : "📋 Copiar"}
+            </button>
+            <button type="button" onClick={handleShare}
+              style={{ background: "transparent", color: colors.accent || colors.green, border: `1px solid ${(colors.accent || colors.green)}50`, borderRadius: 8, padding: "7px 14px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif" }}>
+              📤 Compartilhar
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -397,36 +450,7 @@ export function AIAnalysisSection({ aiRes, runAI, summaryText, colors }) {
 
 export function ReportSection({ pain, logs, redFlags, aiRes, patientName, moduleLabel, colors }) {
   const evaColor = (v) => v <= 3 ? "#22c55e" : v <= 6 ? "#eab308" : "#ef4444";
-
-  const reportContent = `
-RELATÓRIO ${moduleLabel?.toUpperCase() || "CLÍNICO"} — SASYRA
-Paciente: ${patientName || "—"} | Gerado em: ${new Date().toLocaleDateString("pt-BR")}
-
-═ DOR ═
-EVA Movimento: ${pain.evaMov}/10
-EVA Repouso: ${pain.evaRep}/10
-Local: ${pain.localDor.join(", ") || "—"}
-Caráter: ${pain.caraterDor.join(", ") || "—"}
-Melhora: ${pain.melhora.join(", ") || "—"}
-Piora: ${pain.piora.join(", ") || "—"}
-
-═ RED FLAGS ═
-${redFlags.length > 0 ? redFlags.join("\n") : "Nenhum sinal de alerta registrado."}
-
-═ SESSÕES ═
-${logs.length > 0
-    ? logs.map((l, i) => `Sessão ${logs.length - i} — ${l.date}
-  EVA: ${l.eva}/10
-  Procedimentos: ${l.procedimentos.join(", ") || "—"}
-  Evolução: ${l.evolucao || "—"}
-  Metas: ${l.metas || "—"}`).join("\n\n")
-    : "Nenhuma sessão registrada."}
-
-═ ANÁLISE IA ═
-${aiRes || "Nenhuma análise realizada."}
-
-─ SASYRA — Sistema de Assistência e Análise em ${moduleLabel || "Saúde"}
-`;
+  const [copiedReport, setCopiedReport] = useState(false);
 
   const handlePrint = () => {
     const w = window.open("", "_blank");
@@ -500,18 +524,35 @@ ${aiRes || "Nenhuma análise realizada."}
         {aiRes && aiRes !== "Carregando..." && (
           <div style={{ marginTop: 10 }}>
             <strong style={{ color: "#0f6e56" }}>🤖 Análise IA:</strong>
-            <pre style={{ fontSize: 11, whiteSpace: "pre-wrap", margin: "4px 0 0", color: "#374151", fontFamily: "Inter,sans-serif" }}>{aiRes.slice(0, 500)}{aiRes.length > 500 ? "..." : ""}</pre>
+            <pre style={{ fontSize: 11, whiteSpace: "pre-wrap", margin: "4px 0 0", color: "#374151", fontFamily: "Inter,sans-serif" }}>{aiRes}</pre>
           </div>
         )}
       </div>
-      <button type="button" onClick={handlePrint}
-        style={{
-          background: colors.accent || colors.green, color: "#fff", border: "none",
-          borderRadius: 10, padding: "10px 20px", fontSize: 13, fontWeight: 700,
-          cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif",
-        }}>
-        🖨️ Imprimir / Gerar PDF
-      </button>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <button type="button" onClick={handlePrint}
+          style={{
+            background: colors.accent || colors.green, color: "#fff", border: "none",
+            borderRadius: 10, padding: "10px 20px", fontSize: 13, fontWeight: 700,
+            cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif",
+          }}>
+          🖨️ Imprimir / PDF
+        </button>
+        <button type="button" onClick={() => {
+          const txt = `RELATÓRIO ${moduleLabel?.toUpperCase() || "CLÍNICO"} — SASYRA\nPaciente: ${patientName || "—"}\nData: ${new Date().toLocaleDateString("pt-BR")}\n\nEVA Mov: ${pain.evaMov}/10 | EVA Rep: ${pain.evaRep}/10\nLocal: ${pain.localDor.join(", ") || "—"}\nRed Flags: ${redFlags.length > 0 ? redFlags.join(", ") : "Nenhum"}\nSessões: ${logs.length}\n\nAnálise IA:\n${aiRes || "Nenhuma"}\n\nSASYRA — Sistema de Assistência e Análise em ${moduleLabel || "Saúde"}`;
+          navigator.clipboard.writeText(txt).then(() => {
+            setCopiedReport(true);
+            setTimeout(() => setCopiedReport(false), 2000);
+          });
+        }}
+          style={{
+            background: "transparent", color: colors.accent || colors.green,
+            border: `1px solid ${(colors.accent || colors.green)}50`,
+            borderRadius: 10, padding: "10px 20px", fontSize: 13, fontWeight: 600,
+            cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif",
+          }}>
+          {copiedReport ? "✓ Copiado!" : "📋 Copiar"}
+        </button>
+      </div>
     </div>
   );
 }

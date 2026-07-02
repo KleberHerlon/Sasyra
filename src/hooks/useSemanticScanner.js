@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useMemo } from "react";
 import { scanQueixa } from "../data/medicalTerms";
 
-export function useSemanticScanner(queixa, { setComorbid, setAntec }) {
+export function useSemanticScanner(queixa, { setComorbid, setAntec } = {}) {
   const overridesRef = useRef(new Set());
 
   const detected = useMemo(() => scanQueixa(queixa), [queixa]);

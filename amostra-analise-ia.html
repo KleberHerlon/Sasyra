@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Amostra — Análise IA SASYRA</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #f1f5f9;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .page {
+    max-width: 800px;
+    width: 100%;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    padding: 48px 52px;
+    margin-bottom: 24px;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #0f6e56;
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 900;
+    color: #0e141b;
+    letter-spacing: -0.02em;
+  }
+  .header h1 span { color: #0f6e56; }
+  .header .meta {
+    text-align: right;
+    font-size: 11px;
+    color: #7c8fa6;
+    line-height: 1.7;
+  }
+  .badge {
+    display: inline-block;
+    background: #f0fdf4;
+    color: #166534;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .section-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #0f6e56;
+    margin: 28px 0 14px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: #0f6e56;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .field { margin-bottom: 4px; font-size: 13px; line-height: 1.8; color: #1a202c; }
+  .field strong { color: #0e141b; font-weight: 700; }
+  .cif-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
+  .cif-tag {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-family: 'Inter', monospace;
+    color: #334155;
+  }
+  .cif-tag .qual { color: #0f6e56; font-weight: 700; }
+  .phase-card {
+    background: #fafcff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+  }
+  .phase-card .phase-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .phase-card .phase-header h4 {
+    font-size: 14px;
+    font-weight: 800;
+    color: #0e141b;
+  }
+  .phase-stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .phase-stat {
+    background: #e8f5ee;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #166534;
+  }
+  .phase-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+  }
+  .phase-card ul li {
+    font-size: 12px;
+    line-height: 1.7;
+    color: #334155;
+    padding: 2px 0 2px 16px;
+    position: relative;
+  }
+  .phase-card ul li::before { content: "›"; position: absolute; left: 2px; color: #0f6e56; font-weight: 700; }
+  .evidence {
+    color: #6366f1;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 10px 0;
+  }
+  .summary-item {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+  }
+  .summary-item .label { font-size: 10px; color: #7c8fa6; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .summary-item .value { font-size: 15px; font-weight: 800; color: #0e141b; margin-top: 2px; }
+  .alert-box {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 10px 0;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #991b1b;
+  }
+  .alert-box strong { color: #dc2626; }
+  .footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+    font-size: 10px;
+    color: #94a3b8;
+    line-height: 1.8;
+  }
+  .print-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #0e141b;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 28px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: background 0.15s;
+  }
+  .print-btn:hover { background: #1a202c; }
+  @media print {
+    body { background: #fff; padding: 0; }
+    .page { box-shadow: none; border-radius: 0; padding: 40px; margin: 0; }
+    .print-btn { display: none; }
+    .phase-card { break-inside: avoid; }
+  }
+  @media (max-width: 600px) {
+    .page { padding: 24px 18px; }
+    .header { flex-direction: column; gap: 8px; }
+    .header .meta { text-align: left; }
+    .summary-grid { grid-template-columns: 1fr; }
+    .phase-card .phase-header { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="page" id="report">
+  <div class="header">
+    <div>
+      <h1>SASYRA <span>IA</span></h1>
+      <div style="font-size:12px;color:#7c8fa6;margin-top:4px">Análise Clínica — Fisioterapia Ortopédica</div>
+    </div>
+    <div class="meta">
+      <strong>Paciente:</strong> Carlos A. Silva<br>
+      <strong>Data da análise:</strong> 01/07/2026<br>
+      <span class="badge">🧪 v2.0 — Plano faseado</span>
+    </div>
+  </div>
+
+  <!-- 1. Hipótese Diagnóstica Funcional -->
+  <div class="section-title"><span class="num">1</span> Hipótese Diagnóstica Funcional</div>
+
+  <div class="field"><strong>Diagnóstico fisioterapêutico principal:</strong> Lombalgia crônica inespecífica com disfunção do controle motor segmentar lombar e componentes psicossociais associados (cinesiofobia — Tampa ≥ 45).</div>
+  <div class="field"><strong>Diagnósticos diferenciais:</strong> Síndrome facetária L4-L5, Disfunção sacrilíaca unilateral, Hérnia discal póstero-lateral L5-S1 (descartada por RM).</div>
+  <div class="field"><strong>Fatores contribuintes:</strong> Sedentarismo ocupacional (8h/dia sentado), fraqueza de transverso abdominal e multífidos (espessura muscular reduzida ao US), catastrofização da dor (PCS = 32), padrão recrutamento muscular alterado (flexion-relaxation paradox ausente).</div>
+
+  <div class="field" style="margin-top:6px"><strong>CIF — Classificação Internacional de Funcionalidade:</strong></div>
+  <div class="cif-list">
+    <span class="cif-tag">b28013 <span class="qual">(2)</span> — Dor no dorso, moderada</span>
+    <span class="cif-tag">d4150 <span class="qual">(2)</span> — Manter a posição deitada, moderada</span>
+    <span class="cif-tag">d410 <span class="qual">(2)</span> — Mudar posições básicas, moderada</span>
+    <span class="cif-tag">d450 <span class="qual">(1)</span> — Andar, leve</span>
+    <span class="cif-tag">b730 <span class="qual">(1)</span> — Funções de força muscular, leve</span>
+    <span class="cif-tag">b152 <span class="qual">(2)</span> — Funções emocionais, moderada</span>
+  </div>
+
+  <!-- 2. Plano de Tratamento Faseado -->
+  <div class="section-title"><span class="num">2</span> Plano de Tratamento — Dividido em Fases</div>
+
+  <div class="phase-card">
+    <div class="phase-header">
+      <h4>Fase 1 — Analgesia e Educação (Sessões 1–4)</h4>
+      <div class="phase-stats">
+        <span class="phase-stat">📅 2×/semana</span>
+        <span class="phase-stat">⏱ 2 semanas</span>
+      </div>
+    </div>
+    <div class="field"><strong>Objetivos:</strong> Reduzir EVA para ≤ 4, diminuir cinesiofobia (Tampa < 40), iniciar controle motor segmentar.</div>
+    <ul>
+      <li><strong>PNE</strong> — Pain Neuroscience Education (Louw et al., 2023. <em>J Orthop Sports Phys Ther.</em> Nível: 1A). Sessão 1: neurofisiologia da dor. Sessão 2: dessensibilização central. Sessão 3: reconceitualização.</li>
+      <li><strong>Ativação de transverso abdominal</strong> em DDH com feedback tátil + US em tempo real (Hodges &amp; Richardson, 1996. <em>Spine.</em> Nível: 2B). 3 séries × 10s sustentação, 10 repetições.</li>
+      <li><strong>Mobilização PA grau I-II</strong> em L4-L5 (Maitland conceito). 3 × 30s, ritmo 1Hz.</li>
+      <li><strong>Respiração diafragmática</strong> associada à ativação do assoalho pélvico (Hodges &amp; Gandevia, 2000. Nível: 2B). 5 min, 2×/dia.</li>
+    </ul>
+    <div style="margin-top:6px;font-size:11px;color:#7c8fa6;border-left:2px solid #0f6e56;padding-left:10px">
+      <strong>▶ Critérios de progressão:</strong> EVA ≤ 4, paciente explica conceitos de PNE, ativação de TA sem compensação de oblíquos externos por ≥ 8s.
+    </div>
+  </div>
+
+  <div class="phase-card">
+    <div class="phase-header">
+      <h4>Fase 2 — Controle Motor e Estabilização (Sessões 5–10)</h4>
+      <div class="phase-stats">
+        <span class="phase-stat">📅 2×/semana</span>
+        <span class="phase-stat">⏱ 3 semanas</span>
+      </div>
+    </div>
+    <div class="field"><strong>Objetivos:</strong> Controle motor segmentar em cadeia cinética fechada, dissociação lombopélvica em posturas funcionais, EVA ≤ 2.</div>
+    <ul>
+      <li><strong>Dead bug progressivo</strong> (Evidence A — Cochrane Back Review, 2022). Nível 1: MMSS. Nível 2: MMII. Nível 3: contralateral (braço direito / perna esquerda). 3×10, sustentação 5s.</li>
+      <li><strong>Ponte unilateral</strong> com ativação de TA prévia. 3×8, sustentação 5s. Meta: ≥ 30s sem compensação.</li>
+      <li><strong>Pelve neutra em sedestação</strong> — correção postural dinâmica, 10 repetições com feedback tátil e espelho.</li>
+      <li><strong>Agachamento parcial (0–60°)</strong> com haste + correção de valgo dinâmico (Escamilla et al., 2001. <em>J Orthop Sports Phys Ther.</em> Nível: 2B). 3×12.</li>
+      <li><strong>Quadrupedânia —</strong> elevação alternada de membros com pelve estável. 3×8 cada lado.</li>
+    </ul>
+    <div style="margin-top:6px;font-size:11px;color:#7c8fa6;border-left:2px solid #0f6e56;padding-left:10px">
+      <strong>▶ Critérios de progressão:</strong> EVA ≤ 2, Tampa ≤ 37, ponte unilateral ≥ 30s, agachamento 60° com pelve neutra, dead bug nível 3 completo sem perda de posição neutra.
+    </div>
+  </div>
+
+  <div class="phase-card">
+    <div class="phase-header">
+      <h4>Fase 3 — Carga Funcional e Retorno à Atividade (Sessões 11–16)</h4>
+      <div class="phase-stats">
+        <span class="phase-stat">📅 1–2×/semana</span>
+        <span class="phase-stat">⏱ 4 semanas</span>
+      </div>
+    </div>
+    <div class="field"><strong>Objetivos:</strong> Tolerar cargas funcionais, preparar para alta com programa domiciliar autônomo, LSI ≥ 90%.</div>
+    <ul>
+      <li><strong>Levantamento terra romeno com halteres</strong> (Berglund et al., 2015. <em>Br J Sports Med.</em> Nível: 1B). 3×8, 50% 1RM → progressão 5–10%/semana.</li>
+      <li><strong>Agachamento frontal</strong> — 3×8, 50% 1RM, progressão semanal.</li>
+      <li><strong>Padrões de movimento:</strong> carregar objeto do chão com técnica correta, rotação de tronco com carga controlada.</li>
+      <li><strong>YOGA + alongamento dinâmico</strong> — ênfase em flexão anterior de tronco controlada (postura criança → gato-vaca).</li>
+    </ul>
+    <div style="margin-top:6px;font-size:11px;color:#7c8fa6;border-left:2px solid #0f6e56;padding-left:10px">
+      <strong>▶ Critérios de progressão:</strong> LSI ≥ 90% em todos os testes funcionais, EVA ≤ 1 nas atividades da vida diária, paciente independente no programa domiciliar.
+    </div>
+  </div>
+
+  <!-- 3. Resumo do Tratamento -->
+  <div class="section-title"><span class="num">3</span> Resumo do Tratamento</div>
+  <div class="summary-grid">
+    <div class="summary-item">
+      <div class="label">Total de sessões</div>
+      <div class="value">16 sessões</div>
+    </div>
+    <div class="summary-item">
+      <div class="label">Frequência</div>
+      <div class="value">2× → 1–2×/sem</div>
+    </div>
+    <div class="summary-item">
+      <div class="label">Intervalo entre sessões</div>
+      <div class="value">48–72 horas</div>
+    </div>
+    <div class="summary-item">
+      <div class="label">Duração total estimada</div>
+      <div class="value">9 semanas</div>
+    </div>
+  </div>
+  <div class="field" style="margin-top:6px"><strong>Justificativa:</strong> Intervalo de 48–72h entre sessões otimiza o aprendizado motor (consolidação da memória procedural) e permite recuperação tecidual adequada entre estímulos de carga (Schmidt &amp; Lee, 2020. <em>Motor Control and Learning.</em> Nível: 1A). Frequência reduzida na Fase 3 visa transferência de responsabilidade para o paciente (programa domiciliar).</div>
+
+  <!-- 4. Critérios de Alta -->
+  <div class="section-title"><span class="num">4</span> Critérios de Alta</div>
+  <ul style="list-style:none;padding:0;margin:0">
+    <li style="font-size:13px;line-height:2;padding-left:20px;position:relative">
+      <span style="position:absolute;left:0;color:#0f6e56">✓</span> EVA ≤ 2 há pelo menos 2 semanas consecutivas
+    </li>
+    <li style="font-size:13px;line-height:2;padding-left:20px;position:relative">
+      <span style="position:absolute;left:0;color:#0f6e56">✓</span> LSI ≥ 90% nos testes: <em>Y-Balance Test</em> anterior e posterolateral, <em>Single Hop for Distance</em>
+    </li>
+    <li style="font-size:13px;line-height:2;padding-left:20px;position:relative">
+      <span style="position:absolute;left:0;color:#0f6e56">✓</span> Tampa Scale of Kinesiophobia ≤ 37 (baixa cinesiofobia)
+    </li>
+    <li style="font-size:13px;line-height:2;padding-left:20px;position:relative">
+      <span style="position:absolute;left:0;color:#0f6e56">✓</span> Paciente independente no programa domiciliar (≥ 80% de adesão autorrelatada)
+    </li>
+    <li style="font-size:13px;line-height:2;padding-left:20px;position:relative">
+      <span style="position:absolute;left:0;color:#0f6e56">✓</span> Teste de levantamento do chão: execução com técnica adequada sem dor
+    </li>
+    <li style="font-size:13px;line-height:2;padding-left:20px;position:relative">
+      <span style="position:absolute;left:0;color:#0f6e56">✓</span> ODI ≤ 20% (incapacidade mínima)
+    </li>
+  </ul>
+
+  <!-- 5. Escalas Recomendadas -->
+  <div class="section-title"><span class="num">5</span> Escalas Funcionais Recomendadas</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;font-size:12px">
+    <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border:1px solid #e2e8f0">
+      <strong>📋 ODI</strong> — Oswestry Disability Index<br>
+      <span style="color:#7c8fa6;font-size:10px">Pré, 4 sem, 8 sem, alta</span>
+    </div>
+    <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border:1px solid #e2e8f0">
+      <strong>📋 Tampa Scale</strong> — Kinesiophobia<br>
+      <span style="color:#7c8fa6;font-size:10px">Pré, pós-PNE (sessão 4), alta</span>
+    </div>
+    <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border:1px solid #e2e8f0">
+      <strong>📋 PCS</strong> — Pain Catastrophizing Scale<br>
+      <span style="color:#7c8fa6;font-size:10px">Pré, pós-PNE</span>
+    </div>
+    <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border:1px solid #e2e8f0">
+      <strong>📋 GROC</strong> — Global Rating of Change<br>
+      <span style="color:#7c8fa6;font-size:10px">Semanal</span>
+    </div>
+    <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border:1px solid #e2e8f0">
+      <strong>📋 NPRS</strong> — Numerical Pain Rating Scale<br>
+      <span style="color:#7c8fa6;font-size:10px">Toda sessão (pré/pós)</span>
+    </div>
+    <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border:1px solid #e2e8f0">
+      <strong>📋 Y-Balance Test</strong> — Controle neuromuscular<br>
+      <span style="color:#7c8fa6;font-size:10px">Alta (LSI)</span>
+    </div>
+  </div>
+
+  <!-- 6. Prognóstico -->
+  <div class="section-title"><span class="num">6</span> Prognóstico</div>
+  <div class="field"><strong>Expectativa de melhora:</strong> Favorável com adesão ao tratamento ativo.</div>
+  <div class="field" style="margin:4px 0 0">
+    • <strong>4 semanas:</strong> Redução de 50% da dor (EVA 6 → 3) — esperado com PNE + controle motor (Hicks et al., 2005. <em>Spine.</em> Nível: 1B)<br>
+    • <strong>8 semanas:</strong> Retorno às AVDs sem limitação (ODI ≤ 20%)<br>
+    • <strong>9 semanas:</strong> Alta com programa domiciliar consolidado
+  </div>
+  <div class="alert-box">
+    <strong>⚠ Fatores de risco para mau prognóstico:</strong> Tampa > 52, dor > 6 meses, catastrofização alta (PCS > 30), presença de litígio trabalhista/previdenciário, baixa adesão ao programa domiciliar. Nestes casos, considerar encaminhamento para psicologia (terapia cognitivo-comportamental) e/ou programa multidisciplinar de dor crônica.
+  </div>
+  <div class="field" style="margin-top:4px"><strong>Recomendações ao paciente:</strong></div>
+  <ul style="list-style:none;padding:0;margin:2px 0 0">
+    <li style="font-size:12px;line-height:1.9;padding-left:20px;position:relative">
+      <span style="position:absolute;left:0;color:#0f6e56">•</span> Manter diário de dor (EVA matinal/noturna)
+    </li>
+    <li style="font-size:12px;line-height:1.9;padding-left:20px;position:relative">
+      <span style="position:absolute;left:0;color:#0f6e56">•</span> Evitar repouso prolongado (> 2 dias) — movimento é analgesia
+    </li>
+    <li style="font-size:12px;line-height:1.9;padding-left:20px;position:relative">
+      <span style="position:absolute;left:0;color:#0f6e56">•</span> Sinais de alerta para reavaliação: perda de força súbita em MMII, parestesia em sela, incontinência urinária/fecal, febre + dor lombar (red flags)
+    </li>
+    <li style="font-size:12px;line-height:1.9;padding-left:20px;position:relative">
+      <span style="position:absolute;left:0;color:#0f6e56">•</span> Praticar exercícios domiciliares 10 min/dia (respiração diafragmática + ativação TA)
+    </li>
+  </ul>
+
+  <div class="section-title" style="margin-top:20px"><span class="num">📎</span> Referências Citadas</div>
+  <div style="font-size:10px;color:#475569;line-height:1.8;margin:4px 0">
+    • Berglund et al. (2015). "Progressive resistance training in chronic low back pain". Br J Sports Med. Nível: 1B<br>
+    • Hicks et al. (2005). "Predictors of success with stabilization exercises". Spine. Nível: 1B<br>
+    • Hodges &amp; Richardson (1996). "Inefficient muscular stabilization of the lumbar spine". Spine. Nível: 2B<br>
+    • Louw et al. (2023). "Pain neuroscience education for chronic pain". J Orthop Sports Phys Ther. Nível: 1A<br>
+    • Cochrane Back Review Group (2022). "Exercise therapy for chronic low back pain". Cochrane Database. Nível: 1A
+  </div>
+
+  <div class="footer">
+    SASYRA — Sistema de Assistência e Análise em Saúde<br>
+    Análise gerada por IA baseada em evidências | Documento gerado em 01/07/2026 14:32<br>
+    <em>Esta análise não substitui avaliação clínica presencial. O plano deve ser adaptado à resposta individual do paciente.</em>
+  </div>
+</div>
+
+<button class="print-btn" onclick="window.print()">🖨️ Imprimir / Salvar como PDF</button>
+<p style="font-size:11px;color:#7c8fa6;margin-top:8px;text-align:center;max-width:800px">
+  💡 Clique no botão acima ou pressione <kbd>Ctrl+P</kbd> e selecione "Salvar como PDF" para gerar o arquivo.
+  Esta é uma <strong>amostra simulada</strong> do formato que a IA passará a gerar após as melhorias no prompt.
+</p>
+</body>
+</html>
