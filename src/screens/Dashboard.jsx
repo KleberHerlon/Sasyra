@@ -776,7 +776,7 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, user }) {
 
   const handleAdd = () => {
     if (!f.nome.trim()) return;
-    onAdd({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10) });
+    onAdd({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10), assignedModules: ["ortopedica"] });
     setF({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
     setShowForm(false);
   };
@@ -887,7 +887,7 @@ export default function Dashboard() {
     setPatientView(false);
   };
 
-  const addPatient = (p) => setPatients(ps => [...ps, p]);
+  const addPatient = (p) => setPatients(ps => [...ps, { assignedModules: [], ...p }]);
 
   const handleLogout = () => { setUser(null); setPatientView(true); setPatients([]); };
 

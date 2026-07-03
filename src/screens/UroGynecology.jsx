@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 import CifAndHonorarios from "../components/CifAndHonorarios";
+import { CollapsibleSection, CollapsibleSub, SessionCounter, HonorariosCard } from "../components";
+import ScaleSelector from "../components/ScaleSelector";
+import AssignFromOtherModules from "../components/AssignFromOtherModules";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -150,7 +153,7 @@ const URO_EVIDENCE = {
   },
 };
 
-export default function UroGynecology({ student, students, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById }) {
+export default function UroGynecology({ student, students, allPatients, currentModuleId, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById }) {
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -199,8 +202,16 @@ export default function UroGynecology({ student, students, onSelectStudent, onAd
 
   const [evolucaoUro, setEvolucaoUro] = useState("");
 
+  const [expandedSections, setExpandedSections] = useState([]);
+  const toggleSection = (id) => { setExpandedSections(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]); };
   const sid = student?.id || student?.nome;
   const enhancer = useEnhancer("uroginecologia", sid, `uro_enhancer_${sid}`);
+  const [savedScales, setSavedScales] = useState(() => { try { const d = localStorage.getItem(`uro_scales_${sid}`); return d ? JSON.parse(d) : []; } catch { return []; } });
+  const handleScaleSave = (result) => {
+    const next = [...savedScales, { ...result, savedAt: new Date().toISOString() }];
+    setSavedScales(next);
+    try { localStorage.setItem(`uro_scales_${sid}`, JSON.stringify(next)); } catch {}
+  };
   const uroColors = { ...C, accent: C.amber, font: F };
 
   useEffect(() => {
@@ -282,6 +293,9 @@ export default function UroGynecology({ student, students, onSelectStudent, onAd
             {showForm ? "Cancelar" : editingStudent ? "✏️ Editando" : "+ Nova Paciente"}
           </button>
         </div>
+        <div style={{ marginTop:8 }}>
+          <AssignFromOtherModules allPatients={allPatients} currentModuleId={currentModuleId} onUpdateStudentById={onUpdateStudentById} accentColor={C.amber} />
+        </div>
 
         {showForm && (
           <div style={{ ...card(), marginBottom:16, border:`1px solid ${C.amber}50` }}>
@@ -319,7 +333,7 @@ export default function UroGynecology({ student, students, onSelectStudent, onAd
                 Object.entries(f).forEach(([k, v]) => onUpdateStudent(k, v));
                 setEditingStudent(null);
               } else {
-                onAddStudent({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10) });
+                onAddStudent({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10), assignedModules: [currentModuleId] });
               }
               setF({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
               setShowForm(false);
@@ -567,26 +581,26 @@ export default function UroGynecology({ student, students, onSelectStudent, onAd
             </Section>
 
             <Section title="Avaliação do Assoalho Pélvico" icon="🔍">
-              <div style={{ marginBottom:14 }}>
-                <span style={lbl()}>Escala de Oxford (Contração voluntária do MAP)</span>
-                <SingleSelect options={[
-                  { value:"0", label:"0 — Sem contração" },
-                  { value:"1", label:"1 — Esboço de contração" },
-                  { value:"2", label:"2 — Contração fraca" },
-                  { value:"3", label:"3 — Contração moderada" },
-                  { value:"4", label:"4 — Contração boa" },
-                  { value:"5", label:"5 — Contração forte" },
-                ]} value={oxford} onChange={setOxford} activeColor={C.amber} />
-              </div>
-              {oxford && (
-                <div style={{ marginBottom:14, background:C.amberBg, border:`1px solid ${C.amber}40`, borderRadius:10, padding:"12px 14px", textAlign:"center" }}>
-                  <div style={{ fontSize:10, color:C.textMuted, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em" }}>Oxford</div>
-                  <div style={{ fontSize:28, fontWeight:900, color:oxfordResult.color }}>{oxfordResult.grade} — {oxfordResult.level}</div>
+              <CollapsibleSub title="Escala de Oxford">
+                <div style={{ marginBottom:10 }}>
+                  <span style={lbl()}>Contração voluntária do MAP</span>
+                  <SingleSelect options={[
+                    { value:"0", label:"0 — Sem contração" },
+                    { value:"1", label:"1 — Esboço de contração" },
+                    { value:"2", label:"2 — Contração fraca" },
+                    { value:"3", label:"3 — Contração moderada" },
+                    { value:"4", label:"4 — Contração boa" },
+                    { value:"5", label:"5 — Contração forte" },
+                  ]} value={oxford} onChange={setOxford} activeColor={C.amber} />
                 </div>
-              )}
-
-              <div style={{ marginBottom:14 }}>
-                <span style={lbl()}>Esquema PERFECT</span>
+                {oxford && (
+                  <div style={{ background:C.amberBg, border:`1px solid ${C.amber}40`, borderRadius:10, padding:"12px 14px", textAlign:"center" }}>
+                    <div style={{ fontSize:10, color:C.textMuted, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em" }}>Oxford</div>
+                    <div style={{ fontSize:28, fontWeight:900, color:oxfordResult.color }}>{oxfordResult.grade} — {oxfordResult.level}</div>
+                  </div>
+                )}
+              </CollapsibleSub>
+              <CollapsibleSub title="Esquema PERFECT">
                 <div style={{ fontSize:11, color:C.textMuted, marginBottom:8, lineHeight:1.4 }}>
                   P (Power/Força 0-5) · E (Endurance/Resistência em segundos) · R (Repetitions/Repetições 0-10+) · F (Fast/Contrações rápidas por 10s)
                 </div>
@@ -596,20 +610,18 @@ export default function UroGynecology({ student, students, onSelectStudent, onAd
                   <NumericField label="Repetições" value={perfect.repetitions} onChange={v => setPerfect(p=>({...p, repetitions:v}))} min={0} max={50} step={1} />
                   <NumericField label="Rápidas (10s)" value={perfect.fast} onChange={v => setPerfect(p=>({...p, fast:v}))} min={0} max={50} step={1} />
                 </div>
-              </div>
-              {(perfect.power || perfect.endurance || perfect.repetitions || perfect.fast) && (
-                <div style={{ marginBottom:14, background:C.amberBg, border:`1px solid ${C.amber}40`, borderRadius:10, padding:"12px 14px", textAlign:"center" }}>
-                  <div style={{ fontSize:10, color:C.textMuted, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em" }}>PERFECT Score</div>
-                  <div style={{ fontSize:28, fontWeight:900, color:perfectResult.color }}>{perfectResult.total}</div>
-                  <div style={{ fontSize:13, fontWeight:700, color:perfectResult.color }}>{perfectResult.level}</div>
-                  <div style={{ fontSize:10, color:C.textMuted, marginTop:4 }}>P{perfect.power||0} · E{perfect.endurance||0} · R{perfect.repetitions||0} · F{perfect.fast||0}</div>
-                </div>
-              )}
-
-              <div style={{ marginBottom:14 }}>
-                <span style={lbl()}>Perineometria</span>
+                {(perfect.power || perfect.endurance || perfect.repetitions || perfect.fast) && (
+                  <div style={{ marginTop:10, background:C.amberBg, border:`1px solid ${C.amber}40`, borderRadius:10, padding:"12px 14px", textAlign:"center" }}>
+                    <div style={{ fontSize:10, color:C.textMuted, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em" }}>PERFECT Score</div>
+                    <div style={{ fontSize:28, fontWeight:900, color:perfectResult.color }}>{perfectResult.total}</div>
+                    <div style={{ fontSize:13, fontWeight:700, color:perfectResult.color }}>{perfectResult.level}</div>
+                    <div style={{ fontSize:10, color:C.textMuted, marginTop:4 }}>P{perfect.power||0} · E{perfect.endurance||0} · R{perfect.repetitions||0} · F{perfect.fast||0}</div>
+                  </div>
+                )}
+              </CollapsibleSub>
+              <CollapsibleSub title="Perineometria">
                 <NumericField label="Pressão perineal" value={perineometria} onChange={setPerineometria} min={0} max={200} unit="cmH₂O" />
-              </div>
+              </CollapsibleSub>
             </Section>
 
             <Section title="POP-Q (Prolapso de Órgão Pélvico)" icon="📏">
@@ -676,6 +688,33 @@ export default function UroGynecology({ student, students, onSelectStudent, onAd
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
               <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Avaliação</button>
             </div>
+            {/* 📊 Escalas Padronizadas */}
+            <CollapsibleSection title="Escalas Padronizadas" icon="📊" expanded={expandedSections.includes("escalas")} onToggle={()=>toggleSection("escalas")}>
+              <div style={{fontSize:12,color:C.textMuted,marginBottom:12,lineHeight:1.5}}>Selecione uma escala validada para aplicar ao paciente. Os resultados ficam salvos neste módulo.</div>
+              <ScaleSelector scaleNames={["Oxford Grading System (Assoalho Pélvico)","ICIQ-SF (International Consultation on Incontinence)","ICIQ-OAB (Overactive Bladder)","PFIQ-7 (Pelvic Floor Impact Questionnaire)"]} onSave={handleScaleSave} savedResults={savedScales} />
+              {savedScales.length > 0 && (
+                <div style={{marginTop:12}}>
+                  <span style={{fontSize:9,fontWeight:700,color:C.green,textTransform:"uppercase",letterSpacing:"0.08em"}}>✓ Resultados Salvos: {savedScales.length}</span>
+                  <div style={{display:"flex",flexDirection:"column",gap:4,marginTop:6}}>
+                    {savedScales.slice().reverse().map((r,i) => (
+                      <div key={i} style={{background:C.greenBg,borderRadius:6,padding:"6px 10px",fontSize:10,color:C.text,display:"flex",justifyContent:"space-between",alignItems:"center",border:`1px solid ${C.green}30`}}>
+                        <span><strong>{r.shortName || r.scaleName}</strong>: {r.pct}% — {r.interpretation}</span>
+                        <span style={{fontSize:9,color:C.textMuted}}>{r.savedAt?.slice(0,10) || r.date}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CollapsibleSection>
+
+            <CollapsibleSection title="Dados Administrativos e Financeiros" icon="💰" expanded={expandedSections.includes("admin")} onToggle={()=>toggleSection("admin")}>
+              <CollapsibleSub title="Honorários e CIFs">
+                <HonorariosCard convenio={student?.convenio} regiao={regiao} sessoesAuth={student?.sessoesAuth} />
+              </CollapsibleSub>
+              <CollapsibleSub title="Sessões Autorizadas">
+                <SessionCounter value={student?.sessoesAuth || ""} onChange={v => onUpdateStudent?.("sessoesAuth", v)} />
+              </CollapsibleSub>
+            </CollapsibleSection>
           </>
         )}
 

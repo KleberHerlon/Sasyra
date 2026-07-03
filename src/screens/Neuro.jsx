@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 import { AudioField, BodyMap, EvaSlider, TagSelect, SingleSelect, GonioRow, MRCRow, TestCard, Row, HonorariosCard, Section } from "../components";
 import { useClinicalScan } from "../hooks/useClinicalScan.js";
 import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
 import { detectLocalDor, extractClinicalEntities } from "../utils/clinicalDetection.js";
 import { CIF } from "../data/cif.js";
+import ScaleSelector from "../components/ScaleSelector";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -384,7 +386,7 @@ function loadNeuroData(studentId) { try { const d = localStorage.getItem(`neuro_
 
 // ── Main component ───────────────────────────────────────────────────────────
 export default function Neuro({ student, students, onSelectStudent, onAddStudent, onUpdateStudent, onUpdateStudentById, onDeleteStudent,
-  plan, onUpgrade, canUseFeature, tryFeature, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion,
+  plan, onUpgrade, canUseFeature, tryFeature, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion, currentModuleId, allPatients,
 }) {
   // ── Navigation ────────────────────────────────────────────────────────────────
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
@@ -471,6 +473,12 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
   const { detected, handleComorbidChange, handleAntecChange } = useSemanticScanner(queixa, { setComorbid: setComorbidadesNeuro, setAntec: setComorbidadesNeuro });
   const enhancer = useEnhancer("neurofuncional", sid, `neuro_enhancer_${sid}`);
   const neuroColors = { ...C, accent: C.purple, font: F };
+  const [savedScales, setSavedScales] = useState(() => { try { const d = localStorage.getItem(`neuro_scales_${sid}`); return d ? JSON.parse(d) : []; } catch { return []; } });
+  const handleScaleSave = (result) => {
+    const next = [...savedScales, { ...result, savedAt: new Date().toISOString() }];
+    setSavedScales(next);
+    try { localStorage.setItem(`neuro_scales_${sid}`, JSON.stringify(next)); } catch {}
+  };
 
   // ── Detect KB from queixa ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -658,6 +666,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
             {showForm ? "Cancelar" : editingStudent ? "✏️ Editando" : "+ Novo Paciente"}
           </button>
         </div>
+        <AssignFromOtherModules allPatients={allPatients} currentModuleId={currentModuleId} onUpdateStudentById={onUpdateStudentById} accentColor={C.purple} />
 
         {showForm && (
           <div style={{...card(), marginBottom:16, border:`1px solid ${C.purple}50`}}>
@@ -685,7 +694,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
             <button onClick={()=>{
               if (!f.nome.trim()) return;
               if (editingStudent) { onUpdateStudentById(editingStudent.id||editingStudent.nome, f); Object.entries(f).forEach(([k,v])=>onUpdateStudent(k,v)); setEditingStudent(null); }
-              else { onAddStudent({...f, id:Date.now(), data:new Date().toISOString().slice(0,10)}); }
+              else { onAddStudent({...f, id:Date.now(), data:new Date().toISOString().slice(0,10), assignedModules: [currentModuleId]}); }
               setF({nome:"",dataNasc:"",sexo:"",profissao:"",convenio:"",telefone:"",peso:"",altura:""}); setShowForm(false);
             }} disabled={!f.nome.trim()} style={{...primaryBtn({width:"100%",justifyContent:"center",padding:"11px",fontSize:14}),opacity:f.nome.trim()?1:0.4,cursor:f.nome.trim()?"pointer":"not-allowed"}}>
               {editingStudent ? "Salvar Alterações" : "Cadastrar Paciente"}
@@ -1041,6 +1050,26 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
               <span style={lbl()}>Evolução clínica</span>
               <textarea value={evolucaoNeuro} onChange={e=>setEvolucaoNeuro(e.target.value)} rows={3} style={{...inp({resize:"vertical",lineHeight:1.5})}} placeholder="Evolução desde a última sessão..." />
             </div>
+          </CollapsibleSection>
+
+          {/* 📊 Escalas Padronizadas */}
+          <CollapsibleSection title="Escalas Padronizadas" icon="📊" expanded={expandedSections.includes("escalas")} onToggle={()=>toggleSection("escalas")}>
+            <div style={{fontSize:12,color:C.textMuted,marginBottom:12,lineHeight:1.5}}>Selecione uma escala validada para aplicar ao paciente. Os resultados ficam salvos neste módulo.</div>
+            <ScaleSelector scaleNames={["Fugl-Meyer","NIH Stroke Scale (NIHSS)","SCIM (Spinal Cord Independence Measure)","Expanded Disability Status Scale (EDSS)","Timed Up and Go (TUG)","Barthel Index","Functional Independence Measure (MIF)","Berg Balance Scale (BBS)","Modified Ashworth Scale (MAS)"]}
+              onSave={handleScaleSave} savedResults={savedScales} />
+            {savedScales.length > 0 && (
+              <div style={{marginTop:12}}>
+                <span style={{fontSize:9,fontWeight:700,color:C.green,textTransform:"uppercase",letterSpacing:"0.08em"}}>✓ Resultados Salvos: {savedScales.length}</span>
+                <div style={{display:"flex",flexDirection:"column",gap:4,marginTop:6}}>
+                  {savedScales.slice().reverse().map((r,i) => (
+                    <div key={i} style={{background:C.greenBg,borderRadius:6,padding:"6px 10px",fontSize:10,color:C.text,display:"flex",justifyContent:"space-between",alignItems:"center",border:`1px solid ${C.green}30`}}>
+                      <span><strong>{r.shortName || r.scaleName}</strong>: {r.pct}% — {r.interpretation}</span>
+                      <span style={{fontSize:9,color:C.textMuted}}>{r.savedAt?.slice(0,10) || r.date}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CollapsibleSection>
 
           {/* 🤖 Análise por IA */}

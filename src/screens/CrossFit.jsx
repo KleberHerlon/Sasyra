@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 import { AudioField, BodyMap, EvaSlider, TagSelect, SingleSelect, GonioRow, MRCRow, TestCard, Row, HonorariosCard } from "../components";
 import { useMediaQuery } from "../components";
@@ -238,7 +239,7 @@ const CREFITO_REGIOES = {
   "Norte":{consulta:140,sessao:130,avaliacao:210,relatorio:95},
 };
 
-export default function CrossFit({ student, students, onSelectStudent, onAddStudent, onUpdateStudent, onUpdateStudentById, onDeleteStudent, plan, onUpgrade, canUseFeature, tryFeature, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion }) {
+export default function CrossFit({ student, students, onSelectStudent, onAddStudent, onUpdateStudent, onUpdateStudentById, onDeleteStudent, plan, onUpgrade, canUseFeature, tryFeature, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion, currentModuleId, allPatients }) {
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -461,6 +462,7 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
             {showForm ? "Cancelar" : editingStudent ? "✏️ Editando" : "+ Novo Aluno"}
           </button>
         </div>
+        <AssignFromOtherModules allPatients={allPatients} currentModuleId={currentModuleId} onUpdateStudentById={onUpdateStudentById} accentColor={C.blue} />
 
         {showForm && (
           <div style={{ ...card(), marginBottom:16, border:`1px solid ${C.amber}50` }}>
@@ -498,7 +500,7 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
                 Object.entries(f).forEach(([k, v]) => onUpdateStudent(k, v));
                 setEditingStudent(null);
               } else {
-                onAddStudent({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10) });
+                onAddStudent({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10), assignedModules: [currentModuleId] });
               }
               setF({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
               setShowForm(false);

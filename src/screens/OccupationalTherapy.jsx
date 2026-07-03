@@ -3,6 +3,7 @@ import Accordion from "../components/Accordion";
 import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 import { AudioField, BodyMap, EvaSlider, TagSelect, SingleSelect, GonioRow, MRCRow, TestCard, Row, HonorariosCard } from "../components";
 import { useMediaQuery } from "../components";
+import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import { useClinicalScan } from "../hooks/useClinicalScan.js";
 import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
 import { detectLocalDor, extractClinicalEntities } from "../utils/clinicalDetection.js";
@@ -290,7 +291,7 @@ function getMergedRedFlags(kbList) {
 }
 
 // ── MAIN COMPONENT ──────────────────────────────────────────────────────────
-export default function OccupationalTherapy({ student, students, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById, plan, onUpgrade, canUseFeature, tryFeature, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion }) {
+export default function OccupationalTherapy({ student, students, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById, plan, onUpgrade, canUseFeature, tryFeature, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion, currentModuleId, allPatients }) {
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -545,9 +546,12 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
 
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
           <span style={{ fontSize:15, fontWeight:700, color:C.text }}>Pacientes {(students||[]).length > 0 && <span style={{ color:C.textMuted, fontWeight:400, fontSize:13 }}>({(students||[]).length})</span>}</span>
-          <button onClick={() => { setShowForm(!showForm); setEditingStudent(null); if (!showForm) setF({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" }); }} style={primaryBtn({ padding:"9px 18px", fontSize:13 })}>
-            {showForm ? "Cancelar" : editingStudent ? "✏️ Editando" : "+ Novo Paciente"}
-          </button>
+          <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+            <AssignFromOtherModules allPatients={allPatients} currentModuleId={currentModuleId} onUpdateStudentById={onUpdateStudentById} />
+            <button onClick={() => { setShowForm(!showForm); setEditingStudent(null); if (!showForm) setF({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" }); }} style={primaryBtn({ padding:"9px 18px", fontSize:13 })}>
+              {showForm ? "Cancelar" : editingStudent ? "✏️ Editando" : "+ Novo Paciente"}
+            </button>
+          </div>
         </div>
 
         {showForm && (
@@ -586,7 +590,7 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
                 Object.entries(f).forEach(([k, v]) => onUpdateStudent(k, v));
                 setEditingStudent(null);
               } else {
-                onAddStudent({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10) });
+                onAddStudent({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10), assignedModules:[currentModuleId] });
               }
               setF({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
               setShowForm(false);

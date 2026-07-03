@@ -1,30 +1,34 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { EvaSlider, TagSelect, SingleSelect, AudioField, useProgress, Section, Row, Field, SubHeading, useMediaQuery, GonioRow, MRCRow, MUSCLES, JOINTS, MVMT, getRef, isOutOfRange, PaywallModal } from "./components";
 import LanguageSwitcher from "./components/LanguageSwitcher";
-import Assessment from "./Assessment";
 import ScaleModal from "./ScaleModal";
 import SCALES from "./scales";
-import Agenda from "./screens/Agenda";
-import Financeiro from "./screens/Financeiro";
-import Plans from "./screens/Plans";
-import SubscriptionSettings from "./screens/SubscriptionSettings";
-import Integrations from "./screens/Integrations";
 import { useSubscription } from "./hooks/useSubscription";
 import { useSupabasePatients, useSupabaseAssessments, useSupabaseLogs } from "./hooks/useSupabaseData";
-import ExpressAssessment from "./components/ExpressAssessment";
-import EvidencePanel from "./components/EvidencePanel";
 import { detectKB, detectMultipleKB } from "./utils/clinicalDetection";
-import Pediatria from "./screens/Pediatria";
-import Neuro from "./screens/Neuro";
-import CardioRespiratory from "./screens/CardioRespiratory";
-import UroGynecology from "./screens/UroGynecology";
-import Geriatria from "./screens/Geriatria";
-import DermatoFunctional from "./screens/DermatoFunctional";
-import Rheumatology from "./screens/Rheumatology";
-import SportsPhysio from "./screens/SportsPhysio";
-import Oncology from "./screens/Oncology";
 import { FISIO_SUB_MODULES, FISIO_MODULE_MAP } from "./data/modules";
+import { filterPatientsByModule, MODULE_LABELS } from "./data/moduleAssignment";
+import AssignModulesModal from "./components/AssignModulesModal";
+
+const Assessment = React.lazy(() => import("./Assessment"));
+const Agenda = React.lazy(() => import("./screens/Agenda"));
+const Financeiro = React.lazy(() => import("./screens/Financeiro"));
+const Plans = React.lazy(() => import("./screens/Plans"));
+const SubscriptionSettings = React.lazy(() => import("./screens/SubscriptionSettings"));
+const Integrations = React.lazy(() => import("./screens/Integrations"));
+const ExpressAssessment = React.lazy(() => import("./components/ExpressAssessment"));
+const EvidencePanel = React.lazy(() => import("./components/EvidencePanel"));
+const Neuro = React.lazy(() => import("./screens/Neuro"));
+const Pediatria = React.lazy(() => import("./screens/Pediatria"));
+const CardioRespiratory = React.lazy(() => import("./screens/CardioRespiratory"));
+const UroGynecology = React.lazy(() => import("./screens/UroGynecology"));
+const Geriatria = React.lazy(() => import("./screens/Geriatria"));
+const DermatoFunctional = React.lazy(() => import("./screens/DermatoFunctional"));
+const Rheumatology = React.lazy(() => import("./screens/Rheumatology"));
+const SportsPhysio = React.lazy(() => import("./screens/SportsPhysio"));
+const Oncology = React.lazy(() => import("./screens/Oncology"));
+const GlobalDashboard = React.lazy(() => import("./screens/GlobalDashboard"));
 
 const FISIO_SCREEN_MAP = {
   Neuro,
@@ -37,6 +41,12 @@ const FISIO_SCREEN_MAP = {
   SportsPhysio,
   Oncology,
 };
+
+const LazyFallback = () => (
+  <div style={{ padding: 40, textAlign: "center", color: "var(--textSub)", fontSize: 13 }}>
+    Carregando...
+  </div>
+);
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -992,58 +1002,74 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
           <text x="200" y="50" fill={C.text} fontSize="32" fontWeight="900" letterSpacing="8" fontFamily={F} textAnchor="middle">SASYRA</text>
         </svg>
 
-        <h1 style={{ fontSize:30, fontWeight:900, margin:"0 0 12px", lineHeight:1.2, background:"linear-gradient(135deg, #4ADE80, #22C55E)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
-          Onde a clínica encontra<br/>a ciência.
-        </h1>
-        <p style={{ fontSize:14, color:C.textSub, lineHeight:1.7, margin:"0 auto 36px", maxWidth:480 }}>
-          O SASYRA une sua prática clínica às melhores evidências científicas disponíveis. 
-          Toda avaliação, conduta e relatório respaldados por diretrizes internacionais 
-          como JOSPT, NICE e Cochrane — sem você precisar abrir um artigo sequer.
-        </p>
-
-        {/* ── Evidence highlight ──────────────────────────────────────── */}
-
-        <div style={{ background:`linear-gradient(135deg, ${C.purple}10, ${C.card})`, border:`1px solid ${C.purple}40`, borderRadius:16, padding:"24px 20px", marginBottom:36, textAlign:"center" }}>
-          <div style={{ fontSize:28, marginBottom:8 }}>🔬</div>
-          <div style={{ fontSize:15, fontWeight:800, color:C.purple, marginBottom:6 }}>Prática baseada em evidências, automatizada</div>
-          <p style={{ fontSize:12, color:C.textSub, lineHeight:1.7, maxWidth:440, margin:"0 auto" }}>
-            Enquanto você avalia o paciente, o SASYRA cruza os achados com as diretrizes mais recentes de 
-            lombalgia, ombro, joelho, cervical e muito mais. O plano de tratamento sugerido já vem 
-            com o nível de evidência, ano da diretriz e referência. Você pratica no mais alto padrão 
-            científico — sem esforço extra.
+        <div style={{ position:"relative", marginBottom:16 }}>
+          <div style={{ fontSize:11, fontWeight:600, letterSpacing:3, textTransform:"uppercase", color:C.green, marginBottom:8, opacity:0.8 }}>
+            SASYRA — Sistema de Avaliação Científica
+          </div>
+          <h1 style={{ fontSize:34, fontWeight:900, margin:"0 0 6px", lineHeight:1.15, letterSpacing:"-0.5px" }}>
+            <span style={{ background:"linear-gradient(135deg, #4ADE80, #16A34A)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+              Sua clínica merece<br/>decisões com respaldo científico.
+            </span>
+          </h1>
+          <p style={{ fontSize:15, fontWeight:400, color:C.textSub, lineHeight:1.6, margin:"10px auto 28px", maxWidth:460 }}>
+            O SASYRA transforma horas de pesquisa em segundos. Enquanto você avalia,
+            o sistema cruza cada achado clínico com as diretrizes internacionais 
+            — JOSPT, NICE, Cochrane — e entrega um plano de tratamento hierarquizado 
+            por nível de evidência, com referência e ano da publicação.
           </p>
-          <div style={{ display:"flex", justifyContent:"center", gap:16, marginTop:14, flexWrap:"wrap" }}>
-            {["JOSPT · Nível A", "NICE · Guideline 2023", "Cochrane · Revisão Sistemática"].map((s,i) => (
-              <span key={i} style={{ fontSize:10, fontWeight:700, color:C.purple, background:`${C.purple}18`, padding:"4px 12px", borderRadius:6, border:`1px solid ${C.purple}30` }}>
+          <div style={{ display:"flex", justifyContent:"center", gap:10, flexWrap:"wrap", marginBottom:24 }}>
+            {["JOSPT · Nível A", "NICE · Guideline 2024", "Cochrane · Revisão Sistemática", "PubMed · Atualizado"].map((s,i) => (
+              <span key={i} style={{ fontSize:9, fontWeight:700, letterSpacing:"0.3px", color:C.green, background:`${C.green}14`, padding:"4px 10px", borderRadius:20, border:`1px solid ${C.green}25` }}>
                 {s}
               </span>
             ))}
           </div>
         </div>
 
-        <div style={{ display:"flex", justifyContent:"center", gap:32, marginBottom:40, flexWrap:"wrap" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:28 }}>
           {[
-            { icon:"⏱️", value:"90 min → 15 min", label:"Tempo de avaliação completa" },
-            { icon:"📊", value:"1 clique", desc:"Relatório profissional com CIF + evidências + evolução" },
-            { icon:"💰", value:"+R$ 30 a R$ 50", label:"Valor agregado por sessão" },
+            { icon:"⚡", value:"15 min", label:"Avaliação completa", sub:"O que levava 90 min" },
+            { icon:"📋", value:"1 clique", label:"Relatório completo", sub:"CIF + evidências + evolução" },
+            { icon:"📈", value:"+R$ 35", label:"Valor agregado", sub:"por sessão atendida" },
+            { icon:"🏆", value:"50+", label:"Clínicas parceiras", sub:"em todo o Brasil" },
           ].map((p,i) => (
-            <div key={i} style={{ textAlign:"center", minWidth:120 }}>
-              <div style={{ fontSize:24, marginBottom:4 }}>{p.icon}</div>
-              <div style={{ fontSize:17, fontWeight:900, color:C.green, marginBottom:2 }}>{p.value}</div>
-              <div style={{ fontSize:11, color:C.textDim }}>{p.desc || p.label}</div>
+            <div key={i}
+              style={{
+                background:`${C.card}80`, border:`1px solid ${C.border}50`, borderRadius:12,
+                padding:"14px 12px", textAlign:"center", backdropFilter:"blur(4px)",
+                transition:"transform 0.2s, border-color 0.2s",
+                cursor:"default",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = C.green; e.currentTarget.style.transform = "translateY(-2px)" }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = `${C.border}50`; e.currentTarget.style.transform = "none" }}>
+              <div style={{ fontSize:20, marginBottom:2 }}>{p.icon}</div>
+              <div style={{ fontSize:20, fontWeight:900, color:C.green, lineHeight:1.1, marginBottom:1 }}>{p.value}</div>
+              <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:2 }}>{p.label}</div>
+              <div style={{ fontSize:11, fontWeight:500, color:C.textSub, lineHeight:1.3 }}>{p.sub}</div>
             </div>
           ))}
         </div>
 
-        <div style={{ background:`linear-gradient(135deg, #0D9E5C12, ${C.card})`, border:`1px solid ${C.green}40`, borderRadius:16, padding:"18px 20px", marginBottom:40 }}>
-          <div style={{ fontSize:13, color:C.textMuted, marginBottom:4 }}>Investimento a partir de</div>
-          <div style={{ fontSize:28, fontWeight:900, color:C.green }}>R$ 19,90<span style={{ fontSize:14, fontWeight:400, color:C.textDim }}>/mês</span></div>
-          <div style={{ fontSize:12, color:C.textSub, marginTop:4 }}>Se paga em 1 atendimento · 7 dias grátis · Sem cartão de crédito</div>
+        <div style={{ background:`linear-gradient(135deg, #0D9E5C14, ${C.card})`, border:`1px solid ${C.green}40`, borderRadius:16, padding:"20px 20px", marginBottom:28, position:"relative", overflow:"hidden" }}>
+          <div style={{ position:"absolute", top:"-40%", right:"-10%", width:180, height:180, borderRadius:"50%", background:`${C.green}08`, pointerEvents:"none" }} />
+          <div style={{ position:"relative", zIndex:1 }}>
+            <div style={{ display:"flex", alignItems:"baseline", justifyContent:"center", gap:4, marginBottom:4 }}>
+              <span style={{ fontSize:13, color:C.textMuted, fontWeight:500 }}>a partir de</span>
+              <span style={{ fontSize:34, fontWeight:900, color:C.green, letterSpacing:"-1px" }}>R$ 19,90</span>
+              <span style={{ fontSize:13, color:C.textDim, fontWeight:400 }}>/mês</span>
+            </div>
+            <div style={{ display:"flex", justifyContent:"center", gap:12, flexWrap:"wrap", marginTop:8 }}>
+              {["✅ 7 dias grátis", "💳 Sem cartão", "🚫 Sem fidelidade"].map((tag,i) => (
+                <span key={i} style={{ fontSize:11, color:C.textSub, fontWeight:500 }}>{tag}</span>
+              ))}
+            </div>
+            <div style={{ marginTop:10, padding:"8px 14px", background:`${C.amber}14`, borderRadius:8, border:`1px solid ${C.amber}25`, display:"inline-block", marginLeft:"auto", marginRight:"auto" }}>
+              <span style={{ fontSize:11, fontWeight:700, color:C.amber }}>
+                ⚡ Se paga em 1 única sessão
+              </span>
+            </div>
+          </div>
         </div>
-
-        <p style={{ fontSize:12, color:C.textDim, marginBottom:20 }}>
-          <span style={{ color:C.amber }}>★</span> Utilizado por fisioterapeutas em mais de 50 clínicas no Brasil
-        </p>
 
         <div style={{ maxWidth:360, margin:"0 auto" }}>
           <div style={{ textAlign:"left", marginBottom:12 }}>
@@ -1153,13 +1179,22 @@ function ModuleSelector({ user, onSelect, onLogout, theme, onToggleTheme }) {
 }
 
 // ── Patient List ──────────────────────────────────────────────────────────────
-function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChange, user, assessmentHistory, onDelete, plan, theme, onToggleTheme, noHeader }) {
+function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChange, user, assessmentHistory, onDelete, onDashboard, plan, theme, onToggleTheme, noHeader, onUpdatePatientById }) {
   const { t } = useTranslation();
   const [showClinicasUpsell, setShowClinicasUpsell] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [assignTarget, setAssignTarget] = useState(null);
   const isMobile = useMediaQuery("(max-width:767px)");
+  const filteredPatients = useMemo(() =>
+    patients.filter(p => {
+      const am = p.assignedModules;
+      if (!am || am.length === 0) return true;
+      return am.includes("ortopedica");
+    }),
+    [patients]
+  );
 
   const redFlagCount = useMemo(() => {
     const map = {};
@@ -1177,7 +1212,7 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChan
 
   const handleAdd = () => {
     if (!f.nome.trim()) return;
-    onAdd({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10) });
+    onAdd({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10), assignedModules: ["ortopedica"] });
     setF({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
     setShowForm(false);
   };
@@ -1230,7 +1265,7 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChan
         )}
 
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-          <span style={{ fontSize:15, fontWeight:700, color:C.text }}>Pacientes {patients.length > 0 && <span style={{ color:C.textMuted, fontWeight:400, fontSize:13 }}>({patients.length})</span>}</span>
+          <span style={{ fontSize:15, fontWeight:700, color:C.text }}>Pacientes {filteredPatients.length > 0 && <span style={{ color:C.textMuted, fontWeight:400, fontSize:13 }}>({filteredPatients.length})</span>}</span>
           <button onClick={() => setShowForm(!showForm)} style={primaryBtn({ padding:"9px 18px", fontSize:13 })}>
             {showForm ? "Cancelar" : "+ Novo Paciente"}
           </button>
@@ -1265,16 +1300,24 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChan
           </div>
         )}
 
-        {patients.length === 0 && !showForm && (
+        {filteredPatients.length === 0 && !showForm && (
           <div style={{ ...cardStyle(), textAlign:"center", padding:"48px 24px" }}>
             <div style={{ fontSize:40, marginBottom:12 }}>🩺</div>
-            <div style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:6 }}>Nenhum paciente cadastrado</div>
-            <div style={{ fontSize:13, color:C.textMuted, marginBottom:18 }}>Clique em "+ Novo Paciente" para começar</div>
+            <div style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:6 }}>Nenhum paciente encontrado</div>
+            <div style={{ fontSize:13, color:C.textMuted, marginBottom:18 }}>{patients.length > 0 ? "Nenhum paciente atribuído a este módulo. Use o botão 👥 abaixo para atribuir." : 'Clique em "+ Novo Paciente" para começar'}</div>
           </div>
         )}
 
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-          {[...patients].reverse().map(p => {
+          {patients.length > 0 && filteredPatients.length < patients.length && (
+            <div style={{ fontSize:11, color:C.textMuted, textAlign:"center", padding:"6px 0" }}>
+              {patients.length - filteredPatients.length} paciente(s) não atribuído(s) a este módulo.
+              <button onClick={() => setAssignTarget({})} style={{ background:"transparent", border:"none", color:C.green, cursor:"pointer", fontFamily:F, fontSize:11, fontWeight:700, marginLeft:4, textDecoration:"underline" }}>
+                Atribuir paciente
+              </button>
+            </div>
+          )}
+          {[...filteredPatients].reverse().map(p => {
             const pid = p.id || p.nome;
             const count = redFlagCount[pid] || 0;
             return (
@@ -1299,12 +1342,25 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChan
                       {p.profissao && <span>{p.profissao}</span>}
                       {p.convenio && <span>{p.convenio}</span>}
                     </div>
+                    <div style={{ fontSize:10, color:C.textDim, display:"flex", gap:4, flexWrap:"wrap", marginTop:4 }}>
+                      {(p.assignedModules || ["ortopedica"]).map(mid => (
+                        <span key={mid} style={{ background:`${C.greenBg}`, border:`1px solid ${C.green}40`, borderRadius:4, padding:"1px 6px", fontSize:9, color:C.green }}>
+                          {MODULE_LABELS[mid] || mid}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                   <span style={{ color:C.green, fontSize:16 }}>→</span>
                 </button>
+                <button onClick={() => setAssignTarget(p)}
+                  style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:12, cursor:"pointer", width:48, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, color:C.textDim, fontFamily:F, flexShrink:0, transition:"all 0.12s" }}
+                  title="Atribuir a módulos">👥</button>
                 <button onClick={() => setDeleteTarget(p)}
                   style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:12, cursor:"pointer", width:48, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, color:C.textDim, fontFamily:F, flexShrink:0, transition:"all 0.12s" }}
                   title="Excluir paciente">🗑</button>
+                <button onClick={() => onDashboard?.(p)}
+                  style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:12, cursor:"pointer", width:48, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, color:C.textDim, fontFamily:F, flexShrink:0, transition:"all 0.12s" }}
+                  title="Dashboard">📊</button>
               </div>
             );
           })}
@@ -1341,6 +1397,21 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChan
             </div>
           </div>
         </div>
+      )}
+
+      {assignTarget && (
+        <AssignModulesModal
+          patient={assignTarget}
+          assignedModules={assignTarget.assignedModules || []}
+          onSave={(selected) => {
+            const pid = assignTarget.id || assignTarget.nome;
+            if (onUpdatePatientById) {
+              onUpdatePatientById(pid, { assignedModules: selected });
+            }
+            setAssignTarget(null);
+          }}
+          onClose={() => setAssignTarget(null)}
+        />
       )}
     </div>
   );
@@ -1401,16 +1472,20 @@ function FisioSubModulePicker({ user, onSelect, onLogout, theme, onToggleTheme }
   );
 }
 
-function SubModuleLayout({ title, onBack, theme, onToggleTheme, children }) {
+function SubModuleLayout({ title, onBack, theme, onToggleTheme, onAgenda, onFinanceiro, children }) {
   return (
     <div style={{ background:`radial-gradient(ellipse at 50% 0%, ${C.card} 0%, ${C.bg} 70%)`, minHeight:"100vh", fontFamily:F, color:C.text, position:"relative" }}>
       <div style={{ position:"fixed", top:0, left:0, right:0, zIndex:100, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 20px", background:C.bg, borderBottom:`1px solid ${C.border}` }}>
         <button onClick={onBack} style={{ background:"transparent", border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"6px 14px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:F, display:"flex", alignItems:"center", gap:6 }}>
           ← {title}
         </button>
-        <button onClick={onToggleTheme} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.textMuted, padding:"5px 8px", fontSize:14, lineHeight:1, cursor:"pointer", fontFamily:F }}>
-          {theme === "dark" ? "☀️" : "🌙"}
-        </button>
+        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          {onAgenda && <button onClick={onAgenda} style={ghostBtn({ fontSize:12 })}>📅 Agenda</button>}
+          {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ fontSize:12 })}>💰 Financeiro</button>}
+          <button onClick={onToggleTheme} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.textMuted, padding:"5px 8px", fontSize:14, lineHeight:1, cursor:"pointer", fontFamily:F }}>
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
+        </div>
       </div>
       <div style={{ paddingTop:60 }}>
         {children}
@@ -1508,7 +1583,7 @@ export default function Sasyra() {
       setPaywallOpen(true);
       return;
     }
-    setPatients(ps => [...ps, p]);
+    setPatients(ps => [...ps, { assignedModules: [], ...p }]);
   };
 
   const updatePatientById = (id, updates) =>
@@ -1539,6 +1614,11 @@ export default function Sasyra() {
     setPatientView(false);
     setTab(targetTab || "avaliacao");
     setAppView("patients");
+  }, []);
+
+  const goToDashboard = useCallback((p) => {
+    setPt(p);
+    setAppView("globalDashboard");
   }, []);
 
   // Anamnese
@@ -1849,43 +1929,57 @@ NÃO cite nem recomende cirurgias, medicamentos, infiltrações ou qualquer proc
     const mod = FISIO_MODULE_MAP[subModule];
     if (mod && mod.screen && FISIO_SCREEN_MAP[mod.screen]) {
       const Comp = FISIO_SCREEN_MAP[mod.screen];
+      const filteredPatients = filterPatientsByModule(patients, subModule);
       return (
-        <SubModuleLayout title={mod.title} onBack={() => setSubModule(null)} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")}>
-          <Comp
-            students={patients}
-            student={pt}
-            onSelectStudent={selectPatient}
-            onAddStudent={addPatient}
-            onUpdateStudent={up}
-            onDeleteStudent={deletePatient}
-            onUpdateStudentById={updatePatientById}
-            plan={plan}
-            onUpgrade={() => { setAppView("plans"); }}
-            canUseFeature={canUseFeature}
-            tryFeature={tryFeature}
-            aiRemaining={aiRemaining}
-            aiLimit={aiLimit}
-            hasExpansion={hasExpansion}
-            purchaseAIExpansion={purchaseAIExpansion}
-          />
+        <SubModuleLayout title={mod.title} onBack={() => setSubModule(null)} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} onAgenda={() => setAppView("agenda")} onFinanceiro={() => setAppView("financeiro")}>
+          <Suspense fallback={<LazyFallback />}>
+            <Comp
+              students={filteredPatients}
+              allPatients={patients}
+              currentModuleId={subModule}
+              student={pt}
+              onSelectStudent={selectPatient}
+              onAddStudent={addPatient}
+              onUpdateStudent={up}
+              onDeleteStudent={deletePatient}
+              onUpdateStudentById={updatePatientById}
+              plan={plan}
+              onUpgrade={() => { setAppView("plans"); }}
+              canUseFeature={canUseFeature}
+              tryFeature={tryFeature}
+              aiRemaining={aiRemaining}
+              aiLimit={aiLimit}
+              hasExpansion={hasExpansion}
+              purchaseAIExpansion={purchaseAIExpansion}
+            />
+          </Suspense>
         </SubModuleLayout>
       );
     }
   }
 
   if (appView === "agenda") return (
-    <Agenda patients={patients} onNavigateToPatient={navigateToPatientFromAgenda} onNavigate={(v) => setAppView(v)} />
+    <Suspense fallback={<LazyFallback />}>
+      <Agenda patients={patients} onNavigateToPatient={navigateToPatientFromAgenda} onNavigate={(v) => setAppView(v)} />
+    </Suspense>
   );
   if (appView === "financeiro") return (
-    <Financeiro onNavigateToPatient={navigateToPatientFromAgenda} onNavigate={(v) => setAppView(v)} />
+    <Suspense fallback={<LazyFallback />}>
+      <Financeiro onNavigateToPatient={navigateToPatientFromAgenda} onNavigate={(v) => setAppView(v)} />
+    </Suspense>
   );
-  if (appView === "plans") return <Plans onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} />;
-  if (appView === "subscription") return <SubscriptionSettings onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} />;
-  if (appView === "integrations") return <Integrations onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} />;
+  if (appView === "plans") return <Suspense fallback={<LazyFallback />}><Plans onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} /></Suspense>;
+  if (appView === "subscription") return <Suspense fallback={<LazyFallback />}><SubscriptionSettings onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} /></Suspense>;
+  if (appView === "integrations") return <Suspense fallback={<LazyFallback />}><Integrations onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} /></Suspense>;
+  if (appView === "globalDashboard") return (
+    <Suspense fallback={<LazyFallback />}>
+      <GlobalDashboard patient={pt} onBack={() => { setAppView("patients"); setPatientView(true); }} />
+    </Suspense>
+  );
   if (patientView) {
     const content = (
       <>
-        <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} onAgenda={() => setAppView("agenda")} onViewChange={(v) => setAppView(v)} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} plan={plan} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} noHeader={subModule === "ortopedica"} />
+        <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} onAgenda={() => setAppView("agenda")} onViewChange={(v) => setAppView(v)} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} onDashboard={goToDashboard} plan={plan} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} noHeader={subModule === "ortopedica"} onUpdatePatientById={updatePatientById} />
         <PaywallModal open={paywallOpen} onClose={() => setPaywallOpen(false)}
           featureName={paywallFeature.name} featureDesc={paywallFeature.desc}
           onUpgrade={() => { setPaywallOpen(false); setAppView("plans"); }} />
@@ -1894,7 +1988,7 @@ NÃO cite nem recomende cirurgias, medicamentos, infiltrações ou qualquer proc
     );
     if (subModule === "ortopedica") {
       const mod = FISIO_MODULE_MAP["ortopedica"];
-      return <SubModuleLayout title={mod?.title || "Fisioterapia Ortopédica"} onBack={() => setSubModule(null)} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")}>{content}</SubModuleLayout>;
+      return <SubModuleLayout title={mod?.title || "Fisioterapia Ortopédica"} onBack={() => setSubModule(null)} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} onAgenda={() => setAppView("agenda")} onFinanceiro={() => setAppView("financeiro")}>{content}</SubModuleLayout>;
     }
     return content;
   }
@@ -1983,64 +2077,70 @@ NÃO cite nem recomende cirurgias, medicamentos, infiltrações ou qualquer proc
 
         {/* ══════════════ AVALIAÇÃO ══════════════════════════════════════════ */}
         {isExpress ? (
-          <ExpressAssessment
-            pt={pt} up={up}
-            queixa={queixa} setQueixa={setQueixa} setQueixaKey={setQueixaKey}
-            localDor={localDor} setLocalDor={setLocalDor}
-            setRegiao={setRegiao}
-            impressaoClinica={impressaoClinica} setImpressaoClinica={setImpressaoClinica}
-            onSave={saveExpressAssessment}
-            onCancel={() => setIsExpress(false)}
-          />
+          <Suspense fallback={<LazyFallback />}>
+            <ExpressAssessment
+              pt={pt} up={up}
+              queixa={queixa} setQueixa={setQueixa} setQueixaKey={setQueixaKey}
+              localDor={localDor} setLocalDor={setLocalDor}
+              setRegiao={setRegiao}
+              impressaoClinica={impressaoClinica} setImpressaoClinica={setImpressaoClinica}
+              onSave={saveExpressAssessment}
+              onCancel={() => setIsExpress(false)}
+            />
+          </Suspense>
         ) : (tab==="avaliacao" && (
-          <Assessment
-            pt={pt} up={up} regiao={regiao} setRegiao={setRegiao}
-            queixa={queixa} setQueixa={setQueixa} setQueixaKey={setQueixaKey}
-            localDor={localDor} setLocalDor={setLocalDor}
-            caraterDor={caraterDor} setCaraterDor={setCaraterDor}
-            tempoDor={tempoDor} setTempoDor={setTempoDor}
-            melhora={melhora} setMelhora={setMelhora}
-            piora={piora} setPiora={setPiora}
-            hda={hda} setHda={setHda}
-            comorbid={comorbid} setComorbid={setComorbid}
-            antec={antec} setAntec={setAntec}
-            meds={meds} setMeds={setMeds}
-            yellowFlagsState={yellowFlagsState} setYellowFlagsState={setYellowFlagsState}
-            selectedRedFlags={selectedRedFlags} setSelectedRedFlags={setSelectedRedFlags}
-            evaMov={evaMov} setEvaMov={setEvaMov}
-            evaRep={evaRep} setEvaRep={setEvaRep}
-            avds={avds} setAvds={setAvds}
-            objTrat={objTrat} setObjTrat={setObjTrat}
-            nivelAti={nivelAti} setNivelAti={setNivelAti}
-            postura={postura} setPostura={setPostura}
-            marcha={marcha} setMarcha={setMarcha}
-            edema={edema} setEdema={setEdema}
-            palpacao={palpacao} setPalpacao={setPalpacao}
-            sensib={sensib} setSensib={setSensib}
-            reflexos={reflexos} setReflexos={setReflexos}
-            forca={forca} addF={addF} updF={updF} remF={remF}
-            gonio={gonio} addG={addG} updG={updG} remG={remG}
-            tests={tests} setTests={setTests}
-            obs={obs} setObs={setObs}
-            aiLoad={aiLoad} runAI={runAI} aiRes={aiRes}
-            kb={kb} kbList={kbList} queixaKeys={queixaKeys}
-            evidence={evidence} cifSuggestions={cifSuggestions} autoCIF={autoCIF} imc={imc}
-            mergedRedFlags={mergedRedFlags} mergedEscalas={mergedEscalas}
-            progSteps={progSteps} detectKB={detectKB}
-            diagnosticoCinesio={diagnosticoCinesio} setDiagnosticoCinesio={setDiagnosticoCinesio}
-            assessmentHistory={assessmentHistory} saveAssessment={saveAssessment}
-            loadAssessment={loadAssessment} resetAssessment={resetAssessment}
-            patientId={pt.id || pt.nome}
-            tryFeature={tryFeature} plan={plan}
-            onUpgrade={() => { setPaywallOpen(false); setAppView("plans"); }}
-            aiRemaining={aiRemaining} aiLimit={aiLimit}
-            hasExpansion={hasExpansion} purchaseAIExpansion={purchaseAIExpansion}
-          />
+          <Suspense fallback={<LazyFallback />}>
+            <Assessment
+              pt={pt} up={up} regiao={regiao} setRegiao={setRegiao}
+              queixa={queixa} setQueixa={setQueixa} setQueixaKey={setQueixaKey}
+              localDor={localDor} setLocalDor={setLocalDor}
+              caraterDor={caraterDor} setCaraterDor={setCaraterDor}
+              tempoDor={tempoDor} setTempoDor={setTempoDor}
+              melhora={melhora} setMelhora={setMelhora}
+              piora={piora} setPiora={setPiora}
+              hda={hda} setHda={setHda}
+              comorbid={comorbid} setComorbid={setComorbid}
+              antec={antec} setAntec={setAntec}
+              meds={meds} setMeds={setMeds}
+              yellowFlagsState={yellowFlagsState} setYellowFlagsState={setYellowFlagsState}
+              selectedRedFlags={selectedRedFlags} setSelectedRedFlags={setSelectedRedFlags}
+              evaMov={evaMov} setEvaMov={setEvaMov}
+              evaRep={evaRep} setEvaRep={setEvaRep}
+              avds={avds} setAvds={setAvds}
+              objTrat={objTrat} setObjTrat={setObjTrat}
+              nivelAti={nivelAti} setNivelAti={setNivelAti}
+              postura={postura} setPostura={setPostura}
+              marcha={marcha} setMarcha={setMarcha}
+              edema={edema} setEdema={setEdema}
+              palpacao={palpacao} setPalpacao={setPalpacao}
+              sensib={sensib} setSensib={setSensib}
+              reflexos={reflexos} setReflexos={setReflexos}
+              forca={forca} addF={addF} updF={updF} remF={remF}
+              gonio={gonio} addG={addG} updG={updG} remG={remG}
+              tests={tests} setTests={setTests}
+              obs={obs} setObs={setObs}
+              aiLoad={aiLoad} runAI={runAI} aiRes={aiRes}
+              kb={kb} kbList={kbList} queixaKeys={queixaKeys}
+              evidence={evidence} cifSuggestions={cifSuggestions} autoCIF={autoCIF} imc={imc}
+              mergedRedFlags={mergedRedFlags} mergedEscalas={mergedEscalas}
+              progSteps={progSteps} detectKB={detectKB}
+              diagnosticoCinesio={diagnosticoCinesio} setDiagnosticoCinesio={setDiagnosticoCinesio}
+              assessmentHistory={assessmentHistory} saveAssessment={saveAssessment}
+              loadAssessment={loadAssessment} resetAssessment={resetAssessment}
+              patientId={pt.id || pt.nome}
+              tryFeature={tryFeature} plan={plan}
+              onUpgrade={() => { setPaywallOpen(false); setAppView("plans"); }}
+              aiRemaining={aiRemaining} aiLimit={aiLimit}
+              hasExpansion={hasExpansion} purchaseAIExpansion={purchaseAIExpansion}
+            />
+          </Suspense>
         ))}
 
         {/* ══════════════ EVIDÊNCIAS ══════════════════════════════════════════ */}
         {tab==="evidencias" && (
-          <EvidencePanel evidence={EVIDENCE} kb={KB} />
+          <Suspense fallback={<LazyFallback />}>
+            <EvidencePanel evidence={EVIDENCE} kb={KB} />
+          </Suspense>
         )}
 
         {/* ══════════════ DIÁRIO ══════════════════════════════════════════════ */}

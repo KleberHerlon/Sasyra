@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import Accordion from "../components/Accordion";
 import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 import CifAndHonorarios from "../components/CifAndHonorarios";
+import { CollapsibleSection, CollapsibleSub } from "../components";
+import ScaleSelector from "../components/ScaleSelector";
+import AssignFromOtherModules from "../components/AssignFromOtherModules";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -184,7 +186,7 @@ const ONCO_EVIDENCE = {
   },
 };
 
-export default function Oncology({ student, students, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById }) {
+export default function Oncology({ student, students, allPatients, currentModuleId, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById }) {
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -233,8 +235,16 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
 
   const [evolucaoOnco, setEvolucaoOnco] = useState("");
 
+  const [expandedSections, setExpandedSections] = useState([]);
+  const toggleSection = (id) => { setExpandedSections(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]); };
   const sid = student?.id || student?.nome;
   const enhancer = useEnhancer("oncologia", sid, `onco_enhancer_${sid}`);
+  const [savedScales, setSavedScales] = useState(() => { try { const d = localStorage.getItem(`onco_scales_${sid}`); return d ? JSON.parse(d) : []; } catch { return []; } });
+  const handleScaleSave = (result) => {
+    const next = [...savedScales, { ...result, savedAt: new Date().toISOString() }];
+    setSavedScales(next);
+    try { localStorage.setItem(`onco_scales_${sid}`, JSON.stringify(next)); } catch {}
+  };
   const oncoColors = { ...C, accent: C.amber, font: F };
 
   useEffect(() => {
@@ -291,6 +301,9 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
             {showForm ? "Cancelar" : editingStudent ? "✏️ Editando" : "+ Novo Paciente"}
           </button>
         </div>
+        <div style={{ marginTop:8 }}>
+          <AssignFromOtherModules allPatients={allPatients} currentModuleId={currentModuleId} onUpdateStudentById={onUpdateStudentById} accentColor={C.amber} />
+        </div>
 
         {showForm && (
           <div style={{ ...card(), marginBottom:16, border:`1px solid ${C.amber}50` }}>
@@ -328,7 +341,7 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
                 Object.entries(f).forEach(([k, v]) => onUpdateStudent(k, v));
                 setEditingStudent(null);
               } else {
-                onAddStudent({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10) });
+                onAddStudent({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10), assignedModules: [currentModuleId] });
               }
               setF({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
               setShowForm(false);
@@ -661,6 +674,24 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
               <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Avaliação</button>
             </div>
+            {/* 📊 Escalas Padronizadas */}
+            <CollapsibleSection title="Escalas Padronizadas" icon="📊" expanded={expandedSections.includes("escalas")} onToggle={()=>toggleSection("escalas")}>
+              <div style={{fontSize:12,color:C.textMuted,marginBottom:12,lineHeight:1.5}}>Selecione uma escala validada para aplicar ao paciente. Os resultados ficam salvos neste módulo.</div>
+              <ScaleSelector scaleNames={["ECOG Performance Status","Karnofsky Performance Status (KPS)","ESAS (Edmonton Symptom Assessment System)","DN4 (Douleur Neuropathique 4)","FACT-F (Functional Assessment of Cancer Therapy - Fatigue)","PALLIA-10"]} onSave={handleScaleSave} savedResults={savedScales} />
+              {savedScales.length > 0 && (
+                <div style={{marginTop:12}}>
+                  <span style={{fontSize:9,fontWeight:700,color:C.green,textTransform:"uppercase",letterSpacing:"0.08em"}}>✓ Resultados Salvos: {savedScales.length}</span>
+                  <div style={{display:"flex",flexDirection:"column",gap:4,marginTop:6}}>
+                    {savedScales.slice().reverse().map((r,i) => (
+                      <div key={i} style={{background:C.greenBg,borderRadius:6,padding:"6px 10px",fontSize:10,color:C.text,display:"flex",justifyContent:"space-between",alignItems:"center",border:`1px solid ${C.green}30`}}>
+                        <span><strong>{r.shortName || r.scaleName}</strong>: {r.pct}% — {r.interpretation}</span>
+                        <span style={{fontSize:9,color:C.textMuted}}>{r.savedAt?.slice(0,10) || r.date}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CollapsibleSection>
           </>
         )}
 
