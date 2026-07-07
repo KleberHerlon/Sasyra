@@ -530,6 +530,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
       setEdema(saved.edema || "");
       setPalpacao(saved.palpacao || "");
       setObs(saved.obs || "");
+      setEvolucaoNeuro(saved.evolucaoNeuro || "");
       setTests(saved.tests || {});
       setYellowFlags(saved.yellowFlags || []);
       setDiagnosticoCinesio(saved.diagnosticoCinesio || "");
@@ -555,7 +556,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
       masScores, masResult, bbsScores, bbsResult, mifScores, mifResult,
       tono, forcaNeuro, forcaRows, gonioRows, sensibilidade, coordenacao, tipoMarcha, reflexos,
       postura, marcha, edema, palpacao, obs,
-      tests, yellowFlags, diagnosticoCinesio, regiao, expandedSections, assessmentHistory,
+      tests, yellowFlags, evolucaoNeuro, diagnosticoCinesio, regiao, expandedSections, assessmentHistory,
       pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
     });
@@ -593,6 +594,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
     setPostura(saved.postura || []); setMarcha(saved.marcha || "");
     setEdema(saved.edema || ""); setPalpacao(saved.palpacao || ""); setObs(saved.obs || "");
     setTests(saved.tests || {}); setYellowFlags(saved.yellowFlags || []);
+    setEvolucaoNeuro(saved.evolucaoNeuro || "");
     setDiagnosticoCinesio(saved.diagnosticoCinesio || ""); setRegiao(saved.regiao || "");
     if (saved.pain) enhancer.setPain(saved.pain);
     if (saved.logs) enhancer.setLogs(saved.logs);
@@ -610,7 +612,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
     setTono(""); setForcaNeuro({}); setForcaRows([]); setGonioRows([]);
     setSensibilidade([]); setCoordenacao([]); setTipoMarcha([]); setReflexos([]);
     setPostura([]); setMarcha(""); setEdema(""); setPalpacao(""); setObs("");
-    setTests({}); setYellowFlags([]); setDiagnosticoCinesio(""); setRegiao("");
+    setTests({}); setYellowFlags([]); setEvolucaoNeuro(""); setDiagnosticoCinesio(""); setRegiao("");
     enhancer.setPain({ evaMov:0, evaRep:0, localDor:[], caraterDor:[], melhora:[], piora:[] });
     enhancer.setLogs([]); enhancer.setRedFlags([]); enhancer.setAiRes("");
   };
@@ -899,7 +901,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
             </CollapsibleSub>
           </CollapsibleSection>
 
-          <GeneralAssessment storageKey="neuro" studentId={sid} colors={{ ...C, accent: C.purple }} />
+          <GeneralAssessment storageKey="neuro" studentId={sid} colors={{ ...C, accent: C.purple }} initialBodyPain={localDor} />
 
           {/* ⚡ Dor e Funcionalidade */}
           <CollapsibleSection title="Dor e Funcionalidade" icon="⚡" expanded={expandedSections.includes("dor")} onToggle={()=>toggleSection("dor")}>

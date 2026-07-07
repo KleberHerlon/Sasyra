@@ -8,13 +8,14 @@ const YELLOW_FLAGS = [
   "Isolamento social", "Fadiga crônica", "Sobrecarga do cuidador",
 ];
 
-export default function GeneralAssessment({ storageKey, studentId, colors, onSave }) {
+export default function GeneralAssessment({ storageKey, studentId, colors, onSave, initialBodyPain }) {
   const [bodyPain, setBodyPain] = useState([]);
   const [caraterDor, setCaraterDor] = useState([]);
   const [tempoDor, setTempoDor] = useState("");
   const [melhora, setMelhora] = useState([]);
   const [piora, setPiora] = useState([]);
   const [yellowFlags, setYellowFlags] = useState([]);
+  const [loaded, setLoaded] = useState(false);
 
   const sid = studentId;
   const storageKeyFull = `${storageKey}_general_${sid}`;
@@ -34,7 +35,17 @@ export default function GeneralAssessment({ storageKey, studentId, colors, onSav
         setYellowFlags(d.yellowFlags || []);
       }
     } catch {}
+    setLoaded(true);
   }, [sid]);
+
+  useEffect(() => {
+    if (!loaded || !initialBodyPain?.length) return;
+    setBodyPain(prev => {
+      const merged = [...new Set([...prev, ...initialBodyPain])];
+      if (merged.length === prev.length) return prev;
+      return merged;
+    });
+  }, [initialBodyPain, loaded]);
 
   const persist = () => {
     const data = { bodyPain, caraterDor, tempoDor, melhora, piora, yellowFlags };
