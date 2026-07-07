@@ -787,7 +787,7 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
             {/* 📊 Escalas Padronizadas */}
             <CollapsibleSection title="Escalas Padronizadas" icon="📊" expanded={expandedSections.includes("escalas")} onToggle={()=>toggleSection("escalas")}>
               <div style={{fontSize:12,color:C.textMuted,marginBottom:12,lineHeight:1.5}}>Selecione uma escala validada para aplicar ao paciente. Os resultados ficam salvos neste módulo.</div>
-              <ScaleSelector scaleNames={["IKDC","Lysholm","Tegner Activity Scale","ACL-RSI","Y-Balance Test (SEBT) Composite","HAGOS","VISA-P","VISA-A","FAAM","Return to Sport Criteria (RTS)","LSI"]} onSave={handleScaleSave} savedResults={savedScales} />
+              <ScaleSelector scaleNames={["IKDC","Lysholm","Tegner Activity Scale","ACL-RSI","Y-Balance Test (SEBT) Composite","HAGOS","VISA-P","VISA-A","FAAM","Return to Sport Criteria (RTS)","LSI","Fonseca Anamnestic Index","RDC/TMD (Research Diagnostic Criteria for TMD)"]} onSave={handleScaleSave} savedResults={savedScales} />
               {savedScales.length > 0 && (
                 <div style={{marginTop:12}}>
                   <span style={{fontSize:9,fontWeight:700,color:C.green,textTransform:"uppercase",letterSpacing:"0.08em"}}>✓ Resultados Salvos: {savedScales.length}</span>

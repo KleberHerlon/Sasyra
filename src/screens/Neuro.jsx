@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
-import { AudioField, BodyMap, EvaSlider, TagSelect, SingleSelect, GonioRow, MRCRow, TestCard, Row, HonorariosCard, Section } from "../components";
+import { AudioField, EvaSlider, TagSelect, SingleSelect, GonioRow, MRCRow, TestCard, Row, HonorariosCard, Section } from "../components";
 import { useClinicalScan } from "../hooks/useClinicalScan.js";
 import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
 import { detectLocalDor, extractClinicalEntities } from "../utils/clinicalDetection.js";
 import { CIF } from "../data/cif.js";
 import ScaleSelector from "../components/ScaleSelector";
+import GeneralAssessment from "../components/GeneralAssessment";
 import { calcMAS, calcBBS, calcMIF } from "../data/neuroScales";
 import LogoSVG from "../components/LogoSVG";
 
@@ -865,18 +866,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
               {enhancer.redFlags.length > 0 && <div style={{fontSize:11,color:C.red,marginTop:4}}>⚠ {enhancer.redFlags.length} red flag(s) selecionada(s)</div>}
             </div>
 
-            <CollapsibleSub title="Caracterização da Dor">
-              <Row cols={isMobile?"1fr":"1fr 1fr"} gap="12px 16px">
-                <div><span style={lbl()}>Localização da dor</span><BodyMap value={localDor} onChange={setLocalDor} sex={student?.sexo} style={{marginBottom:4}} />
-                  {localDor.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>{localDor.map(r=><span key={r} style={{fontSize:10,color:C.green,background:C.greenBg,borderRadius:6,padding:"2px 8px"}}>📍 {r}</span>)}</div>}</div>
-                <div><span style={lbl()}>Caráter da dor</span><TagSelect options={["Latejante","Queimação","Pontada","Pressão","Facada","Formigamento","Peso","Cãibra","Choques","Mecânica","Inflamatória","Neuropática"]} value={caraterDor} onChange={setCaraterDor} activeColor={C.purple} /></div>
-              </Row>
-              <Row cols={isMobile?"1fr":"1fr 1fr 1fr"} gap="12px 16px" style={{marginTop:12}}>
-                <div><span style={lbl()}>Tempo de dor</span><select value={tempoDor} onChange={e=>setTempoDor(e.target.value)} style={sel()}>{["","< 2 semanas (aguda)","2-6 semanas (subaguda)","6 sem - 3 meses","3-6 meses (crônica)","6-12 meses","1-2 anos","> 2 anos"].map(o=><option key={o} value={o}>{o||"Selecionar…"}</option>)}</select></div>
-                <div><span style={lbl()}>Melhora</span><TagSelect options={["Repouso","Calor","Frio","Movimento","Analgésico","Posição específica","Fisioterapia","Sono"]} value={melhora} onChange={setMelhora} activeColor={C.green} /></div>
-                <div><span style={lbl()}>Piora</span><TagSelect options={["Movimento","Carga","Postura estática","Frio","Stress emocional","Noite/repouso","Trabalho","Após atividade"]} value={piora} onChange={setPiora} activeColor={C.red} /></div>
-              </Row>
-            </CollapsibleSub>
+
 
             <CollapsibleSub title="História da Doença Atual (HDA)">
               <AudioField value={hda} onChange={setHda} placeholder="Início, mecanismo de lesão, evolução, tratamentos anteriores, exames realizados..." rows={3} style={{...inp({resize:"vertical",lineHeight:1.5})}} />
@@ -904,15 +894,12 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
               <div style={{marginTop:8}}><span style={lbl()}>Histórico cirúrgico</span><textarea value={historicoNeuro} onChange={e=>setHistoricoNeuro(e.target.value)} rows={2} style={{...inp({resize:"vertical",lineHeight:1.3,fontSize:12})}} placeholder="Cirurgias prévias, internações, complicações..." /></div>
             </CollapsibleSub>
 
-            <CollapsibleSub title="Yellow Flags (Fatores Psicossociais)">
-              <TagSelect options={YELLOW_FLAGS_NEURO} value={yellowFlags} onChange={setYellowFlags} activeColor={C.amber} />
-              {yellowFlags.length >= 3 && <div style={{background:C.amberBg,borderRadius:8,padding:"8px 12px",fontSize:11,color:C.amber,lineHeight:1.6,marginTop:6}}>⚠️ {yellowFlags.length} yellow flags. Considerar abordagem biopsicossocial.</div>}
-            </CollapsibleSub>
-
             <CollapsibleSub title="Sintomas">
               <div><span style={lbl()}>Sintomas</span><TagSelect options={["Fraqueza","Espasticidade","Ataxia","Tremor","Rigidez","Hipomimia","Disartria","Disfagia","Alteração sensitiva","Dor neuropática","Fadiga","Incontinência","Tontura","Visão dupla","Alteração cognitiva"]} value={sintomas} onChange={setSintomas} activeColor={C.purple} /></div>
             </CollapsibleSub>
           </CollapsibleSection>
+
+          <GeneralAssessment storageKey="neuro" studentId={sid} colors={{ ...C, accent: C.purple }} />
 
           {/* ⚡ Dor e Funcionalidade */}
           <CollapsibleSection title="Dor e Funcionalidade" icon="⚡" expanded={expandedSections.includes("dor")} onToggle={()=>toggleSection("dor")}>

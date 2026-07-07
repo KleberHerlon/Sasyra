@@ -3,6 +3,7 @@ import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysi
 import CifAndHonorarios from "../components/CifAndHonorarios";
 import CifSection from "../components/CifSection";
 import { CIF } from "../data/cif";
+import { calcMinnesota } from "../data/cardioScales";
 import { CollapsibleSection, CollapsibleSub, useMediaQuery, AudioField } from "../components";
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
@@ -79,13 +80,6 @@ function saveCardioData(studentId, data) {
 }
 function loadCardioData(studentId) {
   try { const d = localStorage.getItem(`cardio_data_${studentId}`); return d ? JSON.parse(d) : null; } catch { return null; }
-}
-
-function calcMinnesota(scores) {
-  const total = Object.values(scores).reduce((a, b) => a + (Number(b) || 0), 0);
-  const level = total <= 5 ? "Impacto mínimo" : total <= 30 ? "Impacto leve" : total <= 60 ? "Impacto moderado" : total <= 90 ? "Impacto grave" : "Impacto muito grave";
-  const color = total <= 5 ? C.green : total <= 30 ? C.greenDim : total <= 60 ? C.amber : total <= 90 ? C.red : "#DC2626";
-  return { total, level, color, max: 105 };
 }
 
 const MINNESOTA_QUESTIONS = [

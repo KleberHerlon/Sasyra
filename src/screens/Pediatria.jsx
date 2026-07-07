@@ -9,6 +9,7 @@ import { useClinicalScan } from "../hooks/useClinicalScan.js";
 import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
 import { detectLocalDor, extractClinicalEntities } from "../utils/clinicalDetection.js";
 import { CIF } from "../data/cif.js";
+import { calcGMFCS, calcAIMS, calcMCHAT, calcPEDI } from "../data/pediatriaScales";
 import LogoSVG from "../components/LogoSVG";
 
 const C = {
@@ -935,12 +936,13 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
 
             <CollapsibleSub title="Escalas — GMFCS / AIMS / M-CHAT">
               <Row cols={isMobile?"1fr":"1fr 1fr"} gap="12px 16px">
-                <div><span style={lbl()}>GMFCS</span><SingleSelect options={[{value:"I",label:"I — Deambula sem limitações"},{value:"II",label:"II — Deambula com limitações"},{value:"III",label:"III — Deambula com auxílio"},{value:"IV",label:"IV — Mobilidade limitada"},{value:"V",label:"V — Transportado em cadeira de rodas"}]} value={gmfcs} onChange={setGmfcs} activeColor={C.blue} /></div>
+                <div><span style={lbl()}>GMFCS</span><SingleSelect options={[{value:"I",label:"I — Deambula sem limitações"},{value:"II",label:"II — Deambula com limitações"},{value:"III",label:"III — Deambula com auxílio"},{value:"IV",label:"IV — Mobilidade limitada"},{value:"V",label:"V — Transportado em cadeira de rodas"}]} value={gmfcs} onChange={setGmfcs} activeColor={C.blue} />
+                  {gmfcs && <div style={{marginTop:4,fontSize:10,color:calcGMFCS(gmfcs).color,fontWeight:700}}>{calcGMFCS(gmfcs).desc}</div>}</div>
                 <div><span style={lbl()}>AIMS (Alberta Infant Motor Scale)</span><input type="number" value={aimsScore} onChange={e=>setAimsScore(e.target.value)} style={inp()} min={0} max={58} placeholder="Ex: 24" /></div>
               </Row>
-              {aimsScore&&<div style={{marginBottom:10,background:Number(aimsScore)>=25?C.greenBg:Number(aimsScore)>=10?C.amberBg:C.redBg,border:`1px solid ${Number(aimsScore)>=25?C.green:Number(aimsScore)>=10?C.amber:C.red}40`,borderRadius:8,padding:"8px 12px"}}><span style={{fontSize:11,fontWeight:700,color:Number(aimsScore)>=25?C.green:Number(aimsScore)>=10?C.amber:C.red}}>{Number(aimsScore)>=25?"🟢 Percentil ≥25 (adequado)":Number(aimsScore)>=10?"🟡 Percentil 10-25 (risco)":"🔴 Percentil <10 (atraso significativo)"}</span></div>}
+              {aimsScore&&(()=>{const a=calcAIMS(aimsScore);return <div style={{marginBottom:10,background:`${a.color}15`,border:`1px solid ${a.color}40`,borderRadius:8,padding:"8px 12px"}}><span style={{fontSize:11,fontWeight:700,color:a.color}}>{a.level}: {a.total}/{a.max}</span></div>})()}
               <div><span style={lbl()}>M-CHAT — Itens de alerta para TEA</span><TagSelect options={["Não responde ao próprio nome","Evita contato visual","Não aponta para pedir/mostrar","Atraso na fala","Movimentos repetitivos","Interesse restrito","Não imita","Não brinca de faz de conta","Hipersensibilidade sensorial","Hipo-sensibilidade sensorial","Não segue olhar","Não mostra objetos de interesse"]} value={mchat} onChange={setMchat} activeColor={C.blue} /></div>
-              {mchat.length>0&&<div style={{marginTop:8,background:mchat.length>=3?C.redBg:mchat.length>=2?C.amberBg:C.greenBg,border:`1px solid ${mchat.length>=3?C.red:mchat.length>=2?C.amber:C.green}40`,borderRadius:8,padding:"8px 12px",fontSize:11,color:C.textSub}}>{mchat.length>=3?"🔴 ≥3 itens: Risco elevado":mchat.length>=2?"🟡 2 itens: Risco moderado":"🟢 <2 itens: Baixo risco (M-CHAT)"}</div>}
+              {mchat.length>0&&(()=>{const m=calcMCHAT(mchat);return <div style={{marginTop:8,background:`${m.color}15`,border:`1px solid ${m.color}40`,borderRadius:8,padding:"8px 12px",fontSize:11,color:C.textSub}}>{m.count} itens: <strong style={{color:m.color}}>{m.level}</strong></div>})()}
             </CollapsibleSub>
 
             <CollapsibleSub title="Força Muscular — MRC (0-5)">
@@ -1087,7 +1089,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
           {/* 📊 Escalas Padronizadas */}
           <CollapsibleSection title="Escalas Padronizadas" icon="📊" expanded={expandedSections.includes("escalas")} onToggle={()=>toggleSection("escalas")}>
             <div style={{fontSize:12,color:C.textMuted,marginBottom:12,lineHeight:1.5}}>Selecione uma escala validada para aplicar ao paciente. Os resultados ficam salvos neste módulo.</div>
-            <ScaleSelector scaleNames={["GMFCS (Gross Motor Function Classification System)","AIMS (Alberta Infant Motor Scale)","M-CHAT (Modified Checklist for Autism in Toddlers)","PEDI (Pediatric Evaluation of Disability Inventory)","Functional Independence Measure (MIF)","Barthel Index"]} onSave={handleScaleSave} savedResults={savedScales} />
+            <ScaleSelector scaleNames={["GMFCS (Gross Motor Function Classification System)","AIMS (Alberta Infant Motor Scale)","M-CHAT (Modified Checklist for Autism in Toddlers)","PEDI (Pediatric Evaluation of Disability Inventory)","GMFM (Gross Motor Function Measure)","MACS (Manual Ability Classification System)","MABC-2 (Motor Assessment Battery for Children)","FAC (Functional Ambulation Categories)","Vignos Scale (Muscular Dystrophy)","Functional Independence Measure (MIF)","Barthel Index"]} onSave={handleScaleSave} savedResults={savedScales} />
             {savedScales.length > 0 && (
               <div style={{marginTop:12}}>
                 <span style={{fontSize:9,fontWeight:700,color:C.green,textTransform:"uppercase",letterSpacing:"0.08em"}}>✓ Resultados Salvos: {savedScales.length}</span>

@@ -1357,6 +1357,47 @@ const SCALES = {
     if(s>=50) return pct({level:"Fase intermediária", desc:"Critérios parcialmente atendidos. Continuar reabilitação.", color:"#DC2626"});
     return pct({level:"Fase inicial", desc:"Muitos critérios não atendidos. Reabilitação intensiva.", color:"#BE185D"});
   }),
+
+  // ════════════════════ PEDIATRIA — NOVAS ════════════════════
+
+  "GMFM (Gross Motor Function Measure)": simpleScale("gmfm","GMFM",["GMFM","Gross Motor Function Measure","GMFM-88","GMFM-66"], [0,100], "highIsGood", s=>{
+    if(s>=90) return pct({level:"Função motora grossa preservada", desc:"Capacidade motora dentro do esperado.", color:"#16A34A"});
+    if(s>=60) return pct({level:"Limitação motora leve a moderada", desc:"Capacidade motora reduzida, mas funcional.", color:"#D97706"});
+    if(s>=30) return pct({level:"Limitação motora grave", desc:"Comprometimento motor importante.", color:"#DC2626"});
+    return pct({level:"Limitação motora severa", desc:"Função motora grossa severamente comprometida.", color:"#BE185D"});
+  }),
+
+  "MACS (Manual Ability Classification System)": simpleScale("macs","MACS",["MACS","Manual Ability Classification System"], [1,5], "highIsBad", s=>{
+    if(s<=1) return pct({level:"Nível I — Manipula objetos facilmente", desc:"Boa habilidade manual.", color:"#16A34A"});
+    if(s<=2) return pct({level:"Nível II — Manipula com qualidade reduzida", desc:"Limitação leve na destreza.", color:"#D97706"});
+    if(s<=3) return pct({level:"Nível III — Dificuldade para manipular", desc:"Necessita adaptações.", color:"#F59E0B"});
+    if(s<=4) return pct({level:"Nível IV — Manipula objetos simples", desc:"Limitação manual importante.", color:"#DC2626"});
+    return pct({level:"Nível V — Não manipula objetos", desc:"Habilidade manual severamente limitada.", color:"#BE185D"});
+  }),
+
+  "MABC-2 (Motor Assessment Battery for Children)": simpleScale("mabc2","MABC-2",["MABC-2","Motor Assessment Battery for Children"], [0,100], "highIsGood", s=>{
+    if(s>=85) return pct({level:"Desempenho motor normal", desc:"Dentro do esperado para a idade.", color:"#16A34A"});
+    if(s>=70) return pct({level:"Risco de dificuldade motora", desc:"Abaixo da média. Monitorar.", color:"#D97706"});
+    if(s>=56) return pct({level:"Dificuldade motora significativa", desc:"Desempenho motor abaixo do esperado.", color:"#DC2626"});
+    return pct({level:"Dificuldade motora grave", desc:"Desempenho motor muito abaixo.", color:"#BE185D"});
+  }),
+
+  "FAC (Functional Ambulation Categories)": simpleScale("fac","FAC",["FAC","Functional Ambulation Categories"], [0,5], "highIsGood", s=>{
+    if(s>=5) return pct({level:"Nível 5 — Deambulador independente", desc:"Marcha independente em qualquer superfície.", color:"#16A34A"});
+    if(s>=4) return pct({level:"Nível 4 — Deambulador em terreno plano", desc:"Marcha independente apenas em superfície plana.", color:"#D97706"});
+    if(s>=3) return pct({level:"Nível 3 — Deambulador com supervisão", desc:"Marcha com supervisão.", color:"#F59E0B"});
+    if(s>=2) return pct({level:"Nível 2 — Deambulador com suporte", desc:"Marcha com assistência de uma pessoa.", color:"#DC2626"});
+    if(s>=1) return pct({level:"Nível 1 — Deambulador com ajuda", desc:"Marcha com assistência física de uma pessoa.", color:"#BE185D"});
+    return pct({level:"Nível 0 — Não deambulador", desc:"Incapaz de deambular.", color:"#7C3AED"});
+  }),
+
+  "Vignos Scale (Muscular Dystrophy)": simpleScale("vignos","Vignos",["Vignos Scale","Vignos","Vignos Muscular Dystrophy"], [1,10], "highIsBad", s=>{
+    if(s<=2) return pct({level:"Deambulador independente", desc:"Marcha preservada. Sobe escadas sem apoio.", color:"#16A34A"});
+    if(s<=4) return pct({level:"Deambulador com dificuldade", desc:"Marcha preservada, sobe escadas com apoio.", color:"#D97706"});
+    if(s<=6) return pct({level:"Deambulador com auxílio", desc:"Necessita cadeira de rodas para longas distâncias.", color:"#F59E0B"});
+    if(s<=8) return pct({level:"Cadeira de rodas parcial", desc:"Cadeira de rodas para a maioria das atividades.", color:"#DC2626"});
+    return pct({level:"Restrito ao leito / cadeira de rodas total", desc:"Dependente para transferências.", color:"#BE185D"});
+  }),
 };
 
 export default SCALES;

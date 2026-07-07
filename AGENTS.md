@@ -19,7 +19,7 @@ Ao iniciar uma nova sessão, SEMPRE ler o arquivo `SIMULACAO_PERSONAS.md` antes 
 
 ---
 
-## Sessão Atual — 03/07/2026
+## Sessão Atual — 07/07/2026
 
 ### O que foi implementado
 
@@ -48,4 +48,31 @@ CardioRespiratory, UroGynecology, Geriatria, DermatoFunctional, Rheumatology, Sp
 #### 6. Relatório de comparação gerado
 Mapeamento completo de todos os ~20 campos/funcionalidades do Assessment.jsx gold standard vs cada módulo, identificando lacunas como BodyMap, Yellow Flags, MRC/Gonio dinâmico, AutoCIF, paywall, mobile responsive.
 
-### Total de testes: 543 ✓ (15 suites, 0 falhas)
+### Total de testes: 596 ✓ (18 suites, 0 falhas)
+
+---
+
+## O que foi implementado nesta sessão (07/07/2026)
+
+#### 1. GeneralAssessment em Neuro
+Neuro era o único módulo de fisioterapia sem GeneralAssessment. Adicionado com `storageKey="neuro"` e cor roxa. Removidas seções inline duplicadas (BodyMap + Caracterização da Dor + Yellow Flags).
+
+#### 2. `src/data/pediatriaScales.js` + `cardioScales.js` + `dentoScales.js`
+| Módulo | Arquivo | Funções | Testes |
+|---|---|---|---|
+| Pediatria | `src/data/pediatriaScales.js` | calcGMFCS, calcAIMS, calcMCHAT, calcPEDI | 17 |
+| Cardio | `src/data/cardioScales.js` | calcMinnesota (extraído do inline) | 6 |
+| DTM | `src/data/dentoScales.js` | calcFonseca, calcRDCTMD | 10 |
+
+#### 3. Integração nos módulos
+- **CardioRespiratory**: `calcMinnesota` agora importado de `cardioScales` (inline removido)
+- **Pediatria**: calcGMFCS/AIMS/MCHAT/PEDI usam `pediatriaScales` — inline substituído por chamadas às funções
+- **SportsPhysio**: ScaleSelector agora inclui `Fonseca Anamnestic Index` + `RDC/TMD` (DTM)
+- **Pediatria**: ScaleSelector ampliado com GMFM, MACS, MABC-2, FAC, Vignos
+
+#### 4. Novas escalas em `src/scales.js` (5 entradas)
+GMFM, MACS, MABC-2, FAC, Vignos Scale — todas com interpretação completa via `simpleScale`
+
+#### 5. Correções em escalas existentes
+- `calcMinnesota` extraída para `cardioScales.js` (removida definição inline duplicada)
+- `calcGMFCS`/`calcAIMS`/`calcMCHAT`/`calcPEDI` agora em `pediatriaScales.js` com testes
