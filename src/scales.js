@@ -1057,6 +1057,306 @@ const SCALES = {
       return {raw:sum, pct:max>0?Math.round(sum/max*100):0};
     },
   },
+
+  // ════════════════════ NEURO ════════════════════
+
+  "Modified Ashworth Scale (MAS)": simpleScale("mas","MAS",["MAS","Modified Ashworth Scale","Ashworth"], [0,48], "highIsBad", s=>{
+    if(s===0) return pct({level:"Sem espasticidade", desc:"Tônus normal.", color:"#16A34A"});
+    if(s<=12) return pct({level:"Espasticidade leve", desc:"Leve aumento do tônus.", color:"#D97706"});
+    if(s<=24) return pct({level:"Espasticidade moderada", desc:"Aumento moderado, ADM possível.", color:"#DC2626"});
+    return pct({level:"Espasticidade grave", desc:"Aumento acentuado ou rigidez.", color:"#7C3AED"});
+  }),
+
+  "Berg Balance Scale (BBS)": simpleScale("bbs","BBS",["Berg Balance Scale","BBS","Berg"], [0,56], "highIsGood", s=>{
+    if(s>=45) return pct({level:"Baixo risco de queda", desc:"Equilíbrio funcional preservado.", color:"#16A34A"});
+    if(s>=21) return pct({level:"Médio risco de queda", desc:"Equilíbrio moderadamente comprometido.", color:"#D97706"});
+    return pct({level:"Alto risco de queda", desc:"Equilíbrio severamente comprometido.", color:"#DC2626"});
+  }),
+
+  "Functional Independence Measure (MIF)": simpleScale("mif","MIF",["MIF","Functional Independence Measure","FIM"], [18,126], "highIsGood", s=>{
+    if(s>=108) return pct({level:"Independência completa/modificada", desc:"Funcionalidade preservada.", color:"#16A34A"});
+    if(s>=72) return pct({level:"Dependência moderada", desc:"Necessita de assistência parcial.", color:"#D97706"});
+    if(s>=36) return pct({level:"Dependência grave", desc:"Necessita de assistência significativa.", color:"#DC2626"});
+    return pct({level:"Dependência total", desc:"Assistência total nas AVDs.", color:"#BE185D"});
+  }),
+
+  "Fugl-Meyer Assessment": simpleScale("fugl","Fugl-Meyer",["Fugl-Meyer","FMA","Fugl-Meyer Assessment"], [0,226], "highIsGood", s=>{
+    if(s>=200) return pct({level:"Função motora preservada", desc:"Boa recuperação motora.", color:"#16A34A"});
+    if(s>=150) return pct({level:"Déficit motor moderado", desc:"Limitação motora parcial.", color:"#D97706"});
+    if(s>=100) return pct({level:"Déficit motor grave", desc:"Comprometimento motor importante.", color:"#DC2626"});
+    return pct({level:"Déficit motor muito grave", desc:"Função motora severamente comprometida.", color:"#BE185D"});
+  }),
+
+  "NIH Stroke Scale (NIHSS)": simpleScale("nihss","NIHSS",["NIHSS","NIH Stroke Scale"], [0,42], "highIsBad", s=>{
+    if(s<=4) return pct({level:"AVC leve", desc:"Déficit neurológico leve.", color:"#16A34A"});
+    if(s<=15) return pct({level:"AVC moderado", desc:"Déficit neurológico moderado.", color:"#D97706"});
+    if(s<=24) return pct({level:"AVC moderado-grave", desc:"Déficit neurológico importante.", color:"#DC2626"});
+    return pct({level:"AVC grave", desc:"Déficit neurológico severo.", color:"#BE185D"});
+  }),
+
+  "Timed Up and Go (TUG)": simpleScale("tug","TUG",["Timed Up and Go (TUG)","TUG","Timed Up and Go"], [0,120], "highIsBad", s=>{
+    if(s<=10) return pct({level:"Normal", desc:"Mobilidade funcional preservada.", color:"#16A34A"});
+    if(s<=20) return pct({level:"Risco moderado de queda", desc:"Mobilidade reduzida.", color:"#D97706"});
+    if(s<=30) return pct({level:"Alto risco de queda", desc:"Mobilidade significativamente comprometida.", color:"#DC2626"});
+    return pct({level:"Muito alto risco", desc:"Mobilidade severamente comprometida.", color:"#BE185D"});
+  }),
+
+  "Barthel Index": simpleScale("barthel","Barthel",["Barthel Index","Barthel"], [0,100], "highIsGood", s=>{
+    if(s>=90) return pct({level:"Independência", desc:"Funcionalidade preservada nas AVDs.", color:"#16A34A"});
+    if(s>=60) return pct({level:"Dependência leve", desc:"Necessita de ajuda em algumas atividades.", color:"#D97706"});
+    if(s>=40) return pct({level:"Dependência moderada", desc:"Necessita de ajuda significativa.", color:"#DC2626"});
+    return pct({level:"Dependência grave", desc:"Dependente para a maioria das AVDs.", color:"#BE185D"});
+  }),
+
+  "SCIM (Spinal Cord Independence Measure)": simpleScale("scim","SCIM",["SCIM","Spinal Cord Independence Measure"], [0,100], "highIsGood", s=>{
+    if(s>=80) return pct({level:"Independência funcional", desc:"Boa funcionalidade na lesão medular.", color:"#16A34A"});
+    if(s>=50) return pct({level:"Dependência moderada", desc:"Assistência parcial nas AVDs.", color:"#D97706"});
+    if(s>=20) return pct({level:"Dependência grave", desc:"Assistência significativa.", color:"#DC2626"});
+    return pct({level:"Dependência total", desc:"Assistência completa.", color:"#BE185D"});
+  }),
+
+  "Expanded Disability Status Scale (EDSS)": simpleScale("edss","EDSS",["EDSS","Expanded Disability Status Scale"], [0,10], "highIsBad", s=>{
+    if(s<=2.5) return pct({level:"Incapacidade mínima", desc:"Pouca limitação funcional.", color:"#16A34A"});
+    if(s<=4.5) return pct({level:"Incapacidade moderada", desc:"Limitação funcional parcial.", color:"#D97706"});
+    if(s<=6.5) return pct({level:"Incapacidade grave", desc:"Comprometimento importante da marcha.", color:"#DC2626"});
+    return pct({level:"Incapacidade muito grave", desc:"Restrito à cadeira de rodas/leito.", color:"#BE185D"});
+  }),
+
+  // ════════════════════ PEDIATRIA ════════════════════
+
+  "GMFCS (Gross Motor Function Classification System)": simpleScale("gmfcs","GMFCS",["GMFCS","Gross Motor Function Classification System"], [1,5], "highIsBad", s=>{
+    if(s<=1) return pct({level:"Nível I", desc:"Anda sem limitações.", color:"#16A34A"});
+    if(s<=2) return pct({level:"Nível II", desc:"Anda com limitações.", color:"#D97706"});
+    if(s<=3) return pct({level:"Nível III", desc:"Anda com dispositivo de mobilidade.", color:"#F59E0B"});
+    if(s<=4) return pct({level:"Nível IV", desc:"Mobilidade limitada, usa cadeira de rodas.", color:"#DC2626"});
+    return pct({level:"Nível V", desc:"Transportado em cadeira de rodas.", color:"#BE185D"});
+  }),
+
+  "AIMS (Alberta Infant Motor Scale)": simpleScale("aims","AIMS",["AIMS","Alberta Infant Motor Scale"], [0,58], "highIsGood", s=>{
+    if(s>=45) return pct({level:"Desenvolvimento motor adequado", desc:"Dentro do esperado para a idade.", color:"#16A34A"});
+    if(s>=30) return pct({level:"Atraso motor leve", desc:"Abaixo do esperado. Estimulação indicada.", color:"#D97706"});
+    if(s>=15) return pct({level:"Atraso motor moderado", desc:"Atraso significativo. Intervenção precoce.", color:"#DC2626"});
+    return pct({level:"Atraso motor grave", desc:"Atraso severo. Estimulação intensiva.", color:"#BE185D"});
+  }),
+
+  "M-CHAT (Modified Checklist for Autism in Toddlers)": simpleScale("mchat","M-CHAT",["M-CHAT","Modified Checklist for Autism in Toddlers"], [0,23], "highIsBad", s=>{
+    if(s<=2) return pct({level:"Baixo risco de TEA", desc:"Rastreamento negativo. Sem necessidade de avaliação adicional.", color:"#16A34A"});
+    if(s<=7) return pct({level:"Risco médio de TEA", desc:"Rastreamento positivo. Encaminhar para avaliação diagnóstica.", color:"#D97706"});
+    return pct({level:"Alto risco de TEA", desc:"Rastreamento fortemente positivo. Encaminhamento urgente.", color:"#DC2626"});
+  }),
+
+  "PEDI (Pediatric Evaluation of Disability Inventory)": simpleScale("pedi","PEDI",["PEDI","Pediatric Evaluation of Disability Inventory"], [0,100], "highIsGood", s=>{
+    if(s>=80) return pct({level:"Função preservada", desc:"Independência funcional adequada.", color:"#16A34A"});
+    if(s>=50) return pct({level:"Limitação funcional moderada", desc:"Dependência parcial em AVDs.", color:"#D97706"});
+    if(s>=20) return pct({level:"Limitação funcional grave", desc:"Dependência significativa.", color:"#DC2626"});
+    return pct({level:"Limitação funcional severa", desc:"Dependência total.", color:"#BE185D"});
+  }),
+
+  // ════════════════════ CARDIO-RESPIRATÓRIA ════════════════════
+
+  "NYHA Functional Classification": simpleScale("nyha","NYHA",["NYHA","NYHA Functional Classification","New York Heart Association"], [1,4], "highIsBad", s=>{
+    if(s<=1) return pct({level:"Classe I", desc:"Sem limitação. Atividade física habitual não causa sintomas.", color:"#16A34A"});
+    if(s<=2) return pct({level:"Classe II", desc:"Limitação leve. Atividade física habitual causa sintomas.", color:"#D97706"});
+    if(s<=3) return pct({level:"Classe III", desc:"Limitação moderada. Atividades leves causam sintomas.", color:"#DC2626"});
+    return pct({level:"Classe IV", desc:"Limitação severa. Sintomas em repouso.", color:"#BE185D"});
+  }),
+
+  "Borg CR10 Scale": simpleScale("borg","Borg CR10",["Borg (CR10)","Borg CR10","Borg"], [0,10], "highIsBad", s=>{
+    if(s<=2) return pct({level:"Muito leve", desc:"Esforço percebido mínimo.", color:"#16A34A"});
+    if(s<=4) return pct({level:"Moderado", desc:"Esforço percebido moderado.", color:"#D97706"});
+    if(s<=6) return pct({level:"Intenso", desc:"Esforço percebido intenso.", color:"#DC2626"});
+    if(s<=8) return pct({level:"Muito intenso", desc:"Esforço percebido muito intenso.", color:"#7C3AED"});
+    return pct({level:"Máximo", desc:"Esforço máximo percebido.", color:"#BE185D"});
+  }),
+
+  "mMRC Dyspnea Scale": simpleScale("mmrc","mMRC",["mMRC","mMRC Dyspnea Scale","Modified Medical Research Council"], [0,4], "highIsBad", s=>{
+    if(s<=0) return pct({level:"Grau 0", desc:"Falta de ar apenas ao exercício intenso.", color:"#16A34A"});
+    if(s<=1) return pct({level:"Grau 1", desc:"Falta de ar ao andar rápido ou subida leve.", color:"#D97706"});
+    if(s<=2) return pct({level:"Grau 2", desc:"Anda mais devagar que pessoas da mesma idade.", color:"#F59E0B"});
+    if(s<=3) return pct({level:"Grau 3", desc:"Para para respirar após andar 100m ou poucos minutos.", color:"#DC2626"});
+    return pct({level:"Grau 4", desc:"Falta de ar ao sair de casa ou ao se vestir.", color:"#BE185D"});
+  }),
+
+  "BODE Index": simpleScale("bode","BODE",["BODE Index","BODE"], [0,10], "highIsBad", s=>{
+    if(s<=4) return pct({level:"Baixo risco", desc:"Melhor prognóstico na DPOC.", color:"#16A34A"});
+    if(s<=7) return pct({level:"Risco moderado", desc:"Prognóstico intermediário.", color:"#D97706"});
+    return pct({level:"Alto risco", desc:"Pior prognóstico. Mortalidade elevada.", color:"#DC2626"});
+  }),
+
+  "6 Minute Walk Test (6MWT)": simpleScale("mwt6","6MWT",["6 Minute Walk Test","6MWT","Teste de Caminhada 6 min"], [0,800], "highIsGood", s=>{
+    if(s>=500) return pct({level:"Normal", desc:"Capacidade funcional preservada.", color:"#16A34A"});
+    if(s>=350) return pct({level:"Leve redução", desc:"Capacidade funcional levemente reduzida.", color:"#D97706"});
+    if(s>=200) return pct({level:"Redução moderada", desc:"Capacidade funcional moderadamente reduzida.", color:"#DC2626"});
+    return pct({level:"Redução grave", desc:"Capacidade funcional severamente reduzida.", color:"#BE185D"});
+  }),
+
+  // ════════════════════ URO-GINECOLÓGICA ════════════════════
+
+  "Oxford Grading System (Assoalho Pélvico)": simpleScale("oxfordAP","Oxford",["Oxford Grading","Oxford","PERFECT Oxford"], [0,5], "highIsGood", s=>{
+    if(s>=4) return pct({level:"Função preservada", desc:"Boa força do assoalho pélvico.", color:"#16A34A"});
+    if(s>=2) return pct({level:"Força moderada", desc:"Contração presente, mas com limitação.", color:"#D97706"});
+    if(s<=1) return pct({level:"Força fraca", desc:"Contração ausente ou muito fraca.", color:"#DC2626"});
+    return pct({level:"Sem contração", desc:"Ausência de contração detectável.", color:"#BE185D"});
+  }),
+
+  "ICIQ-SF (International Consultation on Incontinence)": simpleScale("iciqsf","ICIQ-SF",["ICIQ-SF","International Consultation on Incontinence","ICIQ"], [0,21], "highIsBad", s=>{
+    if(s<=5) return pct({level:"Incontinência leve", desc:"Pouco impacto na qualidade de vida.", color:"#16A34A"});
+    if(s<=12) return pct({level:"Incontinência moderada", desc:"Impacto moderado na qualidade de vida.", color:"#D97706"});
+    return pct({level:"Incontinência grave", desc:"Grande impacto na qualidade de vida.", color:"#DC2626"});
+  }),
+
+  "ICIQ-OAB (Overactive Bladder)": simpleScale("iciqoab","ICIQ-OAB",["ICIQ-OAB","Overactive Bladder"], [0,16], "highIsBad", s=>{
+    if(s<=5) return pct({level:"Sintomas leves", desc:"Pouco impacto da bexiga hiperativa.", color:"#16A34A"});
+    if(s<=10) return pct({level:"Sintomas moderados", desc:"Impacto moderado.", color:"#D97706"});
+    return pct({level:"Sintomas graves", desc:"Grande impacto. Tratamento intensivo.", color:"#DC2626"});
+  }),
+
+  "PFIQ-7 (Pelvic Floor Impact Questionnaire)": simpleScale("pfiq7","PFIQ-7",["PFIQ-7","Pelvic Floor Impact Questionnaire"], [0,300], "highIsBad", s=>{
+    if(s<=50) return pct({level:"Impacto leve", desc:"Pouco impacto na qualidade de vida.", color:"#16A34A"});
+    if(s<=150) return pct({level:"Impacto moderado", desc:"Impacto moderado nas AVDs.", color:"#D97706"});
+    return pct({level:"Impacto grave", desc:"Grande impacto funcional e social.", color:"#DC2626"});
+  }),
+
+  // ════════════════════ GERIATRIA ════════════════════
+
+  "MEEM (Mini-Exame do Estado Mental)": simpleScale("meem","MEEM",["MEEM (MMSE)","MEEM","MMSE","Mini-Exame do Estado Mental","Mini Mental State Examination"], [0,30], "highIsGood", s=>{
+    if(s>=27) return pct({level:"Normal", desc:"Função cognitiva preservada.", color:"#16A34A"});
+    if(s>=21) return pct({level:"Declínio cognitivo leve", desc:"Comprometimento cognitivo leve (CCL).", color:"#D97706"});
+    if(s>=11) return pct({level:"Declínio cognitivo moderado", desc:"Demência moderada.", color:"#DC2626"});
+    return pct({level:"Declínio cognitivo grave", desc:"Demência avançada.", color:"#BE185D"});
+  }),
+
+  "GDS-15 (Geriatric Depression Scale)": simpleScale("gds15","GDS-15",["GDS-15","Geriatric Depression Scale","GDS"], [0,15], "highIsBad", s=>{
+    if(s<=5) return pct({level:"Normal", desc:"Sintomas depressivos ausentes.", color:"#16A34A"});
+    if(s<=10) return pct({level:"Depressão leve", desc:"Sintomas depressivos leves.", color:"#D97706"});
+    return pct({level:"Depressão grave", desc:"Sintomas depressivos graves. Encaminhamento psiquiátrico.", color:"#DC2626"});
+  }),
+
+  "Katz Index of Independence in ADLs": simpleScale("katz","Katz",["Katz Index","Katz","Katz Index of Independence in ADLs"], [0,6], "highIsGood", s=>{
+    if(s>=5) return pct({level:"Independência funcional", desc:"Função preservada nas AVDs básicas.", color:"#16A34A"});
+    if(s>=2) return pct({level:"Dependência parcial", desc:"Dependência em 1-4 atividades.", color:"#D97706"});
+    return pct({level:"Dependência grave", desc:"Dependente em 5-6 atividades.", color:"#DC2626"});
+  }),
+
+  "Lawton Instrumental ADL Scale": simpleScale("lawton","Lawton",["Lawton Scale","Lawton","Lawton Instrumental ADL Scale"], [0,27], "highIsGood", s=>{
+    if(s>=21) return pct({level:"Independência funcional", desc:"Função preservada nas AVDs instrumentais.", color:"#16A34A"});
+    if(s>=10) return pct({level:"Dependência parcial", desc:"Necessita de assistência em atividades instrumentais.", color:"#D97706"});
+    return pct({level:"Dependência grave", desc:"Dependente para atividades instrumentais.", color:"#DC2626"});
+  }),
+
+  "Tinetti Performance Oriented Mobility Assessment": simpleScale("tinetti","Tinetti",["Tinetti","POMA","Tinetti Performance Oriented Mobility Assessment"], [0,28], "highIsGood", s=>{
+    if(s>=25) return pct({level:"Baixo risco de queda", desc:"Mobilidade e equilíbrio preservados.", color:"#16A34A"});
+    if(s>=19) return pct({level:"Risco moderado de queda", desc:"Alterações de equilíbrio/marcha.", color:"#D97706"});
+    return pct({level:"Alto risco de queda", desc:"Equilíbrio e marcha severamente comprometidos.", color:"#DC2626"});
+  }),
+
+  "FES-I (Falls Efficacy Scale)": simpleScale("fesi","FES-I",["FES-I","Falls Efficacy Scale"], [16,64], "highIsBad", s=>{
+    if(s<=19) return pct({level:"Baixa preocupação", desc:"Pouco medo de cair.", color:"#16A34A"});
+    if(s<=27) return pct({level:"Preocupação moderada", desc:"Medo moderado de cair.", color:"#D97706"});
+    if(s>=28) return pct({level:"Alta preocupação", desc:"Medo intenso de cair. Risco de restrição de atividades.", color:"#DC2626"});
+  }),
+
+  "MNA (Mini Nutritional Assessment)": simpleScale("mna","MNA",["MNA","Mini Nutritional Assessment"], [0,30], "highIsGood", s=>{
+    if(s>=24) return pct({level:"Estado nutricional normal", desc:"Boa nutrição.", color:"#16A34A"});
+    if(s>=17) return pct({level:"Risco de desnutrição", desc:"Risco nutricional. Monitoramento e intervenção.", color:"#D97706"});
+    return pct({level:"Desnutrido", desc:"Desnutrição estabelecida. Intervenção nutricional urgente.", color:"#DC2626"});
+  }),
+
+  // ════════════════════ DERMATOFUNCIONAL ════════════════════
+
+  "Vancouver Scar Scale (VSS)": simpleScale("vancouver","VSS",["Vancouver Scar Scale","VSS","Vancouver"], [0,13], "highIsBad", s=>{
+    if(s<=4) return pct({level:"Cicatriz leve", desc:"Boa qualidade cicatricial.", color:"#16A34A"});
+    if(s<=8) return pct({level:"Cicatriz moderada", desc:"Alterações moderadas da cicatriz.", color:"#D97706"});
+    return pct({level:"Cicatriz grave", desc:"Cicatriz hipertrófica/contratura significativa.", color:"#DC2626"});
+  }),
+
+  "POSAS (Patient and Observer Scar Assessment Scale)": simpleScale("posas","POSAS",["POSAS","Patient and Observer Scar Assessment Scale"], [6,60], "highIsBad", s=>{
+    if(s<=15) return pct({level:"Cicatriz leve", desc:"Boa aparência da cicatriz.", color:"#16A34A"});
+    if(s<=35) return pct({level:"Cicatriz moderada", desc:"Alterações moderadas.", color:"#D97706"});
+    return pct({level:"Cicatriz grave", desc:"Cicatriz com alterações importantes.", color:"#DC2626"});
+  }),
+
+  "LEFS (Lower Extremity Functional Scale)": simpleScale("lefs","LEFS",["LEFS","Lower Extremity Functional Scale"], [0,80], "highIsGood", s=>{
+    if(s>=64) return pct({level:"Função preservada", desc:"Boa função de MMII.", color:"#16A34A"});
+    if(s>=40) return pct({level:"Limitação moderada", desc:"Limitação funcional parcial de MMII.", color:"#D97706"});
+    if(s>=20) return pct({level:"Limitação grave", desc:"Comprometimento funcional importante.", color:"#DC2626"});
+    return pct({level:"Limitação severa", desc:"Função de MMII severamente comprometida.", color:"#BE185D"});
+  }),
+
+  // ════════════════════ REUMATOLÓGICA ════════════════════
+
+  "BASDAI (Bath Ankylosing Spondylitis Disease Activity Index)": simpleScale("basdai","BASDAI",["BASDAI","Bath Ankylosing Spondylitis Disease Activity Index"], [0,10], "highIsBad", s=>{
+    if(s<=3) return pct({level:"Baixa atividade", desc:"Doença controlada.", color:"#16A34A"});
+    if(s<=6) return pct({level:"Atividade moderada", desc:"Atividade inflamatória moderada.", color:"#D97706"});
+    return pct({level:"Alta atividade", desc:"Atividade inflamatória intensa. Ajuste terapêutico.", color:"#DC2626"});
+  }),
+
+  "Tegner Activity Scale": simpleScale("tegner","Tegner",["Tegner Activity Scale","Tegner"], [0,10], "highIsGood", s=>{
+    if(s>=9) return pct({level:"Atleta competitivo", desc:"Esporte de alto impacto.", color:"#16A34A"});
+    if(s>=6) return pct({level:"Atleta recreacional", desc:"Esporte de médio impacto.", color:"#D97706"});
+    if(s>=3) return pct({level:"Atividade leve", desc:"Trabalho leve e caminhada.", color:"#F59E0B"});
+    if(s>=1) return pct({level:"Atividade mínima", desc:"AVDs básicas.", color:"#DC2626"});
+    return pct({level:"Inativo / Licença médica", desc:"Sem atividade física.", color:"#BE185D"});
+  }),
+
+  "Y-Balance Test (SEBT) Composite": simpleScale("ybalance","Y-Balance",["Y-Balance Test","SEBT","Y-Balance"], [0,100], "highIsGood", s=>{
+    if(s>=90) return pct({level:"Bom controle", desc:"Equilíbrio dinâmico preservado.", color:"#16A34A"});
+    if(s>=80) return pct({level:"Controle moderado", desc:"Limitação leve do equilíbrio.", color:"#D97706"});
+    if(s>=70) return pct({level:"Controle reduzido", desc:"Risco de lesão aumentado.", color:"#DC2626"});
+    return pct({level:"Controle insuficiente", desc:"Déficit importante. Reabilitação de equilíbrio.", color:"#BE185D"});
+  }),
+
+  // ════════════════════ ONCOLOGIA ════════════════════
+
+  "ECOG Performance Status": simpleScale("ecog","ECOG",["ECOG","ECOG Performance Status","Eastern Cooperative Oncology Group"], [0,5], "highIsBad", s=>{
+    if(s<=0) return pct({level:"Atividade completa", desc:"Totalmente ativo sem restrições.", color:"#16A34A"});
+    if(s<=1) return pct({level:"Restrição leve", desc:"Ativo, mas limitação para atividades físicas intensas.", color:"#D97706"});
+    if(s<=2) return pct({level:"Restrição moderada", desc:"Capaz de autocuidado, incapaz para trabalho.", color:"#F59E0B"});
+    if(s<=3) return pct({level:"Restrição grave", desc:"Autocuidado limitado. No leito >50% do dia.", color:"#DC2626"});
+    if(s<=4) return pct({level:"Incapacidade total", desc:"Totalmente restrito ao leito.", color:"#BE185D"});
+    return pct({level:"Óbito", desc:"Paciente falecido.", color:"#7C3AED"});
+  }),
+
+  "Karnofsky Performance Status (KPS)": simpleScale("kps","KPS",["KPS","Karnofsky Performance Status","Karnofsky"], [0,100], "highIsGood", s=>{
+    if(s>=80) return pct({level:"Ativo / Independente", desc:"Capaz de atividades normais.", color:"#16A34A"});
+    if(s>=50) return pct({level:"Incapaz para trabalho", desc:"Requer assistência ocasional.", color:"#D97706"});
+    if(s>=30) return pct({level:"Incapaz para autocuidado", desc:"Requer hospitalização.", color:"#DC2626"});
+    return pct({level:"Gravemente incapacitado", desc:"Cuidados intensivos.", color:"#BE185D"});
+  }),
+
+  "ESAS (Edmonton Symptom Assessment System)": simpleScale("esas","ESAS",["ESAS","Edmonton Symptom Assessment System"], [0,90], "highIsBad", s=>{
+    if(s<=20) return pct({level:"Sintomas controlados", desc:"Bom controle sintomático.", color:"#16A34A"});
+    if(s<=45) return pct({level:"Sintomas moderados", desc:"Controle sintomático moderado.", color:"#D97706"});
+    if(s<=65) return pct({level:"Sintomas graves", desc:"Controle sintomático insuficiente.", color:"#DC2626"});
+    return pct({level:"Sintomas muito graves", desc:"Necessidade de cuidados paliativos intensivos.", color:"#BE185D"});
+  }),
+
+  "DN4 (Douleur Neuropathique 4)": simpleScale("dn4","DN4",["DN4","Douleur Neuropathique 4","Neuropathic Pain"], [0,10], "highIsBad", s=>{
+    if(s<=3) return pct({level:"Dor provavelmente nociceptiva", desc:"Baixa probabilidade de componente neuropático.", color:"#16A34A"});
+    if(s<=5) return pct({level:"Possível componente neuropático", desc:"Sugestivo de dor mista.", color:"#D97706"});
+    return pct({level:"Dor predominantemente neuropática", desc:"Alta probabilidade de componente neuropático. Farmacoterapia específica.", color:"#DC2626"});
+  }),
+
+  "FACT-F (Functional Assessment of Cancer Therapy - Fatigue)": simpleScale("factf","FACT-F",["FACT-F","Functional Assessment of Cancer Therapy - Fatigue"], [0,52], "highIsGood", s=>{
+    if(s>=40) return pct({level:"Fadiga leve / controlada", desc:"Boa energia para atividades diárias.", color:"#16A34A"});
+    if(s>=25) return pct({level:"Fadiga moderada", desc:"Fadiga com impacto parcial nas AVDs.", color:"#D97706"});
+    return pct({level:"Fadiga grave", desc:"Fadiga intensa. Intervenção para conservação de energia.", color:"#DC2626"});
+  }),
+
+  "PALLIA-10": simpleScale("pallia10","PALLIA-10",["PALLIA-10","Pallia-10"], [0,30], "highIsBad", s=>{
+    if(s<=10) return pct({level:"Cuidados paliativos básicos", desc:"Complexidade baixa.", color:"#16A34A"});
+    if(s<=20) return pct({level:"CP moderadamente complexos", desc:"Complexidade moderada. Equipe especializada.", color:"#D97706"});
+    return pct({level:"CP altamente complexos", desc:"Alta complexidade. Cuidados paliativos exclusivos.", color:"#DC2626"});
+  }),
+
+  // ════════════════════ ESPORTIVA ════════════════════
+
+  "Return to Sport Criteria (RTS)": simpleScale("rts","RTS",["Return to Sport Criteria","RTS","Return to Sport"], [0,100], "highIsGood", s=>{
+    if(s>=90) return pct({level:"Pronto para retorno", desc:"Critérios satisfeitos. Liberação para RTS.", color:"#16A34A"});
+    if(s>=70) return pct({level:"Próximo do retorno", desc:"Parcialmente apto. Última fase de reabilitação.", color:"#D97706"});
+    if(s>=50) return pct({level:"Fase intermediária", desc:"Critérios parcialmente atendidos. Continuar reabilitação.", color:"#DC2626"});
+    return pct({level:"Fase inicial", desc:"Muitos critérios não atendidos. Reabilitação intensiva.", color:"#BE185D"});
+  }),
 };
 
 export default SCALES;

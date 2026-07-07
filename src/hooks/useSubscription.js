@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { PLAN_LIMITS, PLAN_LABELS, AI_LIMITS, AI_OVERAGE } from "../data/plans";
+import { PLANS, PLAN_LIMITS, PLAN_LABELS, AI_LIMITS, AI_OVERAGE } from "../data/plans";
 
 const STORAGE_KEY = "sasyra_subscription";
 const SUB_EVENT = "sasyra-sub-changed";
@@ -121,6 +121,14 @@ export function useSubscription() {
   }, [sub, saveSub, aiRemaining, aiAnalysesUsed, plan]);
 
   const setPlan = useCallback((newPlan, billing = "monthly") => {
+    const planPrice = PLANS[newPlan]?.monthly || 0;
+    const finalPrice = billing === "yearly" ? (PLANS[newPlan]?.yearly || 0) : planPrice;
+    const invoice = finalPrice > 0 ? {
+      amount: finalPrice,
+      date: today().toISOString(),
+      status: "Pago",
+      desc: `Plano ${PLANS[newPlan]?.name || newPlan} — ${billing === "yearly" ? "Anual" : "Mensal"}${newPlan === "avulso" ? "" : ` — R$ ${planPrice.toFixed(2)}/mês`}`,
+    } : null;
     const newSub = {
       ...sub,
       plan: newPlan,
@@ -130,12 +138,13 @@ export function useSubscription() {
       aiAnalysesUsed: 0,
       aiPeriodStart: currentMonth,
       aiExpansion: null,
+      invoices: invoice ? [...(sub.invoices || []), invoice] : (sub.invoices || []),
     };
     if (newPlan === "avulso") {
       newSub.extraUsers = [];
     }
     saveSub(newSub);
-  }, [sub, saveSub]);
+  }, [sub, saveSub, currentMonth]);
 
   const purchaseAIExpansion = useCallback((analyses = 1) => {
     if (plan === "avulso") {

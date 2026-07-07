@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import ScaleSelector from "../components/ScaleSelector";
+import GeneralAssessment from "../components/GeneralAssessment";
 import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 import { AudioField, BodyMap, EvaSlider, TagSelect, SingleSelect, GonioRow, MRCRow, TestCard, Row, HonorariosCard } from "../components";
 import { useMediaQuery } from "../components";
@@ -8,6 +9,7 @@ import { useClinicalScan } from "../hooks/useClinicalScan.js";
 import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
 import { detectLocalDor, extractClinicalEntities } from "../utils/clinicalDetection.js";
 import { CIF } from "../data/cif.js";
+import LogoSVG from "../components/LogoSVG";
 
 const C = {
   bg:"#F5F0EB",surface:"#FCFAF7",card:"#FCFAF7",cardAlt:"#F0EBE5",
@@ -283,14 +285,7 @@ function detectKBList(comorbidades, diagnosticoMedico, queixaPrincipal) {
     .map(([key, val]) => ({ key, label: val.label, ...val }));
 }
 
-const CREFITO_REGIOES = {
-  "Sul (RS/SC/PR)":{consulta:180,sessao:160,avaliacao:250,relatorio:120},
-  "Sudeste - SP":{consulta:220,sessao:200,avaliacao:320,relatorio:150},
-  "Sudeste - RJ/ES/MG":{consulta:190,sessao:170,avaliacao:280,relatorio:130},
-  "Centro-Oeste":{consulta:170,sessao:150,avaliacao:240,relatorio:110},
-  "Nordeste":{consulta:150,sessao:140,avaliacao:220,relatorio:100},
-  "Norte":{consulta:140,sessao:130,avaliacao:210,relatorio:95},
-};
+import CREFITO_REGIOES from "../data/crefito";
 
 // ── YELLOW FLAGS ─────────────────────────────────────────────────────────────
 const YELLOW_FLAGS_PED = [
@@ -331,7 +326,7 @@ function suggestDCT(comorbidades, diagnosticoMedico, tonus, gmfcs) {
 }
 
 // ── MAIN COMPONENT ──────────────────────────────────────────────────────────
-export default function Pediatria({ student, students, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById, plan, onUpgrade, canUseFeature, tryFeature, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion, currentModuleId, allPatients }) {
+export default function Pediatria({ student, students, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById, plan, onUpgrade, canUseFeature, tryFeature, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion, currentModuleId, allPatients, onAgenda, onFinanceiro, onSubscription, planLabel }) {
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -570,10 +565,6 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
   if (studentListView) return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text, padding: isMobile ? 12 : 24 }}>
       <div style={{ maxWidth:680, margin:"0 auto" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
-          <span style={{ fontSize:22, fontWeight:800, color:C.blue }}>👶 Pediatria</span>
-          <button onClick={() => { localStorage.removeItem("sasyra_module"); window.location.reload(); }} style={ghostBtn({ fontSize:12 })}>Sair</button>
-        </div>
         <div style={{ fontSize:13, color:C.textSub, marginBottom:18, lineHeight:1.5 }}>🧸 Selecione uma criança para iniciar o atendimento ou cadastre um novo paciente</div>
 
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
@@ -725,32 +716,29 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
   // ── Main Screen ──────────────────────────────────────────────────────────
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
-      <div style={{ background:"#FFFFFF", borderBottom:`2px solid ${C.border}`, padding: isMobile ? "0 10px" : "0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height: isMobile ? 50 : 60, boxShadow:"0 2px 12px rgba(232,160,160,0.08)" }}>
+      {/* Header */}
+      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:isMobile?"10px 12px":"0 24px", display:"flex", flexWrap:"wrap", alignItems:"center", justifyContent:"space-between", minHeight:isMobile?"auto":60, gap:isMobile?8:0 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <button onClick={() => setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>← Voltar</button>
-          <span style={{ fontSize:12, fontWeight:800, color:C.blue }}>👶 Pediatria</span>
+          <LogoSVG C={C} F={F}/>
+          <button onClick={()=>setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+          {onAgenda && <button onClick={onAgenda} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Agenda">📅 Agenda</button>}
+          {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
-        <div style={{ display:"flex", gap:4, overflowX: isMobile ? "auto" : "visible", flexShrink:1, msOverflowStyle:"none", scrollbarWidth:"none" }}>
-          {[["avaliacao","📋",isMobile?"":"Avaliação"],["sessoes","📅",isMobile?"":"Sessões"],["relatorio","📊",isMobile?"":"Relatório"],["evidencias","🔬",isMobile?"":"Evidências"]].map(([k,ic,lb]) => (
-            <button key={k} onClick={() => setTab(k)} style={{
-              background: tab === k ? C.blueBg : "#F8F5F0",
-              border: `1px solid ${tab === k ? C.blue + "50" : C.border}`,
-              borderRadius: 30, padding: isMobile ? "8px 12px" : "8px 18px", fontSize: isMobile ? 11 : 12,
-              fontWeight: tab === k ? 800 : 500,
-              whiteSpace:"nowrap",
-              color: tab === k ? C.blue : C.textSub, cursor: "pointer", fontFamily: F,
-              boxShadow: tab === k ? "0 2px 8px rgba(232,160,160,0.2)" : "none",
-            }}>{ic} {lb}</button>
+        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+          {[["avaliacao","📋",isMobile?"":"Avaliação"],["sessoes","📅",isMobile?"":"Sessões"],["relatorio","📊",isMobile?"":"Relatório"],["evidencias","🔬",isMobile?"":"Evidências"]].map(([k,ic,lb])=>(
+            <button key={k} onClick={()=>setTab(k)} style={{background:tab===k?C.blueBg:"transparent",border:`1px solid ${tab===k?C.blue+"50":"transparent"}`,borderRadius:8,padding:isMobile?"5px 10px":"7px 16px",fontSize:isMobile?11:13,fontWeight:tab===k?700:400,color:tab===k?C.blue:C.textMuted,cursor:"pointer",fontFamily:F}}>{ic} {lb}</button>
           ))}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          {onSubscription && (
+            <button onClick={onSubscription}
+              style={{ background:plan==="start"?`${C.amber}15`:"transparent", border:`1px solid ${plan==="start"?C.amber+"50":C.border}`, borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, color:plan==="start"?C.amber:C.green, cursor:"pointer", fontFamily:F, whiteSpace:"nowrap" }}>
+              {plan === "start" ? "⭐ Start" : `⭐ ${planLabel || ""}`}
+            </button>
+          )}
           {student?.nome && (
-            <>
-              <div style={{ width: isMobile ? 24 : 30, height: isMobile ? 24 : 30, background:C.blueBg, border:`1px solid ${C.blue}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize: isMobile ? 10 : 13, fontWeight:800, color:C.blue }}>
-                {student.nome[0]?.toUpperCase()}
-              </div>
-              {!isMobile && <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span>}
-            </>
+            <><div style={{width:isMobile?24:30,height:isMobile?24:30,background:C.blueBg,border:`1px solid ${C.blue}40`,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:isMobile?10:13,fontWeight:800,color:C.blue}}>{student.nome[0]?.toUpperCase()}</div>
+              {!isMobile && <span style={{fontSize:12,color:C.textSub,maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{student.nome}</span>}</>
           )}
         </div>
       </div>
@@ -902,6 +890,8 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
               {yellowFlags.length >= 3 && <div style={{marginTop:6,background:C.amberBg,borderRadius:8,padding:"8px 12px",fontSize:11,color:C.amber,lineHeight:1.6}}>⚠️ {yellowFlags.length} yellow flags.</div>}
             </CollapsibleSub>
           </CollapsibleSection>
+
+          <GeneralAssessment storageKey="pediatria" studentId={sid} colors={{ ...C, accent: C.blue }} />
 
           {/* 🔬 Exame Físico */}
           <CollapsibleSection title="Exame Físico" icon="🔬" expanded={expandedSections.includes("exame")} onToggle={()=>toggleSection("exame")}>

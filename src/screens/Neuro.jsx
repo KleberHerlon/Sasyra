@@ -7,6 +7,8 @@ import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
 import { detectLocalDor, extractClinicalEntities } from "../utils/clinicalDetection.js";
 import { CIF } from "../data/cif.js";
 import ScaleSelector from "../components/ScaleSelector";
+import { calcMAS, calcBBS, calcMIF } from "../data/neuroScales";
+import LogoSVG from "../components/LogoSVG";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -25,14 +27,7 @@ const primaryBtn = (e={}) => ({ background:C.purple, color:"#fff", border:"none"
 const ghostBtn = (e={}) => ({ background:"transparent", color:C.purple, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 16px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:F, display:"inline-flex", alignItems:"center", gap:6, ...e });
 const iconBtn = (active=false, activeColor=C.purple, e={}) => ({ background:active ? `${activeColor}18` : C.surface, border:`1px solid ${active ? activeColor+"50" : C.border}`, color:active ? activeColor : C.textMuted, borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:active ? 700 : 400, cursor:"pointer", fontFamily:F, transition:"all 0.12s", ...e });
 
-const CREFITO_REGIOES = {
-  "Sul (RS/SC/PR)":{consulta:180,sessao:160,avaliacao:250,relatorio:120},
-  "Sudeste - SP":{consulta:220,sessao:200,avaliacao:320,relatorio:150},
-  "Sudeste - RJ/ES/MG":{consulta:190,sessao:170,avaliacao:280,relatorio:130},
-  "Centro-Oeste":{consulta:170,sessao:150,avaliacao:240,relatorio:110},
-  "Nordeste":{consulta:150,sessao:140,avaliacao:220,relatorio:100},
-  "Norte":{consulta:140,sessao:130,avaliacao:210,relatorio:95},
-};
+import CREFITO_REGIOES from "../data/crefito";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function useMediaQuery(q) {
@@ -71,24 +66,7 @@ function CollapsibleSub({ title, defaultOpen, children }) {
 }
 
 // ── Scale calculations ───────────────────────────────────────────────────────
-function calcMAS(scores) {
-  const total = Object.values(scores).reduce((a,b)=>a+(Number(b)||0),0);
-  const level = total===0?"Sem espasticidade":total<=6?"Espasticidade leve":total<=12?"Espasticidade moderada":"Espasticidade grave";
-  const color = total===0?C.green:total<=6?C.amber:total<=12?C.purple:C.red;
-  return { total, level, color };
-}
-function calcBBS(scores) {
-  const total = Object.values(scores).reduce((a,b)=>a+(Number(b)||0),0);
-  const level = total>=16?"Baixo risco de queda":total>=10?"Médio risco de queda":"Alto risco de queda";
-  const color = total>=16?C.green:total>=10?C.amber:C.red;
-  return { total, level, color };
-}
-function calcMIF(scores) {
-  const total = Object.values(scores).reduce((a,b)=>a+(Number(b)||0),0);
-  const level = total>=36?"Independência modificada":total>=24?"Dependência moderada":total>=12?"Dependência grave":"Dependência total";
-  const color = total>=36?C.green:total>=24?C.amber:C.red;
-  return { total, level, max:42, color };
-}
+
 
 // ── Scale definitions ────────────────────────────────────────────────────────
 const MAS_QUESTIONS = [
@@ -387,6 +365,7 @@ function loadNeuroData(studentId) { try { const d = localStorage.getItem(`neuro_
 // ── Main component ───────────────────────────────────────────────────────────
 export default function Neuro({ student, students, onSelectStudent, onAddStudent, onUpdateStudent, onUpdateStudentById, onDeleteStudent,
   plan, onUpgrade, canUseFeature, tryFeature, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion, currentModuleId, allPatients,
+  onAgenda, onFinanceiro, onSubscription, planLabel,
 }) {
   // ── Navigation ────────────────────────────────────────────────────────────────
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
@@ -652,10 +631,6 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
   if (studentListView) return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text, padding:24 }}>
       <div style={{ maxWidth:680, margin:"0 auto" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
-          <span style={{ fontSize:16, fontWeight:800, color:C.text, letterSpacing:"0.05em" }}>🧠 Neurofuncional</span>
-          <button onClick={()=>{localStorage.removeItem("sasyra_module"); window.location.reload()}} style={ghostBtn({fontSize:12})}>Sair</button>
-        </div>
         <div style={{ fontSize:13, color:C.textMuted, marginBottom:6 }}>Selecione um paciente para iniciar o atendimento</div>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
           <span style={{ fontSize:15, fontWeight:700, color:C.text }}>
@@ -772,17 +747,25 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
       {/* Header */}
-      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:isMobile?"0 12px":"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:isMobile?52:60 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:isMobile?6:12 }}>
-          <button onClick={()=>setStudentListView(true)} style={ghostBtn({padding:"5px 10px",fontSize:11})}>← {isMobile?"":"Pacientes"}</button>
-          <span style={{ fontSize:isMobile?10:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>🧠 Neurofuncional</span>
+      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:isMobile?"10px 12px":"0 24px", display:"flex", flexWrap:"wrap", alignItems:"center", justifyContent:"space-between", minHeight:isMobile?"auto":60, gap:isMobile?8:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <LogoSVG C={C} F={F}/>
+          <button onClick={()=>setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+          {onAgenda && <button onClick={onAgenda} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Agenda">📅 Agenda</button>}
+          {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
-        <div style={{ display:"flex", gap:isMobile?2:4, overflowX:"auto", flex:1, justifyContent:"center", padding:"0 8px" }}>
+        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
           {[["avaliacao","📋",isMobile?"":"Avaliação"],["sessoes","📅",isMobile?"":"Sessões"],["relatorio","📊",isMobile?"":"Relatório"],["evidencias","🔬",isMobile?"":"Evidências"]].map(([k,ic,lb])=>(
-            <button key={k} onClick={()=>setTab(k)} style={{background:tab===k?C.purpleBg:"transparent",border:`1px solid ${tab===k?C.purple+"50":"transparent"}`,borderRadius:8,padding:`${isMobile?4:7}px ${isMobile?8:14}px`,fontSize:isMobile?10:12,fontWeight:tab===k?700:400,color:tab===k?C.purple:C.textMuted,cursor:"pointer",fontFamily:F,whiteSpace:"nowrap"}}>{ic} {lb}</button>
+            <button key={k} onClick={()=>setTab(k)} style={{background:tab===k?C.purpleBg:"transparent",border:`1px solid ${tab===k?C.purple+"50":"transparent"}`,borderRadius:8,padding:isMobile?"5px 10px":"7px 16px",fontSize:isMobile?11:13,fontWeight:tab===k?700:400,color:tab===k?C.purple:C.textMuted,cursor:"pointer",fontFamily:F}}>{ic} {lb}</button>
           ))}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          {onSubscription && (
+            <button onClick={onSubscription}
+              style={{ background:plan==="start"?`${C.amber}15`:"transparent", border:`1px solid ${plan==="start"?C.amber+"50":C.border}`, borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, color:plan==="start"?C.amber:C.green, cursor:"pointer", fontFamily:F, whiteSpace:"nowrap" }}>
+              {plan === "start" ? "⭐ Start" : `⭐ ${planLabel || ""}`}
+            </button>
+          )}
           {student?.nome && (
             <><div style={{width:isMobile?24:30,height:isMobile?24:30,background:C.purpleBg,border:`1px solid ${C.purple}40`,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:isMobile?10:13,fontWeight:800,color:C.purple}}>{student.nome[0]?.toUpperCase()}</div>
               {!isMobile && <span style={{fontSize:12,color:C.textSub,maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{student.nome}</span>}</>
@@ -855,7 +838,13 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
                     </div>
                   )
                 ) : (
-                  <div style={{background:C.amberBg,borderRadius:8,padding:"8px 12px",fontSize:11,color:C.amber,marginTop:8}}>🔒 Sugestão CIF nos planos Evidência e Clínica</div>
+                  <div style={{background:C.amberBg,borderRadius:8,padding:"8px 12px",fontSize:11,color:C.amber,marginTop:8,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:6}}>
+                    <span>🔒 Sugestão CIF nos planos <strong style={{color:C.green}}>Evidência</strong> e <strong style={{color:C.green}}>Clínica</strong></span>
+                    <button onClick={() => onUpgrade?.()}
+                      style={{background:"transparent",border:"none",color:C.green,fontWeight:700,cursor:"pointer",fontSize:11,fontFamily:F,textDecoration:"underline",whiteSpace:"nowrap"}}>
+                      Desbloquear
+                    </button>
+                  </div>
                 )}
                 {canUseFeature?.("cif") && cifAuto.length > 0 && (
                   <div style={{marginTop:8}}><span style={{fontSize:9,fontWeight:700,color:C.purple,textTransform:"uppercase",letterSpacing:"0.08em"}}>CIF Automáticos:</span>
