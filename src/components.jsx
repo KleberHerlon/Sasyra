@@ -171,16 +171,18 @@ export function SessionCounter({ value, onChange }) {
 export function AudioField({ value, onChange, placeholder, rows=3 }) {
   const [rec, setRec] = useState(false);
   const rRef = useRef(null);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; });
   const supported = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
   useEffect(() => {
     if (!supported) return;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const r = new SR(); r.lang="pt-BR"; r.continuous=true; r.interimResults=false;
-    r.onresult = e => { const t=Array.from(e.results).map(x=>x[0].transcript).join(" "); onChange(p=>(p?p+" "+t:t)); };
+    r.onresult = e => { const t=Array.from(e.results).map(x=>x[0].transcript).join(" "); onChangeRef.current(p=>(p?p+" "+t:t)); };
     r.onend = () => setRec(false);
     rRef.current = r;
     return () => { try { r.stop(); } catch { /* ignore */ } };
-  }, [onChange, supported]);
+  }, [supported]);
   const toggle = () => { if (!rRef.current) return; if(rec){rRef.current.stop();setRec(false);}else{rRef.current.start();setRec(true);} };
   return (
     <div style={{ position:"relative" }}>
@@ -564,22 +566,86 @@ const BODY_DETAILS = {
   "Pé E":        { joint:"Subtalar, Mediotársicas, Metatarsofalângicas, Interfalângicas", muscles:"Flexor curto dos dedos, Extensor curto dos dedos, Abdutor do hálux, Adutor do hálux, Interósseos, Lombricais, Quadrado plantar" },
 };
 
-export function BodyMap({ value, onChange, sex }) {
+const PEDIATRIC_PARTS = [
+  "Cabeça","Cervical","Ombro D","Ombro E","Braço D","Braço E",
+  "Mão D","Mão E","Torácica","Lombar","Quadril D","Quadril E",
+  "Joelho D","Joelho E","Pé D","Pé E","Abdômen",
+];
+
+const PEDIATRIC_BODY_DETAILS = {
+  "Cabeça":      { joint:"Crânio", muscles:"Músculos da face e pescoço" },
+  "Cervical":    { joint:"Coluna Cervical", muscles:"Músculos do pescoço" },
+  "Torácica":    { joint:"Coluna Torácica", muscles:"Costas" },
+  "Lombar":      { joint:"Coluna Lombar", muscles:"Músculos da lombar" },
+  "Abdômen":     { joint:"Abdômen", muscles:"Barriga" },
+  "Ombro D":     { joint:"Ombro Direito", muscles:"Músculos do ombro" },
+  "Ombro E":     { joint:"Ombro Esquerdo", muscles:"Músculos do ombro" },
+  "Braço D":     { joint:"Cotovelo Direito", muscles:"Músculos do braço" },
+  "Braço E":     { joint:"Cotovelo Esquerdo", muscles:"Músculos do braço" },
+  "Mão D":       { joint:"Punho e Mão Direitos", muscles:"Músculos da mão" },
+  "Mão E":       { joint:"Punho e Mão Esquerdos", muscles:"Músculos da mão" },
+  "Quadril D":   { joint:"Quadril Direito", muscles:"Músculos do quadril" },
+  "Quadril E":   { joint:"Quadril Esquerdo", muscles:"Músculos do quadril" },
+  "Joelho D":    { joint:"Joelho Direito", muscles:"Músculos da perna" },
+  "Joelho E":    { joint:"Joelho Esquerdo", muscles:"Músculos da perna" },
+  "Pé D":        { joint:"Tornozelo e Pé Direitos", muscles:"Músculos do pé" },
+  "Pé E":        { joint:"Tornozelo e Pé Esquerdos", muscles:"Músculos do pé" },
+};
+
+const PEDIATRIC_LABEL_POS = {
+  "Cabeça":      { F:[362,160], B:[1086,160] },
+  "Cervical":    { F:[362,245], B:[1086,245] },
+  "Torácica":    { B:[1086,400] },
+  "Lombar":      { B:[1086,530] },
+  "Abdômen":     { F:[362,480] },
+  "Ombro D":     { F:[275,320], B:[1228,320] },
+  "Ombro E":     { F:[450,320], B:[980,320] },
+  "Braço D":     { F:[200,470], B:[1210,480] },
+  "Braço E":     { F:[525,470], B:[930,480] },
+  "Mão D":       { F:[55,700],  B:[1400,670] },
+  "Mão E":       { F:[670,700],  B:[790,670]  },
+  "Quadril D":   { F:[300,820], B:[1160,830] },
+  "Quadril E":   { F:[425,820], B:[1000,830] },
+  "Joelho D":    { F:[290,980], B:[1170,1070] },
+  "Joelho E":    { F:[435,980], B:[990,1070] },
+  "Pé D":        { F:[275,1310], B:[1155,1310] },
+  "Pé E":        { F:[450,1310], B:[970,1310] },
+};
+
+export function BodyMap({ value, onChange, sex, pediatric }) {
   const [view, setView] = useState("front");
   const kv = view === "front" ? "F" : "B";
   const isMobile = useMediaQuery("(max-width:767px)");
-  const bodyScale = isMobile ? 0.9 : 1.4;
+  const bodyScale = pediatric ? (isMobile ? 1.0 : 1.5) : (isMobile ? 0.9 : 1.4);
+  const activeParts = pediatric ? PEDIATRIC_PARTS : Object.keys(PART_SLUG);
+  const activeSlug = pediatric ? (() => {
+    const map = {};
+    PEDIATRIC_PARTS.forEach(id => { if (PART_SLUG[id]) map[id] = PART_SLUG[id]; });
+    return map;
+  })() : PART_SLUG;
+  const activeLabelPos = pediatric ? PEDIATRIC_LABEL_POS : LABEL_POS;
+  const activeDetails = pediatric ? PEDIATRIC_BODY_DETAILS : BODY_DETAILS;
+
+  const activeSlugRev = useMemo(() => {
+    const rev = {};
+    Object.entries(activeSlug).forEach(([id, m]) => {
+      ["F","B"].forEach(v2 => {
+        if (!m[v2]) return;
+        rev[`${m[v2]}|${m.side||""}|${v2}`] = id;
+      });
+    });
+    return rev;
+  }, [pediatric]);
 
   const selectedData = useMemo(() => {
     const groups = {};
     (value||[]).forEach(id => {
-      const m = PART_SLUG[id];
+      const m = activeSlug[id];
       if (!m) return;
       const slug = m[kv];
       if (!slug) return;
       if (!groups[slug]) groups[slug] = { sides: new Set() };
       if (m.side) {
-        // Mirror side for front view (visual → anatomical)
         const adjSide = kv === "F"
           ? (m.side === "left" ? "right" : m.side === "right" ? "left" : m.side)
           : m.side;
@@ -591,22 +657,19 @@ export function BodyMap({ value, onChange, sex }) {
       color: C_BODY.green,
       ...(g.sides.size === 1 ? { side: [...g.sides][0] } : {}),
     }));
-  }, [value, kv]);
+  }, [value, kv, pediatric]);
 
   const handlePartPress = (_part, side) => {
     const slug = _part?.slug;
     if (!slug) return;
-    // Library uses visual coordinates (viewer's perspective).
-    // Front view: visual left = anatomical right; visual right = anatomical left.
-    // Back view: visual sides match anatomical sides.
     const adjustedSide = kv === "F"
       ? (side === "left" ? "right" : side === "right" ? "left" : side)
       : side;
     let key = `${slug}|${adjustedSide||""}|${kv}`;
-    let id = SLUG_REV[key];
+    let id = activeSlugRev[key];
     if (!id) {
       key = `${slug}||${kv}`;
-      id = SLUG_REV[key];
+      id = activeSlugRev[key];
     }
     if (id) {
       const sel = value?.includes(id);
@@ -627,7 +690,7 @@ export function BodyMap({ value, onChange, sex }) {
     transform: "translate(-50%,-50%)",
     background: "rgba(0,0,0,0.8)",
     color: "var(--green)",
-    fontSize: 10,
+    fontSize: pediatric ? 9 : 10,
     fontWeight: 700,
     padding: "2px 8px",
     borderRadius: 4,
@@ -641,6 +704,7 @@ export function BodyMap({ value, onChange, sex }) {
   return (
     <div style={{ textAlign:"center" }}>
       <div style={{ display:"flex", justifyContent:"center", gap:6, marginBottom:6 }}>
+        {pediatric && <span style={{ fontSize:10, color:C_BODY.textMuted, marginRight:4, alignSelf:"center" }}>🧸</span>}
         <button onClick={() => setView("front")} style={tglStyle("front")}>Frente</button>
         <button onClick={() => setView("back")} style={tglStyle("back")}>Costas</button>
       </div>
@@ -657,7 +721,7 @@ export function BodyMap({ value, onChange, sex }) {
           border="#3D5675"
         />
         {(value||[]).map(id => {
-          const pos = LABEL_POS[id];
+          const pos = activeLabelPos[id];
           if (!pos) return null;
           const xy = pos[kv];
           if (!xy) return null;
@@ -674,23 +738,23 @@ export function BodyMap({ value, onChange, sex }) {
       {(value||[]).length > 0 && (
         <div style={{ marginTop:10, textAlign:"left", background:"var(--card)", border:"1px solid var(--border)", borderRadius:10, padding:"10px 12px" }}>
           <div style={{ fontSize:9, fontWeight:800, color:"var(--textMuted)", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>
-            Áreas selecionadas — articulação e músculos
+            {pediatric ? "Áreas selecionadas" : "Áreas selecionadas — articulação e músculos"}
           </div>
           {(value||[]).map(id => {
-            const d = BODY_DETAILS[id];
+            const d = activeDetails[id];
             if (!d) return null;
             return (
               <div key={id} style={{ marginBottom:6, padding:"6px 8px", background:"var(--surface)", borderRadius:6, border:"1px solid var(--borderLight)" }}>
                 <div style={{ fontSize:11, fontWeight:700, color:"var(--green)" }}>{id}</div>
-                <div style={{ fontSize:10, color:"var(--textSub)", marginTop:2 }}>Articulação: {d.joint}</div>
-                <div style={{ fontSize:10, color:"var(--textMuted)", marginTop:1 }}>Músculos: {d.muscles}</div>
+                {d.joint && <div style={{ fontSize:10, color:"var(--textSub)", marginTop:2 }}>{d.joint}</div>}
+                {d.muscles && <div style={{ fontSize:10, color:"var(--textMuted)", marginTop:1 }}>{d.muscles}</div>}
               </div>
             );
           })}
         </div>
       )}
       <div style={{ fontSize:10, color: C_BODY.textMuted, marginTop:6, lineHeight:1.4 }}>
-        Clique nas áreas do corpo para adicionar/remover
+        {pediatric ? "Toque nas áreas para marcar onde a criança sente dor" : "Clique nas áreas do corpo para adicionar/remover"}
       </div>
     </div>
   );
@@ -717,7 +781,7 @@ export function PaywallModal({ open, onClose, featureName, featureDesc, onUpgrad
         onClick={e=>e.stopPropagation()}>
         <div style={{ fontSize:48, marginBottom:8 }}>🔒</div>
         <h2 style={{ margin:"0 0 4px", fontSize:20, fontWeight:800, color:C2.text, fontFamily:"'Inter','Segoe UI',sans-serif" }}>
-          {featureName} disponível apenas no <span style={{ color:C2.green }}>Plano IA Premium</span>
+          {featureName} disponível nos planos <span style={{ color:C2.green }}>Evidência</span> e <span style={{ color:C2.green }}>Clínica</span>
         </h2>
         {featureDesc && (
           <p style={{ fontSize:13, color:C2.textMuted, lineHeight:1.6, margin:"12px 0 20px", fontFamily:"'Inter','Segoe UI',sans-serif" }}>
@@ -725,8 +789,8 @@ export function PaywallModal({ open, onClose, featureName, featureDesc, onUpgrad
           </p>
         )}
         <div style={{ fontSize:11, color:C2.textMuted, lineHeight:1.5, margin:"0 0 16px", fontFamily:"'Inter','Segoe UI',sans-serif" }}>
-          🔹 Assine o <strong>IA Premium (R$ 79,90/mês)</strong> — 300 análises/mês inclusas<br/>
-          🔹 Ou pague <strong>R$ 4,90 por análise avulsa</strong> no seu plano atual
+          🔹 Assine <strong>Evidência (R$ 59,90/mês)</strong> — 40 análises IA/mês + CIF + relatório completo<br/>
+          🔹 Ou <strong>Clínica (R$ 149,90/mês)</strong> — 150 análises/mês (equipe) + agenda compartilhada
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           <button onClick={()=>{onUpgrade?.(); onClose?.();}}
@@ -933,6 +997,37 @@ export function OnboardingDica({ dicas, storageKey }) {
           style={{ background: "none", border: "none", color: C.textMuted, fontSize: 10, cursor: "pointer", padding: "4px 6px" }}>
           Fechar ×</button>
       </div>
+    </div>
+  );
+}
+
+export function CollapsibleSection({ title, icon, badge, expanded, onToggle, children }) {
+  const isMobile = useMediaQuery("(max-width:767px)");
+  return (
+    <div style={{ ...cardStyle(), padding: isMobile ? "14px 12px" : "20px 22px" }}>
+      <div onClick={onToggle}
+        style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer", paddingBottom:expanded?12:0, borderBottom:expanded?`1px solid ${C.border}`:"none", marginBottom:expanded?isMobile?14:18:0 }}>
+        <span style={{ fontSize:10, color:C.textMuted, transition:"transform 0.15s", transform:expanded?"rotate(90deg)":"rotate(0deg)" }}>▶</span>
+        <span style={{ fontSize:16 }}>{icon}</span>
+        <h3 style={{ margin:0, fontSize:isMobile?10:11, fontWeight:800, letterSpacing:"0.11em", textTransform:"uppercase", color:C.green, flex:1 }}>{title}</h3>
+        {badge && <span style={{ fontSize:11, background:C.amberBg, color:C.amber, border:`1px solid ${C.amber}40`, borderRadius:20, padding:"2px 10px" }}>{badge}</span>}
+      </div>
+      {expanded && <div>{children}</div>}
+    </div>
+  );
+}
+
+export function CollapsibleSub({ title, defaultOpen = true, children }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const isMobile = useMediaQuery("(max-width:767px)");
+  return (
+    <div style={{ marginBottom: 14, background: C.cardAlt, border: `1px solid ${C.border}`, borderRadius: 10, padding: isMobile ? "8px 10px" : "10px 14px" }}>
+      <div onClick={() => setOpen(!open)}
+        style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none", paddingBottom: open ? 8 : 0, borderBottom: open ? `1px solid ${C.border}` : "none", marginBottom: open ? 10 : 0 }}>
+        <span style={{ fontSize: 10, color: C.textMuted, transition: "transform 0.15s", transform: open ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
+        <span style={{ fontSize: 11, fontWeight: 800, color: C.textMuted, letterSpacing: "0.1em", textTransform: "uppercase", flex: 1 }}>{title}</span>
+      </div>
+      {open && <div>{children}</div>}
     </div>
   );
 }

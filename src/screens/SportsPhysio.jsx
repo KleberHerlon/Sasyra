@@ -1,9 +1,14 @@
 import { useState, useEffect } from "react";
 import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
+import LogoSVG from "../components/LogoSVG";
 import CifAndHonorarios from "../components/CifAndHonorarios";
-import { CollapsibleSection, CollapsibleSub } from "../components";
+import CifSection from "../components/CifSection";
+import { CIF } from "../data/cif";
+import { CollapsibleSection, CollapsibleSub, AudioField } from "../components";
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
+import GeneralAssessment from "../components/GeneralAssessment";
+import { calcYBalance, calcLSI, calcLSIBidirectional, calcRTS } from "../data/sportsScales";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -77,31 +82,7 @@ function loadSportsData(studentId) {
   try { const d = localStorage.getItem(`esportiva_data_${studentId}`); return d ? JSON.parse(d) : null; } catch { return null; }
 }
 
-function calcYBalance(scores) {
-  if (!scores) return null;
-  const d = { anterior: scores.anteriorD || 0, posteromedial: scores.posteromedialD || 0, posterolateral: scores.posterolateralD || 0 };
-  const e = { anterior: scores.anteriorE || 0, posteromedial: scores.posteromedialE || 0, posterolateral: scores.posterolateralE || 0 };
-  const totalD = d.anterior + d.posteromedial + d.posterolateral;
-  const totalE = e.anterior + e.posteromedial + e.posterolateral;
-  const compositeD = totalD / (3 * 1) * 100;
-  const compositeE = totalE / (3 * 1) * 100;
-  return { d, e, totalD, totalE, compositeD, compositeE, lsi: totalE > 0 ? Math.round(totalD / totalE * 100) : 0 };
-}
-
-function calcLSI(affected, unaffected) {
-  if (!unaffected || unaffected === 0) return 0;
-  return Math.round(affected / unaffected * 100);
-}
-
-function calcRTS(criteria) {
-  if (!criteria || criteria.length === 0) return { total: 0, met: 0, pct: 0, status: "Sem critérios preenchidos", color: C.textMuted };
-  const met = criteria.filter(c => c.met).length;
-  const total = criteria.length;
-  const pct = Math.round(met / total * 100);
-  const status = pct >= 90 ? "Apto para retorno ao esporte" : pct >= 70 ? "Próximo do retorno — reforçar critérios pendentes" : "Continua em reabilitação — critérios insuficientes";
-  const color = pct >= 90 ? C.green : pct >= 70 ? C.amber : C.red;
-  return { total, met, pct, status, color };
-}
+// moved to src/data/sportsScales.js
 
 const SPORTS_EVIDENCE = {
   lca: {
@@ -155,7 +136,21 @@ const SPORTS_EVIDENCE = {
   },
 };
 
-export default function SportsPhysio({ student, students, allPatients, currentModuleId, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById }) {
+function generateCIFSports({ evaMov, avds }) {
+  const result = [];
+  if (evaMov >= 7) result.push({ code:"b280", desc:"Sensação de dor intensa", qualifier:3 });
+  else if (evaMov >= 4) result.push({ code:"b280", desc:"Sensação de dor moderada", qualifier:2 });
+  else if (evaMov >= 1) result.push({ code:"b280", desc:"Sensação de dor leve", qualifier:1 });
+  result.push({ code:"b730", desc:"Força muscular", qualifier:2 });
+  result.push({ code:"b710", desc:"Mobilidade das articulações", qualifier:2 });
+  if (avds?.some(c => c.includes("Andar")) || avds?.some(c => c.includes("Correr"))) result.push({ code:"d450", desc:"Andar", qualifier:2 });
+  if (avds?.some(c => c.includes("Esport")) || avds?.some(c => c.includes("Jogar")) || avds?.some(c => c.includes("Treinar"))) result.push({ code:"d920", desc:"Recreação e lazer", qualifier:2 });
+  return result;
+}
+
+export default function SportsPhysio({ student, students, allPatients, currentModuleId, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById,
+  plan, onUpgrade, canUseFeature, tryFeature, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion,
+  onAgenda, onFinanceiro, onSubscription, planLabel }) {
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -177,11 +172,15 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
   const [cirurgiasPrevias, setCirurgiasPrevias] = useState("");
 
   const [queixaEsportiva, setQueixaEsportiva] = useState("");
+  const [hdaSports, setHdaSports] = useState("");
+  const [diagnosticoCinesioSports, setDiagnosticoCinesioSports] = useState("");
   const [mecanismoLesao, setMecanismoLesao] = useState("");
   const [dataLesao, setDataLesao] = useState("");
   const [tratamentoRealizado, setTratamentoRealizado] = useState("");
   const [retornoAtividades, setRetornoAtividades] = useState("");
 
+  const [comprimentoPerna, setComprimentoPerna] = useState("");
+  const [ladoAfetado, setLadoAfetado] = useState("");
   const [yBalance, setYBalance] = useState({ anteriorD:"", posteromedialD:"", posterolateralD:"", anteriorE:"", posteromedialE:"", posterolateralE:"" });
   const [yBalanceResult, setYBalanceResult] = useState(null);
 
@@ -228,6 +227,12 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
     try { localStorage.setItem(`esportiva_scales_${sid}`, JSON.stringify(next)); } catch {}
   };
   const sportColors = { ...C, accent: C.blue, font: F };
+  const autoCifSports = generateCIFSports({ evaMov: enhancer.pain.evaMov, avds: [] });
+  const matchedCif = Object.entries(SPORTS_EVIDENCE).find(([key]) =>
+    (queixaEsportiva||"").toLowerCase().includes(key.replace(/_/g," ")) ||
+    (lesoesPrevias||[]).some(c => c.toLowerCase().includes(key.replace(/_/g," ")))
+  );
+  const cifSuggestionsSports = matchedCif ? matchedCif[1].cif || [] : [];
 
   useEffect(() => {
     if (student?.id || student?.nome) {
@@ -243,10 +248,14 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
         setLesoesPrevias(saved.lesoesPrevias || []);
         setCirurgiasPrevias(saved.cirurgiasPrevias || "");
         setQueixaEsportiva(saved.queixaEsportiva || "");
+        setHdaSports(saved.hdaSports || "");
+        setDiagnosticoCinesioSports(saved.diagnosticoCinesioSports || "");
         setMecanismoLesao(saved.mecanismoLesao || "");
         setDataLesao(saved.dataLesao || "");
         setTratamentoRealizado(saved.tratamentoRealizado || "");
         setRetornoAtividades(saved.retornoAtividades || "");
+        setComprimentoPerna(saved.comprimentoPerna || "");
+        setLadoAfetado(saved.ladoAfetado || "");
         setYBalance(saved.yBalance || { anteriorD:"", posteromedialD:"", posterolateralD:"", anteriorE:"", posteromedialE:"", posterolateralE:"" });
         setYBalanceResult(saved.yBalanceResult || null);
         setHopTest(saved.hopTest || { singleD:"", tripleD:"", crossoverD:"", singleE:"", tripleE:"", crossoverE:"" });
@@ -286,8 +295,8 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
     const sid = student.id || student.nome;
     saveSportsData(sid, {
       nomeAtleta, idadeAtleta, sexoAtleta, modalidadeEsporte, tempoPratica, nivelCompetitivo, faseTemporada, lesoesPrevias, cirurgiasPrevias,
-      queixaEsportiva, mecanismoLesao, dataLesao, tratamentoRealizado, retornoAtividades,
-      yBalance, yBalanceResult, hopTest, plank, sidePlank, admEsportiva, forcaEsportiva,
+      queixaEsportiva, hdaSports, diagnosticoCinesioSports, mecanismoLesao, dataLesao, tratamentoRealizado, retornoAtividades,
+      comprimentoPerna, ladoAfetado, yBalance, yBalanceResult, hopTest, plank, sidePlank, admEsportiva, forcaEsportiva,
       rtsCriteria, rtsResult, testesEspeciais,
       faseReabilitacao, objetivosFase, exerciciosPrescritos, progressaoCarga,
       evolucaoEsportiva,
@@ -299,10 +308,6 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
   if (studentListView) return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text, padding:24 }}>
       <div style={{ maxWidth:680, margin:"0 auto" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
-          <span style={{ fontSize:16, fontWeight:800, color:C.text, letterSpacing:"0.05em" }}>⚽ Fisioterapia Esportiva</span>
-          <button onClick={() => { localStorage.removeItem("sasyra_module"); window.location.reload(); }} style={ghostBtn({ fontSize:12 })}>Sair</button>
-        </div>
         <div style={{ fontSize:13, color:C.textMuted, marginBottom:6 }}>Selecione um atleta para iniciar o atendimento</div>
 
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
@@ -465,8 +470,10 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
       <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:60 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <button onClick={() => setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>← Atletas</button>
-          <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>⚽ Fisioterapia Esportiva</span>
+          <LogoSVG C={C} F={F}/>
+          <button onClick={()=>setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+          {onAgenda && <button onClick={onAgenda} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Agenda">📅 Agenda</button>}
+          {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
         <div style={{ display:"flex", gap:4 }}>
           {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
@@ -480,6 +487,12 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
           ))}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          {onSubscription && (
+            <button onClick={onSubscription}
+              style={{ background:plan==="start"?`${C.amber}15`:"transparent", border:`1px solid ${plan==="start"?C.amber+"50":C.border}`, borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, color:plan==="start"?C.amber:C.green, cursor:"pointer", fontFamily:F, whiteSpace:"nowrap" }}>
+              {plan === "start" ? "⭐ Start" : `⭐ ${planLabel || ""}`}
+            </button>
+          )}
           {student?.nome && (
             <>
               <div style={{ width:30, height:30, background:C.blueBg, border:`1px solid ${C.blue}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.blue }}>
@@ -542,9 +555,15 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
             <Section title="História da Lesão" icon="📝">
               <div style={{ marginBottom:12 }}>
                 <span style={lbl()}>Queixa esportiva / Motivo da consulta</span>
-                <textarea value={queixaEsportiva} onChange={e => setQueixaEsportiva(e.target.value)} rows={2}
-                  style={{ ...inp({ resize:"vertical", lineHeight:1.5 }) }}
-                  placeholder="Ex: Dor no joelho direito ao agachar e correr, com sensação de falseio..." />
+                <AudioField value={queixaEsportiva} onChange={v => setQueixaEsportiva(typeof v === "function" ? v(queixaEsportiva) : v)} placeholder="Ex: Dor no joelho direito ao agachar e correr, com sensação de falseio..." rows={2} />
+              </div>
+              <div style={{ marginBottom:12 }}>
+                <span style={lbl()}>HDA — História da Doença Atual</span>
+                <AudioField value={hdaSports} onChange={v => setHdaSports(typeof v === "function" ? v(hdaSports) : v)} placeholder="Início, evolução, tratamentos prévios, exames realizados…" rows={3} />
+              </div>
+              <div style={{ marginBottom:12 }}>
+                <span style={lbl()}>Diagnóstico Cinesioterapêutico (DCT)</span>
+                <input type="text" value={diagnosticoCinesioSports} onChange={e => setDiagnosticoCinesioSports(e.target.value)} style={inp()} placeholder="Ex: Disfunção de ombro no overhead, joelho do saltador, tendinopatia patelar" />
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
                 <div>
@@ -568,6 +587,10 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
               </div>
             </Section>
 
+            <GeneralAssessment storageKey="sports" studentId={sid} colors={{ ...C, accent: C.blue }} />
+
+            <CifSection cifSuggestions={cifSuggestionsSports} autoCif={autoCifSports} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
+
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
               <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Anamnese</button>
             </div>
@@ -580,13 +603,20 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
               <div style={{ fontSize:12, color:C.textMuted, marginBottom:10, lineHeight:1.5 }}>
                 Teste de equilíbrio e propriocepção em apoio unipodal. Valores em cm. Assimetria {'>'} 4 cm ou LSI {'<'} 90% = risco elevado de lesão.
               </div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"12px 16px", marginBottom:12 }}>
+                <NumericField label="Comp. da perna (cm)" value={comprimentoPerna} onChange={v => { setComprimentoPerna(v); if (yBalance) setYBalanceResult(calcYBalance(yBalance, v)); }} min={0} max={120} step={0.5} unit="cm" />
+                <div>
+                  <span style={lbl()}>Lado afetado</span>
+                  <SingleSelect options={["Direito","Esquerdo","Nenhum"]} value={ladoAfetado} onChange={v => setLadoAfetado(v)} activeColor={C.blue} />
+                </div>
+              </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
-                <NumericField label="Anterior D (cm)" value={yBalance.anteriorD} onChange={v => { const n={...yBalance,anteriorD:v}; setYBalance(n); setYBalanceResult(calcYBalance(n)); }} min={0} max={150} step={0.5} />
-                <NumericField label="Anterior E (cm)" value={yBalance.anteriorE} onChange={v => { const n={...yBalance,anteriorE:v}; setYBalance(n); setYBalanceResult(calcYBalance(n)); }} min={0} max={150} step={0.5} />
-                <NumericField label="Póstero-medial D (cm)" value={yBalance.posteromedialD} onChange={v => { const n={...yBalance,posteromedialD:v}; setYBalance(n); setYBalanceResult(calcYBalance(n)); }} min={0} max={150} step={0.5} />
-                <NumericField label="Póstero-medial E (cm)" value={yBalance.posteromedialE} onChange={v => { const n={...yBalance,posteromedialE:v}; setYBalance(n); setYBalanceResult(calcYBalance(n)); }} min={0} max={150} step={0.5} />
-                <NumericField label="Póstero-lateral D (cm)" value={yBalance.posterolateralD} onChange={v => { const n={...yBalance,posterolateralD:v}; setYBalance(n); setYBalanceResult(calcYBalance(n)); }} min={0} max={150} step={0.5} />
-                <NumericField label="Póstero-lateral E (cm)" value={yBalance.posterolateralE} onChange={v => { const n={...yBalance,posterolateralE:v}; setYBalance(n); setYBalanceResult(calcYBalance(n)); }} min={0} max={150} step={0.5} />
+                <NumericField label="Anterior D (cm)" value={yBalance.anteriorD} onChange={v => { const n={...yBalance,anteriorD:v}; setYBalance(n); setYBalanceResult(calcYBalance(n, comprimentoPerna)); }} min={0} max={150} step={0.5} />
+                <NumericField label="Anterior E (cm)" value={yBalance.anteriorE} onChange={v => { const n={...yBalance,anteriorE:v}; setYBalance(n); setYBalanceResult(calcYBalance(n, comprimentoPerna)); }} min={0} max={150} step={0.5} />
+                <NumericField label="Póstero-medial D (cm)" value={yBalance.posteromedialD} onChange={v => { const n={...yBalance,posteromedialD:v}; setYBalance(n); setYBalanceResult(calcYBalance(n, comprimentoPerna)); }} min={0} max={150} step={0.5} />
+                <NumericField label="Póstero-medial E (cm)" value={yBalance.posteromedialE} onChange={v => { const n={...yBalance,posteromedialE:v}; setYBalance(n); setYBalanceResult(calcYBalance(n, comprimentoPerna)); }} min={0} max={150} step={0.5} />
+                <NumericField label="Póstero-lateral D (cm)" value={yBalance.posterolateralD} onChange={v => { const n={...yBalance,posterolateralD:v}; setYBalance(n); setYBalanceResult(calcYBalance(n, comprimentoPerna)); }} min={0} max={150} step={0.5} />
+                <NumericField label="Póstero-lateral E (cm)" value={yBalance.posterolateralE} onChange={v => { const n={...yBalance,posterolateralE:v}; setYBalance(n); setYBalanceResult(calcYBalance(n, comprimentoPerna)); }} min={0} max={150} step={0.5} />
               </div>
               {yBalanceResult && (
                 <div style={{ marginTop:12, background:C.blueBg, border:`1px solid ${C.blue}40`, borderRadius:10, padding:"14px 16px" }}>
@@ -598,6 +628,10 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
                     <div><strong>Anterior E:</strong> {yBalanceResult.e.anterior}cm</div>
                     <div><strong>PM E:</strong> {yBalanceResult.e.posteromedial}cm</div>
                     <div><strong>PL E:</strong> {yBalanceResult.e.posterolateral}cm</div>
+                  </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginTop:8, fontSize:13, color:C.textSub }}>
+                    <div>Composite D: <strong>{yBalanceResult.compositeD}%</strong></div>
+                    <div>Composite E: <strong>{yBalanceResult.compositeE}%</strong></div>
                   </div>
                   <div style={{ marginTop:8, fontSize:14, fontWeight:700, color: yBalanceResult.lsi >= 90 ? C.green : C.amber }}>
                     LSI: {yBalanceResult.lsi}% {yBalanceResult.lsi >= 90 ? "✅" : "⚠️"}
@@ -622,9 +656,9 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
                 <div style={{ marginTop:12, background:C.blueBg, border:`1px solid ${C.blue}40`, borderRadius:10, padding:"14px 16px" }}>
                   <div style={{ fontSize:10, color:C.textMuted, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>LSI — Hop Tests</div>
                   <div style={{ fontSize:13, color:C.textSub, lineHeight:1.8 }}>
-                    Single hop: <strong style={{color:calcLSI(hopTest.singleD,hopTest.singleE)>=90?C.green:C.amber}}>{calcLSI(hopTest.singleD,hopTest.singleE)}%</strong>
-                    {hopTest.tripleD && hopTest.tripleE ? <> · Triple hop: <strong style={{color:calcLSI(hopTest.tripleD,hopTest.tripleE)>=90?C.green:C.amber}}>{calcLSI(hopTest.tripleD,hopTest.tripleE)}%</strong></> : ""}
-                    {hopTest.crossoverD && hopTest.crossoverE ? <> · Crossover: <strong style={{color:calcLSI(hopTest.crossoverD,hopTest.crossoverE)>=90?C.green:C.amber}}>{calcLSI(hopTest.crossoverD,hopTest.crossoverE)}%</strong></> : ""}
+                    Single hop: <strong style={{color:calcLSIBidirectional(hopTest.singleD,hopTest.singleE,ladoAfetado)>=90?C.green:C.amber}}>{calcLSIBidirectional(hopTest.singleD,hopTest.singleE,ladoAfetado)}%</strong>
+                    {hopTest.tripleD && hopTest.tripleE ? <> · Triple hop: <strong style={{color:calcLSIBidirectional(hopTest.tripleD,hopTest.tripleE,ladoAfetado)>=90?C.green:C.amber}}>{calcLSIBidirectional(hopTest.tripleD,hopTest.tripleE,ladoAfetado)}%</strong></> : ""}
+                    {hopTest.crossoverD && hopTest.crossoverE ? <> · Crossover: <strong style={{color:calcLSIBidirectional(hopTest.crossoverD,hopTest.crossoverE,ladoAfetado)>=90?C.green:C.amber}}>{calcLSIBidirectional(hopTest.crossoverD,hopTest.crossoverE,ladoAfetado)}%</strong></> : ""}
                   </div>
                 </div>
               ) : null}
@@ -681,8 +715,8 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
               </div>
               {(forcaEsportiva.quadricepsD && forcaEsportiva.quadricepsE) ? (
                 <div style={{ marginTop:12, background:C.blueBg, border:`1px solid ${C.blue}40`, borderRadius:10, padding:"10px 14px" }}>
-                  <span style={{ fontSize:12, color:C.textSub }}>LSI Quadríceps: <strong style={{color:calcLSI(forcaEsportiva.quadricepsD,forcaEsportiva.quadricepsE)>=90?C.green:C.amber}}>{calcLSI(forcaEsportiva.quadricepsD,forcaEsportiva.quadricepsE)}%</strong></span>
-                  {(forcaEsportiva.isquiotibiaisD && forcaEsportiva.isquiotibiaisE) ? <span style={{ fontSize:12, color:C.textSub, marginLeft:16 }}>LSI Isquiotibiais: <strong style={{color:calcLSI(forcaEsportiva.isquiotibiaisD,forcaEsportiva.isquiotibiaisE)>=90?C.green:C.amber}}>{calcLSI(forcaEsportiva.isquiotibiaisD,forcaEsportiva.isquiotibiaisE)}%</strong></span> : null}
+                  <span style={{ fontSize:12, color:C.textSub }}>LSI Quadríceps: <strong style={{color:calcLSIBidirectional(forcaEsportiva.quadricepsD,forcaEsportiva.quadricepsE,ladoAfetado)>=90?C.green:C.amber}}>{calcLSIBidirectional(forcaEsportiva.quadricepsD,forcaEsportiva.quadricepsE,ladoAfetado)}%</strong></span>
+                  {(forcaEsportiva.isquiotibiaisD && forcaEsportiva.isquiotibiaisE) ? <span style={{ fontSize:12, color:C.textSub, marginLeft:16 }}>LSI Isquiotibiais: <strong style={{color:calcLSIBidirectional(forcaEsportiva.isquiotibiaisD,forcaEsportiva.isquiotibiaisE,ladoAfetado)>=90?C.green:C.amber}}>{calcLSIBidirectional(forcaEsportiva.isquiotibiaisD,forcaEsportiva.isquiotibiaisE,ladoAfetado)}%</strong></span> : null}
                 </div>
               ) : null}
             </Section>
@@ -786,7 +820,7 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
               <div style={{ background:C.cardAlt, borderRadius:10, padding:"14px 16px", marginBottom:14 }}>
                 <div style={{ fontSize:10, fontWeight:800, color:C.blue, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Últimos indicadores</div>
                 <div style={{ fontSize:13, color:C.textSub, lineHeight:1.7 }}>
-                  <strong>Y-Balance LSI:</strong> {yBalanceResult.lsi}% · <strong>Hop LSI:</strong> {calcLSI(hopTest.singleD,hopTest.singleE)}% · <strong>Plank:</strong> {plank || "—"}s · <strong>RTS:</strong> {rtsResult?.pct || "—"}%
+                  <strong>Y-Balance LSI:</strong> {yBalanceResult.lsi}% · <strong>Hop LSI:</strong> {calcLSIBidirectional(hopTest.singleD,hopTest.singleE,ladoAfetado)}% · <strong>Plank:</strong> {plank || "—"}s · <strong>RTS:</strong> {rtsResult?.pct || "—"}%
                 </div>
               </div>
             )}
@@ -804,7 +838,7 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
               colors={sportColors} />
             <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={sportColors} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
-              summaryText={`Atleta: ${student?.nome || "—"}\nModalidade: ${modalidadeEsporte}\nNível: ${nivelCompetitivo}\nFase temporada: ${faseTemporada}\nQueixa: ${queixaEsportiva}\nMecanismo: ${mecanismoLesao}\nLesões prévias: ${lesoesPrevias.join(", ")}\nY-Balance LSI: ${yBalanceResult?.lsi || "—"}%\nHop LSI: ${calcLSI(hopTest.singleD,hopTest.singleE)}%\nRTS: ${rtsResult?.pct || "—"}%\nPlank: ${plank || "—"}s\nFase reabilitação: ${faseReabilitacao}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nTestes especiais (+): ${testesEspeciais.join(", ")}\nEvolução: ${evolucaoEsportiva}`}
+              summaryText={`Atleta: ${student?.nome || "—"}\nModalidade: ${modalidadeEsporte}\nNível: ${nivelCompetitivo}\nFase temporada: ${faseTemporada}\nQueixa: ${queixaEsportiva}\nHDA: ${hdaSports}\nDCT: ${diagnosticoCinesioSports}\nMecanismo: ${mecanismoLesao}\nLesões prévias: ${lesoesPrevias.join(", ")}\nY-Balance LSI: ${yBalanceResult?.lsi || "—"}%\nHop LSI: ${calcLSIBidirectional(hopTest.singleD,hopTest.singleE,ladoAfetado)}%\nRTS: ${rtsResult?.pct || "—"}%\nPlank: ${plank || "—"}s\nFase reabilitação: ${faseReabilitacao}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nTestes especiais (+): ${testesEspeciais.join(", ")}\nEvolução: ${evolucaoEsportiva}`}
               colors={sportColors} />
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
               <button onClick={handleSave} style={primaryBtn({ padding:"11px 26px", fontSize:14 })}>💾 Salvar Tudo</button>
@@ -812,11 +846,21 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
           </>
         )}
 
-        {tab === "relatorio" && (
-          <ReportSection pain={enhancer.pain} logs={enhancer.logs} redFlags={enhancer.redFlags}
-            aiRes={enhancer.aiRes} patientName={student?.nome || "—"}
-            moduleLabel="Fisioterapia Esportiva" colors={sportColors} />
-        )}
+        {tab === "relatorio" && (() => {
+          const matched = Object.entries(SPORTS_EVIDENCE).find(([key]) =>
+            (queixaEsportiva||"").toLowerCase().includes(key.replace(/_/g," ")) ||
+            (lesoesPrevias||[]).some(c => c.toLowerCase().includes(key.replace(/_/g," ")))
+          );
+          const cifCodes = matched ? matched[1].cif || [] : [];
+          return (
+            <>
+              <CifAndHonorarios cifCodes={cifCodes} convenio={student?.convenio} regiao={regiao} setRegiao={setRegiao} sessoesAuth={student?.sessoesAuth} color={C.blue} />
+              <ReportSection pain={enhancer.pain} logs={enhancer.logs} redFlags={enhancer.redFlags}
+                aiRes={enhancer.aiRes} patientName={student?.nome || "—"}
+                moduleLabel="Fisioterapia Esportiva" colors={sportColors} />
+            </>
+          );
+        })()}
 
         {tab === "evidencias" && (() => {
           const matched = Object.entries(SPORTS_EVIDENCE).find(([key]) =>

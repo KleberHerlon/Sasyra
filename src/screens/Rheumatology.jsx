@@ -1,9 +1,14 @@
 import { useState, useEffect } from "react";
 import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 import CifAndHonorarios from "../components/CifAndHonorarios";
-import { CollapsibleSection, CollapsibleSub } from "../components";
+import CifSection from "../components/CifSection";
+import { CIF } from "../data/cif";
+import { CollapsibleSection, CollapsibleSub, AudioField } from "../components";
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
+import GeneralAssessment from "../components/GeneralAssessment";
+import LogoSVG from "../components/LogoSVG";
+import { calcDAS28, calcBASDAI, calcHAQ, calcWOMAC, calcWPI } from "../data/rheumatologyScales";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -75,63 +80,6 @@ function saveReumatoData(studentId, data) {
 }
 function loadReumatoData(studentId) {
   try { const d = localStorage.getItem(`reumato_data_${studentId}`); return d ? JSON.parse(d) : null; } catch { return null; }
-}
-
-function calcDAS28(tender28, swollen28, esr, globalHealth) {
-  const t = Number(tender28) || 0;
-  const s = Number(swollen28) || 0;
-  const e = Number(esr) || 0;
-  const g = Number(globalHealth) || 0;
-  if (!t && !s && !e && !g) return null;
-  const das = 0.56 * Math.sqrt(t) + 0.28 * Math.sqrt(s) + 0.70 * Math.log(e + 1) + 0.014 * g;
-  const rounded = Math.round(das * 100) / 100;
-  const level = rounded <= 2.6 ? "Remiss\u00e3o" : rounded <= 3.2 ? "Baixa atividade" : rounded <= 5.1 ? "Moderada atividade" : "Alta atividade";
-  const color = rounded <= 2.6 ? C.green : rounded <= 3.2 ? C.amber : rounded <= 5.1 ? C.purple : C.red;
-  return { total: rounded, level, color };
-}
-
-function calcBASDAI(scores) {
-  const vals = Object.values(scores).map(v => Number(v) || 0);
-  if (vals.length < 6) return null;
-  const fatigue = vals[0];
-  const spinalPain = vals[1];
-  const jointPain = vals[2];
-  const tenderness = vals[3];
-  const severity = vals[4];
-  const duration = vals[5];
-  const total = (fatigue + spinalPain + jointPain + tenderness + ((severity + duration) / 2)) / 5;
-  const rounded = Math.round(total * 100) / 100;
-  const level = rounded <= 2 ? "Baixa atividade" : rounded <= 4 ? "Moderada atividade" : "Alta atividade";
-  const color = rounded <= 2 ? C.green : rounded <= 4 ? C.amber : C.red;
-  return { total: rounded, level, color };
-}
-
-function calcHAQ(scores) {
-  const vals = Object.values(scores).map(v => Number(v) || 0);
-  const total = vals.length ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 100) / 100 : 0;
-  const level = total <= 0.5 ? "Sem incapacidade" : total <= 1.0 ? "Incapacidade leve" : total <= 2.0 ? "Incapacidade moderada" : "Incapacidade grave";
-  const color = total <= 0.5 ? C.green : total <= 1.0 ? C.amber : total <= 2.0 ? C.purple : C.red;
-  return { total, level, color };
-}
-
-function calcWOMAC(pain, stiffness, function_) {
-  const painVals = Object.values(pain).map(v => Number(v) || 0);
-  const stiffVals = Object.values(stiffness).map(v => Number(v) || 0);
-  const funcVals = Object.values(function_).map(v => Number(v) || 0);
-  const painTotal = painVals.reduce((a, b) => a + b, 0);
-  const stiffTotal = stiffVals.reduce((a, b) => a + b, 0);
-  const funcTotal = funcVals.reduce((a, b) => a + b, 0);
-  const grandTotal = painTotal + stiffTotal + funcTotal;
-  const level = grandTotal <= 20 ? "Leve" : grandTotal <= 48 ? "Moderada" : "Grave";
-  const color = grandTotal <= 20 ? C.green : grandTotal <= 48 ? C.amber : C.red;
-  return { painTotal, stiffTotal, funcTotal, grandTotal, level, color };
-}
-
-function calcWPI(wpiValue) {
-  const v = Number(wpiValue) || 0;
-  const level = v <= 4 ? "Baixa dor generalizada" : v <= 8 ? "Moderada" : "Alta dor generalizada";
-  const color = v <= 4 ? C.green : v <= 8 ? C.amber : C.red;
-  return { total: v, level, color };
 }
 
 const JOINT_28 = [
@@ -239,7 +187,21 @@ const REUMATO_EVIDENCE = {
   },
 };
 
-export default function Rheumatology({ student, students, allPatients, currentModuleId, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById }) {
+function generateCIFReuma({ evaMov, avds }) {
+  const result = [];
+  if (evaMov >= 7) result.push({ code:"b280", desc:"Sensação de dor intensa", qualifier:3 });
+  else if (evaMov >= 4) result.push({ code:"b280", desc:"Sensação de dor moderada", qualifier:2 });
+  else if (evaMov >= 1) result.push({ code:"b280", desc:"Sensação de dor leve", qualifier:1 });
+  result.push({ code:"b730", desc:"Força muscular", qualifier:2 });
+  result.push({ code:"b710", desc:"Mobilidade das articulações", qualifier:2 });
+  if (avds?.some(c => c.includes("Andar"))) result.push({ code:"d450", desc:"Andar", qualifier:2 });
+  if (avds?.some(c => c.includes("Tarefas"))) result.push({ code:"d640", desc:"Realizar tarefas domésticas", qualifier:2 });
+  return result;
+}
+
+export default function Rheumatology({ student, students, allPatients, currentModuleId, onSelectStudent, onAddStudent, onUpdateStudent, onUpdateStudentById, onDeleteStudent,
+  plan, onUpgrade, canUseFeature, tryFeature, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion,
+  onAgenda, onFinanceiro, onSubscription, planLabel }) {
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -251,6 +213,8 @@ export default function Rheumatology({ student, students, allPatients, currentMo
   const [regiao, setRegiao] = useState("Centro-Oeste");
 
   const [queixaReumato, setQueixaReumato] = useState("");
+  const [hdaReuma, setHdaReuma] = useState("");
+  const [diagnosticoCinesioReuma, setDiagnosticoCinesioReuma] = useState("");
   const [diagnosticoReumato, setDiagnosticoReumato] = useState("");
   const [tempoDiagnostico, setTempoDiagnostico] = useState("");
   const [rigidezMatinal, setRigidezMatinal] = useState("");
@@ -295,12 +259,19 @@ export default function Rheumatology({ student, students, allPatients, currentMo
     try { localStorage.setItem(`reumato_scales_${sid}`, JSON.stringify(next)); } catch {}
   };
   const reumatoColors = { ...C, accent: C.purple, font: F };
+  const autoCifReuma = generateCIFReuma({ evaMov: enhancer.pain.evaMov, avds: [] });
+  const matchedCif = Object.entries(REUMATO_EVIDENCE).find(([key]) =>
+    (queixaReumato||"").toLowerCase().includes(key.replace(/_/g," "))
+  );
+  const cifSuggestionsReuma = matchedCif ? matchedCif[1].cif || [] : [];
 
   useEffect(() => {
     if (student?.id || student?.nome) {
       const saved = loadReumatoData(sid);
       if (saved) {
         setQueixaReumato(saved.queixaReumato || "");
+        setHdaReuma(saved.hdaReuma || "");
+        setDiagnosticoCinesioReuma(saved.diagnosticoCinesioReuma || "");
         setDiagnosticoReumato(saved.diagnosticoReumato || "");
         setTempoDiagnostico(saved.tempoDiagnostico || "");
         setRigidezMatinal(saved.rigidezMatinal || "");
@@ -339,7 +310,7 @@ export default function Rheumatology({ student, students, allPatients, currentMo
     if (!student?.id && !student?.nome) return;
     const sid = student.id || student.nome;
     saveReumatoData(sid, {
-      queixaReumato, diagnosticoReumato, tempoDiagnostico, rigidezMatinal,
+      queixaReumato, hdaReuma, diagnosticoCinesioReuma, diagnosticoReumato, tempoDiagnostico, rigidezMatinal,
       articulacoesDolorosas, articulacoesEdemaciadas, fadigaFACT, escalaFadiga,
       historicoReumato, medicacoesReumato,
       das28Tender, das28Swollen, das28ESR, das28Global, das28Result,
@@ -354,10 +325,6 @@ export default function Rheumatology({ student, students, allPatients, currentMo
   if (studentListView) return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text, padding:24 }}>
       <div style={{ maxWidth:680, margin:"0 auto" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
-          <span style={{ fontSize:16, fontWeight:800, color:C.text, letterSpacing:"0.05em" }}>🦴 Fisioterapia Reumatológica</span>
-          <button onClick={() => { localStorage.removeItem("sasyra_module"); window.location.reload(); }} style={ghostBtn({ fontSize:12 })}>Sair</button>
-        </div>
         <div style={{ fontSize:13, color:C.textMuted, marginBottom:6 }}>Selecione um paciente para iniciar o atendimento</div>
 
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
@@ -518,30 +485,35 @@ export default function Rheumatology({ student, students, allPatients, currentMo
 
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
+      {/* Header */}
       <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:60 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <button onClick={() => setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>← Pacientes</button>
-          <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>🦴 Reumatológica</span>
+          <LogoSVG C={C} F={F}/>
+          <button onClick={()=>setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+          {onAgenda && <button onClick={onAgenda} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Agenda">📅 Agenda</button>}
+          {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
         <div style={{ display:"flex", gap:4 }}>
           {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               background: tab === k ? C.purpleBg : "transparent",
               border: `1px solid ${tab === k ? C.purple + "50" : "transparent"}`,
-              borderRadius: 8, padding: "7px 14px", fontSize: 12,
+              borderRadius:8, padding:"7px 14px", fontSize:12,
               fontWeight: tab === k ? 700 : 400,
-              color: tab === k ? C.purple : C.textMuted, cursor: "pointer", fontFamily: F,
+              color: tab === k ? C.purple : C.textMuted, cursor:"pointer", fontFamily:F,
             }}>{ic} {lb}</button>
           ))}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          {onSubscription && (
+            <button onClick={onSubscription}
+              style={{ background:plan==="start"?`${C.amber}15`:"transparent", border:`1px solid ${plan==="start"?C.amber+"50":C.border}`, borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, color:plan==="start"?C.amber:C.green, cursor:"pointer", fontFamily:F, whiteSpace:"nowrap" }}>
+              {plan === "start" ? "⭐ Start" : `⭐ ${planLabel || ""}`}
+            </button>
+          )}
           {student?.nome && (
-            <>
-              <div style={{ width:30, height:30, background:C.purpleBg, border:`1px solid ${C.purple}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.purple }}>
-                {student.nome[0]?.toUpperCase()}
-              </div>
-              <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span>
-            </>
+            <><div style={{ width:30, height:30, background:C.purpleBg, border:`1px solid ${C.purple}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.purple }}>{student.nome[0]?.toUpperCase()}</div>
+              <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span></>
           )}
         </div>
       </div>
@@ -556,14 +528,20 @@ export default function Rheumatology({ student, students, allPatients, currentMo
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
                 <div>
                   <span style={lbl()}>Queixa principal / História da doença atual</span>
-                  <textarea value={queixaReumato} onChange={e => setQueixaReumato(e.target.value)} rows={2}
-                    style={{ ...inp({ resize:"vertical", lineHeight:1.5 }) }}
-                    placeholder="Descreva a queixa principal, início dos sintomas e evolução..." />
+                  <AudioField value={queixaReumato} onChange={v => setQueixaReumato(typeof v === "function" ? v(queixaReumato) : v)} placeholder="Descreva a queixa principal, início dos sintomas e evolução..." rows={2} />
                 </div>
                 <div>
                   <span style={lbl()}>Diagnóstico médico / Condição reumática</span>
                   <input type="text" value={diagnosticoReumato} onChange={e => setDiagnosticoReumato(e.target.value)} style={inp()} placeholder="Ex: Artrite Reumatoide soropositiva, Espondilite Anquilosante..." />
                 </div>
+              </div>
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>HDA — História da Doença Atual</span>
+                <AudioField value={hdaReuma} onChange={v => setHdaReuma(typeof v === "function" ? v(hdaReuma) : v)} placeholder="Início, evolução, tratamentos prévios, exames realizados…" rows={3} />
+              </div>
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>Diagnóstico Cinesioterapêutico (DCT)</span>
+                <input type="text" value={diagnosticoCinesioReuma} onChange={e => setDiagnosticoCinesioReuma(e.target.value)} style={inp()} placeholder="Ex: Artrite Reumatoide com limitação funcional e rigidez matinal" />
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginTop:12 }}>
                 <div>
@@ -608,6 +586,10 @@ export default function Rheumatology({ student, students, allPatients, currentMo
                 </div>
               </div>
             </Section>
+
+            <GeneralAssessment storageKey="reumato" studentId={sid} colors={{ ...C, accent: C.purple }} />
+
+            <CifSection cifSuggestions={cifSuggestionsReuma} autoCif={autoCifReuma} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
               <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Anamnese</button>
@@ -833,11 +815,21 @@ export default function Rheumatology({ student, students, allPatients, currentMo
           </>
         )}
 
-        {tab === "relatorio" && (
-          <ReportSection pain={enhancer.pain} logs={enhancer.logs} redFlags={enhancer.redFlags}
-            aiRes={enhancer.aiRes} patientName={student?.nome || "—"}
-            moduleLabel="Fisioterapia Reumatológica" colors={reumatoColors} />
-        )}
+        {tab === "relatorio" && (() => {
+          const matched = Object.entries(REUMATO_EVIDENCE).find(([key]) =>
+            (queixaReumato||"").toLowerCase().includes(key.replace(/_/g," ")) ||
+            (diagnosticoReumato||"").toLowerCase().includes(key.replace(/_/g," "))
+          );
+          const cifCodes = matched ? matched[1].cif || [] : [];
+          return (
+            <>
+              <CifAndHonorarios cifCodes={cifCodes} convenio={student?.convenio} regiao={regiao} setRegiao={setRegiao} sessoesAuth={student?.sessoesAuth} color={C.purple} />
+              <ReportSection pain={enhancer.pain} logs={enhancer.logs} redFlags={enhancer.redFlags}
+                aiRes={enhancer.aiRes} patientName={student?.nome || "—"}
+                moduleLabel="Fisioterapia Reumatológica" colors={reumatoColors} />
+            </>
+          );
+        })()}
 
         {tab === "evidencias" && (() => {
           const matched = Object.entries(REUMATO_EVIDENCE).find(([key]) =>

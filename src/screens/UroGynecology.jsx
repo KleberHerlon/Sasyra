@@ -1,9 +1,14 @@
 import { useState, useEffect } from "react";
 import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 import CifAndHonorarios from "../components/CifAndHonorarios";
-import { CollapsibleSection, CollapsibleSub, SessionCounter, HonorariosCard } from "../components";
+import CifSection from "../components/CifSection";
+import { CIF } from "../data/cif";
+import { AudioField, CollapsibleSection, CollapsibleSub, SessionCounter, HonorariosCard } from "../components";
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
+import GeneralAssessment from "../components/GeneralAssessment";
+import LogoSVG from "../components/LogoSVG";
+import { calcOxford, calcPERFECT } from "../data/uroScales";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -77,30 +82,6 @@ function loadUroData(studentId) {
   try { const d = localStorage.getItem(`uro_data_${studentId}`); return d ? JSON.parse(d) : null; } catch { return null; }
 }
 
-function calcOxford(value) {
-  const v = Number(value) || 0;
-  const grades = [
-    { grade:"0", level:"Sem contração", color:C.red },
-    { grade:"1", level:"Esboço de contração", color:C.red },
-    { grade:"2", level:"Contração fraca", color:C.amber },
-    { grade:"3", level:"Contração moderada", color:C.amber },
-    { grade:"4", level:"Contração boa", color:C.green },
-    { grade:"5", level:"Contração forte", color:C.green },
-  ];
-  return grades[v] || { grade:"—", level:"Não avaliado", color:C.textMuted };
-}
-
-function calcPERFECT(perfect) {
-  const p = Number(perfect.power) || 0;
-  const e = Number(perfect.endurance) || 0;
-  const r = Number(perfect.repetitions) || 0;
-  const f = Number(perfect.fast) || 0;
-  const total = p + e + r + f;
-  const level = total >= 15 ? "Função excelente" : total >= 10 ? "Função boa" : total >= 5 ? "Função moderada" : "Função fraca";
-  const color = total >= 15 ? C.green : total >= 10 ? C.amber : total >= 5 ? C.purple : C.red;
-  return { total, level, color };
-}
-
 const URO_EVIDENCE = {
   incontinencia_urinaria: {
     cif:["b620","b630","d530","d770","s750"],
@@ -153,7 +134,18 @@ const URO_EVIDENCE = {
   },
 };
 
-export default function UroGynecology({ student, students, allPatients, currentModuleId, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById }) {
+function generateCIFUro({ evaMov, sintomas, limitacoes }) {
+  const result = [];
+  if (evaMov >= 7) result.push({ code:"b280", desc:"Sensação de dor intensa", qualifier:3 });
+  else if (evaMov >= 4) result.push({ code:"b280", desc:"Sensação de dor moderada", qualifier:2 });
+  else if (evaMov >= 1) result.push({ code:"b280", desc:"Sensação de dor leve", qualifier:1 });
+  if (sintomas?.length > 0) { result.push({ code:"b620", desc:"Função urinária", qualifier:2 }); result.push({ code:"b630", desc:"Sensação relacionada à micção", qualifier:2 }); }
+  if (limitacoes?.includes("Deambular") || limitacoes?.includes("Andar")) result.push({ code:"d450", desc:"Andar", qualifier:2 });
+  if (limitacoes?.includes("AVDs domésticas")) result.push({ code:"d640", desc:"Realizar tarefas domésticas", qualifier:2 });
+  return result;
+}
+
+export default function UroGynecology({ student, students, allPatients, currentModuleId, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById, onAgenda, onFinanceiro, onSubscription, planLabel }) {
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -165,6 +157,8 @@ export default function UroGynecology({ student, students, allPatients, currentM
   const [regiao, setRegiao] = useState("Centro-Oeste");
 
   const [queixaUro, setQueixaUro] = useState("");
+  const [hdaUro, setHdaUro] = useState("");
+  const [diagnosticoCinesioUro, setDiagnosticoCinesioUro] = useState("");
   const [gesta, setGesta] = useState("");
   const [para, setPara] = useState("");
   const [partosNormais, setPartosNormais] = useState("");
@@ -213,12 +207,20 @@ export default function UroGynecology({ student, students, allPatients, currentM
     try { localStorage.setItem(`uro_scales_${sid}`, JSON.stringify(next)); } catch {}
   };
   const uroColors = { ...C, accent: C.amber, font: F };
+  const autoCifUro = generateCIFUro({ evaMov: enhancer.pain.evaMov, sintomas: doencasUro, limitacoes: [] });
+  const matchedCif = Object.entries(URO_EVIDENCE).find(([key]) =>
+    (queixaUro||"").toLowerCase().includes(key.replace(/_/g," ")) ||
+    (doencasUro||[]).some(c => c.toLowerCase().includes(key.replace(/_/g," ")))
+  );
+  const cifSuggestionsUro = matchedCif ? matchedCif[1].cif || [] : [];
 
   useEffect(() => {
     if (student?.id || student?.nome) {
       const saved = loadUroData(sid);
       if (saved) {
         setQueixaUro(saved.queixaUro || "");
+        setHdaUro(saved.hdaUro || "");
+        setDiagnosticoCinesioUro(saved.diagnosticoCinesioUro || "");
         setGesta(saved.gesta || "");
         setPara(saved.para || "");
         setPartosNormais(saved.partosNormais || "");
@@ -262,7 +264,7 @@ export default function UroGynecology({ student, students, allPatients, currentM
     if (!student?.id && !student?.nome) return;
     const sid = student.id || student.nome;
     saveUroData(sid, {
-      queixaUro, gesta, para, partosNormais, partosCesarios, abortos, menopausa,
+      queixaUro, hdaUro, diagnosticoCinesioUro, gesta, para, partosNormais, partosCesarios, abortos, menopausa,
       cirurgiasPelvicas, doencasUro, medicamentosUro, historicoFamiliarUro,
       perdaUrina, frequenciaUrinaria, urgenciaMiccional, nicturia, sensacaoEsvaziamento,
       dorMiccao, constipacao, dispareunia,
@@ -281,10 +283,6 @@ export default function UroGynecology({ student, students, allPatients, currentM
   if (studentListView) return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text, padding:24 }}>
       <div style={{ maxWidth:680, margin:"0 auto" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
-          <span style={{ fontSize:16, fontWeight:800, color:C.text, letterSpacing:"0.05em" }}>🚺 Uro-Ginecológica</span>
-          <button onClick={() => { localStorage.removeItem("sasyra_module"); window.location.reload(); }} style={ghostBtn({ fontSize:12 })}>Sair</button>
-        </div>
         <div style={{ fontSize:13, color:C.textMuted, marginBottom:6 }}>Selecione uma paciente para iniciar o atendimento</div>
 
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
@@ -445,30 +443,28 @@ export default function UroGynecology({ student, students, allPatients, currentM
 
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
-      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:60 }}>
+      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"0 24px", display:"flex", flexWrap:"wrap", alignItems:"center", justifyContent:"space-between", minHeight:60, gap:0 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <button onClick={() => setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>← Pacientes</button>
-          <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>🚺 Uro-Ginecológica</span>
+          <LogoSVG C={C} F={F}/>
+          <button onClick={()=>setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+          {onAgenda && <button onClick={onAgenda} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Agenda">📅 Agenda</button>}
+          {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
-        <div style={{ display:"flex", gap:4 }}>
+        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
           {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
-            <button key={k} onClick={() => setTab(k)} style={{
-              background: tab === k ? C.amberBg : "transparent",
-              border: `1px solid ${tab === k ? C.amber + "50" : "transparent"}`,
-              borderRadius: 8, padding: "7px 14px", fontSize: 12,
-              fontWeight: tab === k ? 700 : 400,
-              color: tab === k ? C.amber : C.textMuted, cursor: "pointer", fontFamily: F,
-            }}>{ic} {lb}</button>
+            <button key={k} onClick={() => setTab(k)} style={{ background:tab === k ? C.amberBg : "transparent", border:`1px solid ${tab === k ? C.amber + "50" : "transparent"}`, borderRadius:8, padding:"7px 16px", fontSize:13, fontWeight:tab === k ? 700 : 400, color:tab === k ? C.amber : C.textMuted, cursor:"pointer", fontFamily:F }}>{ic} {lb}</button>
           ))}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          {onSubscription && (
+            <button onClick={onSubscription}
+              style={{ background:plan==="start"?`${C.amber}15`:"transparent", border:`1px solid ${plan==="start"?C.amber+"50":C.border}`, borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, color:plan==="start"?C.amber:C.green, cursor:"pointer", fontFamily:F, whiteSpace:"nowrap" }}>
+              {plan === "start" ? "⭐ Start" : `⭐ ${planLabel || ""}`}
+            </button>
+          )}
           {student?.nome && (
-            <>
-              <div style={{ width:30, height:30, background:C.amberBg, border:`1px solid ${C.amber}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.amber }}>
-                {student.nome[0]?.toUpperCase()}
-              </div>
-              <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span>
-            </>
+            <><div style={{ width:30, height:30, background:C.amberBg, border:`1px solid ${C.amber}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.amber }}>{student.nome[0]?.toUpperCase()}</div>
+              <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span></>
           )}
         </div>
       </div>
@@ -481,10 +477,18 @@ export default function UroGynecology({ student, students, allPatients, currentM
                 Preencha os dados da avaliação uro-ginecológica, história obstétrica, cirurgias e condições associadas.
               </div>
               <div style={{ marginBottom:14 }}>
-                <span style={lbl()}>Queixa principal / História da doença atual</span>
-                <textarea value={queixaUro} onChange={e => setQueixaUro(e.target.value)} rows={2}
-                  style={{ ...inp({ resize:"vertical", lineHeight:1.5 }) }}
-                  placeholder="Descreva a queixa principal da paciente..." />
+                <span style={lbl()}>Queixa principal</span>
+                <AudioField value={queixaUro} onChange={v=>{const t=typeof v==="function"?v(queixaUro):v;setQueixaUro(t)}}
+                  placeholder="Digite ou use o microfone para ditar a queixa da paciente..." rows={2} />
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <span style={lbl()}>História da Doença Atual (HDA)</span>
+                <AudioField value={hdaUro} onChange={v=>setHdaUro(typeof v==="function"?v(hdaUro):v)}
+                  placeholder="Início, mecanismo de lesão, evolução, tratamentos anteriores, exames realizados..." rows={3} />
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <span style={lbl()}>Diagnóstico Cinesioterapêutico (DCT)</span>
+                <input type="text" value={diagnosticoCinesioUro} onChange={e=>setDiagnosticoCinesioUro(e.target.value)} style={inp()} placeholder="Ex: Disfunção do assoalho pélvico com incontinência urinária de esforço" />
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:"12px 16px" }}>
                 <NumericField label="Gesta" value={gesta} onChange={setGesta} min={0} max={20} />
@@ -515,6 +519,10 @@ export default function UroGynecology({ student, students, allPatients, currentM
                 </div>
               </div>
             </Section>
+
+            <GeneralAssessment storageKey="uro" studentId={sid} colors={{ ...C, accent: C.amber }} />
+
+            <CifSection cifSuggestions={cifSuggestionsUro} autoCif={autoCifUro} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
               <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Anamnese</button>

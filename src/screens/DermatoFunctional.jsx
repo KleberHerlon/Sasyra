@@ -1,9 +1,14 @@
 import { useState, useEffect } from "react";
 import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 import CifAndHonorarios from "../components/CifAndHonorarios";
-import { CollapsibleSection, CollapsibleSub } from "../components";
+import CifSection from "../components/CifSection";
+import { CIF } from "../data/cif";
+import { AudioField, CollapsibleSection, CollapsibleSub, useMediaQuery } from "../components";
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
+import GeneralAssessment from "../components/GeneralAssessment";
+import LogoSVG from "../components/LogoSVG";
+import { calcVancouver, calcEdema } from "../data/dermatoScales";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -77,24 +82,6 @@ function loadDermatoData(studentId) {
   try { const d = localStorage.getItem(`dermato_data_${studentId}`); return d ? JSON.parse(d) : null; } catch { return null; }
 }
 
-function calcVancouver(scores) {
-  const p = Math.min(Number(scores.pigmentation) || 0, 2);
-  const v = Math.min(Number(scores.vascularity) || 0, 3);
-  const pl = Math.min(Number(scores.pliability) || 0, 5);
-  const h = Math.min(Number(scores.height) || 0, 3);
-  const total = p + v + pl + h;
-  const level = total === 0 ? "Cicatriz normal" : total <= 4 ? "Cicatriz leve" : total <= 8 ? "Cicatriz moderada" : "Cicatriz grave";
-  const color = total === 0 ? C.green : total <= 4 ? C.amber : total <= 8 ? C.purple : C.red;
-  return { total, max: 13, pigmentation: p, vascularity: v, pliability: pl, height: h, level, color };
-}
-
-function calcEdema(level) {
-  const v = Number(level);
-  const desc = v === 0 ? "Ausente" : v === 1 ? "Leve (desaparece com digito)" : v === 2 ? "Moderado (2-4mm)" : v === 3 ? "Acentuado (4-6mm)" : "Grave (>6mm)";
-  const color = v === 0 ? C.green : v <= 1 ? C.amber : v <= 2 ? C.purple : C.red;
-  return { level: v, description: desc, color };
-}
-
 const DERMATO_EVIDENCE = {
   cicatriz_hipertrofica: {
     cif:["s810","b810","b820","d510","d540"],
@@ -140,7 +127,20 @@ const DERMATO_EVIDENCE = {
   },
 };
 
-export default function DermatoFunctional({ student, students, allPatients, currentModuleId, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById }) {
+function generateCIFDermato({ evaMov }) {
+  const result = [];
+  if (evaMov >= 7) result.push({ code:"b280", desc:"Sensação de dor intensa", qualifier:3 });
+  else if (evaMov >= 4) result.push({ code:"b280", desc:"Sensação de dor moderada", qualifier:2 });
+  else if (evaMov >= 1) result.push({ code:"b280", desc:"Sensação de dor leve", qualifier:1 });
+  result.push({ code:"b810", desc:"Funções da pele", qualifier:2 });
+  result.push({ code:"b820", desc:"Funções reparadoras da pele", qualifier:2 });
+  return result;
+}
+
+export default function DermatoFunctional({ student, students, onSelectStudent, onAddStudent, onUpdateStudent, onUpdateStudentById, onDeleteStudent,
+  plan, onUpgrade, canUseFeature, tryFeature, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion, currentModuleId, allPatients,
+  onAgenda, onFinanceiro, onSubscription, planLabel }) {
+  const isMobile = useMediaQuery("(max-width:767px)");
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -152,6 +152,8 @@ export default function DermatoFunctional({ student, students, allPatients, curr
   const [regiao, setRegiao] = useState("Centro-Oeste");
 
   const [queixaDermato, setQueixaDermato] = useState("");
+  const [hdaDermato, setHdaDermato] = useState("");
+  const [diagnosticoCinesioDermato, setDiagnosticoCinesioDermato] = useState("");
   const [tipoCirurgia, setTipoCirurgia] = useState("");
   const [dataCirurgia, setDataCirurgia] = useState("");
   const [queimaduraPrevia, setQueimaduraPrevia] = useState("");
@@ -187,12 +189,20 @@ export default function DermatoFunctional({ student, students, allPatients, curr
     try { localStorage.setItem(`dermato_scales_${sid}`, JSON.stringify(next)); } catch {}
   };
   const dermatoColors = { ...C, accent: C.amber, font: F };
+  const autoCifDermato = generateCIFDermato({ evaMov: enhancer.pain.evaMov });
+  const matchedCif = Object.entries(DERMATO_EVIDENCE).find(([key]) =>
+    (queixaDermato||"").toLowerCase().includes(key.replace(/_/g," ")) ||
+    (doencasDermato||[]).some(c => c.toLowerCase().includes(key.replace(/_/g," ")))
+  );
+  const cifSuggestionsDermato = matchedCif ? matchedCif[1].cif || [] : [];
 
   useEffect(() => {
     if (student?.id || student?.nome) {
       const saved = loadDermatoData(sid);
       if (saved) {
         setQueixaDermato(saved.queixaDermato || "");
+        setHdaDermato(saved.hdaDermato || "");
+        setDiagnosticoCinesioDermato(saved.diagnosticoCinesioDermato || "");
         setTipoCirurgia(saved.tipoCirurgia || "");
         setDataCirurgia(saved.dataCirurgia || "");
         setQueimaduraPrevia(saved.queimaduraPrevia || "");
@@ -224,7 +234,7 @@ export default function DermatoFunctional({ student, students, allPatients, curr
     if (!student?.id && !student?.nome) return;
     const sid = student.id || student.nome;
     saveDermatoData(sid, {
-      queixaDermato, tipoCirurgia, dataCirurgia, queimaduraPrevia, cicatrizesPrevias,
+      queixaDermato, hdaDermato, diagnosticoCinesioDermato, tipoCirurgia, dataCirurgia, queimaduraPrevia, cicatrizesPrevias,
       doencasDermato, medicamentosDermato, alergiasDermato, historicoTabagismo,
       vancouverScores, vancouverResult, perimetria, bioimpedancia,
       fibrose, fibroseSeveridade, tipoQueimadura, superficieQueimada, edemaNivel, edemaResult,
@@ -237,10 +247,6 @@ export default function DermatoFunctional({ student, students, allPatients, curr
   if (studentListView) return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text, padding:24 }}>
       <div style={{ maxWidth:680, margin:"0 auto" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
-          <span style={{ fontSize:16, fontWeight:800, color:C.text, letterSpacing:"0.05em" }}>🔬 Fisioterapia Dermatofuncional</span>
-          <button onClick={() => { localStorage.removeItem("sasyra_module"); window.location.reload(); }} style={ghostBtn({ fontSize:12 })}>Sair</button>
-        </div>
         <div style={{ fontSize:13, color:C.textMuted, marginBottom:6 }}>Selecione um paciente para iniciar o atendimento</div>
 
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
@@ -401,30 +407,29 @@ export default function DermatoFunctional({ student, students, allPatients, curr
 
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
-      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:60 }}>
+      {/* Header */}
+      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:isMobile?"10px 12px":"0 24px", display:"flex", flexWrap:"wrap", alignItems:"center", justifyContent:"space-between", minHeight:isMobile?"auto":60, gap:isMobile?8:0 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <button onClick={() => setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>← Pacientes</button>
-          <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>🔬 Dermatofuncional</span>
+          <LogoSVG C={C} F={F}/>
+          <button onClick={()=>setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+          {onAgenda && <button onClick={onAgenda} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Agenda">📅 Agenda</button>}
+          {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
-        <div style={{ display:"flex", gap:4 }}>
+        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
           {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
-            <button key={k} onClick={() => setTab(k)} style={{
-              background: tab === k ? C.amberBg : "transparent",
-              border: `1px solid ${tab === k ? C.amber + "50" : "transparent"}`,
-              borderRadius: 8, padding: "7px 14px", fontSize: 12,
-              fontWeight: tab === k ? 700 : 400,
-              color: tab === k ? C.amber : C.textMuted, cursor: "pointer", fontFamily: F,
-            }}>{ic} {lb}</button>
+            <button key={k} onClick={() => setTab(k)} style={{ background:tab === k ? C.amberBg : "transparent", border:`1px solid ${tab === k ? C.amber + "50" : "transparent"}`, borderRadius:8, padding:isMobile?"5px 10px":"7px 16px", fontSize:isMobile?11:13, fontWeight:tab === k ? 700 : 400, color:tab === k ? C.amber : C.textMuted, cursor:"pointer", fontFamily:F }}>{ic} {lb}</button>
           ))}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          {onSubscription && (
+            <button onClick={onSubscription}
+              style={{ background:plan==="start"?`${C.amber}15`:"transparent", border:`1px solid ${plan==="start"?C.amber+"50":C.border}`, borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, color:plan==="start"?C.amber:C.green, cursor:"pointer", fontFamily:F, whiteSpace:"nowrap" }}>
+              {plan === "start" ? "⭐ Start" : `⭐ ${planLabel || ""}`}
+            </button>
+          )}
           {student?.nome && (
-            <>
-              <div style={{ width:30, height:30, background:C.amberBg, border:`1px solid ${C.amber}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.amber }}>
-                {student.nome[0]?.toUpperCase()}
-              </div>
-              <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span>
-            </>
+            <><div style={{ width:30, height:30, background:C.amberBg, border:`1px solid ${C.amber}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.amber }}>{student.nome[0]?.toUpperCase()}</div>
+              <span style={{ fontSize:12, color:C.textSub, maxWidth:isMobile?100:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span></>
           )}
         </div>
       </div>
@@ -439,12 +444,20 @@ export default function DermatoFunctional({ student, students, allPatients, curr
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
                 <div>
                   <span style={lbl()}>Queixa principal dermatofuncional</span>
-                  <input type="text" value={queixaDermato} onChange={e => setQueixaDermato(e.target.value)} style={inp()} placeholder="Ex: Cicatriz hipertrófica pós-cirurgia, celulite, queimadura..." />
+                  <AudioField value={queixaDermato} onChange={v => setQueixaDermato(typeof v === "function" ? v(queixaDermato) : v)} placeholder="Ex: Cicatriz hipertrófica pós-cirurgia, celulite, queimadura..." rows={2} />
                 </div>
                 <div>
                   <span style={lbl()}>Tipo de cirurgia (se aplicável)</span>
                   <input type="text" value={tipoCirurgia} onChange={e => setTipoCirurgia(e.target.value)} style={inp()} placeholder="Ex: Abdominoplastia, lipoaspiração, mamoplastia" />
                 </div>
+              </div>
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>HDA — História da Doença Atual</span>
+                <AudioField value={hdaDermato} onChange={v => setHdaDermato(typeof v === "function" ? v(hdaDermato) : v)} placeholder="Início, evolução, tratamentos anteriores, exames realizados…" rows={3} />
+              </div>
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>Diagnóstico Cinesioterapêutico (DCT)</span>
+                <input type="text" value={diagnosticoCinesioDermato} onChange={e => setDiagnosticoCinesioDermato(e.target.value)} style={inp()} placeholder="Ex: Cicatriz hipertrófica com limitação funcional e alterações estéticas" />
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginTop:12 }}>
                 <div>
@@ -482,6 +495,10 @@ export default function DermatoFunctional({ student, students, allPatients, curr
                 <SingleSelect options={["Nunca fumou","Ex-tabagista (< 5 anos)","Ex-tabagista (> 5 anos)","Tabagista atual"]} value={historicoTabagismo} onChange={setHistoricoTabagismo} activeColor={C.amber} />
               </div>
             </Section>
+
+            <GeneralAssessment storageKey="dermato" studentId={sid} colors={{ ...C, accent: C.amber }} />
+
+            <CifSection cifSuggestions={cifSuggestionsDermato} autoCif={autoCifDermato} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
               <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Anamnese</button>
@@ -740,9 +757,12 @@ export default function DermatoFunctional({ student, students, allPatients, curr
         )}
 
         {tab === "relatorio" && (
-          <ReportSection pain={enhancer.pain} logs={enhancer.logs} redFlags={enhancer.redFlags}
-            aiRes={enhancer.aiRes} patientName={student?.nome || "—"}
-            moduleLabel="Fisioterapia Dermatofuncional" colors={dermatoColors} />
+          <>
+            <CifAndHonorarios cifCodes={[]} convenio={student?.convenio} regiao={regiao} setRegiao={setRegiao} sessoesAuth={student?.sessoesAuth} color={C.amber} />
+            <ReportSection pain={enhancer.pain} logs={enhancer.logs} redFlags={enhancer.redFlags}
+              aiRes={enhancer.aiRes} patientName={student?.nome || "—"}
+              moduleLabel="Fisioterapia Dermatofuncional" colors={dermatoColors} />
+          </>
         )}
 
         {tab === "evidencias" && (() => {

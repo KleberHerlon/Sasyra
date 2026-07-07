@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react";
 import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 import CifAndHonorarios from "../components/CifAndHonorarios";
-import { CollapsibleSection, CollapsibleSub } from "../components";
+import CifSection from "../components/CifSection";
+import { CIF } from "../data/cif";
+import { CollapsibleSection, CollapsibleSub, useMediaQuery, AudioField } from "../components";
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
+import GeneralAssessment from "../components/GeneralAssessment";
+import LogoSVG from "../components/LogoSVG";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -160,7 +164,21 @@ const CARDIO_EVIDENCE = {
   },
 };
 
-export default function CardioRespiratory({ student, students, allPatients, currentModuleId, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById }) {
+function generateCIFCardio({ evaMov, sintomas, limitacoes }) {
+  const result = [];
+  if (evaMov >= 7) result.push({ code:"b280", desc:"Sensação de dor intensa", qualifier:3 });
+  else if (evaMov >= 4) result.push({ code:"b280", desc:"Sensação de dor moderada", qualifier:2 });
+  else if (evaMov >= 1) result.push({ code:"b280", desc:"Sensação de dor leve", qualifier:1 });
+  if (sintomas?.includes("Dispneia")) result.push({ code:"b440", desc:"Respiração", qualifier:2 });
+  if (sintomas?.includes("Tosse")) result.push({ code:"b450", desc:"Tolerância ao exercício", qualifier:2 });
+  if (limitacoes?.includes("Deambular") || limitacoes?.includes("Subir escadas")) result.push({ code:"d450", desc:"Andar", qualifier:2 });
+  if (limitacoes?.includes("AVDs domésticas")) result.push({ code:"d640", desc:"Realizar tarefas domésticas", qualifier:2 });
+  if (limitacoes?.includes("Trabalho")) result.push({ code:"d850", desc:"Trabalho remunerado", qualifier:2 });
+  if (sintomas?.includes("Fadiga")) result.push({ code:"b130", desc:"Funções energéticas (fadiga)", qualifier:2 });
+  return result;
+}
+
+export default function CardioRespiratory({ student, students, allPatients, currentModuleId, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById, plan, onAgenda, onFinanceiro, onSubscription, planLabel }) {
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -172,6 +190,8 @@ export default function CardioRespiratory({ student, students, allPatients, curr
   const [regiao, setRegiao] = useState("Centro-Oeste");
 
   const [queixaCardio, setQueixaCardio] = useState("");
+  const [hdaCardio, setHdaCardio] = useState("");
+  const [diagnosticoCinesioCardio, setDiagnosticoCinesioCardio] = useState("");
   const [historicoTabagismo, setHistoricoTabagismo] = useState("");
   const [comorbidadesCardio, setComorbidadesCardio] = useState([]);
   const [medicamentosCardio, setMedicamentosCardio] = useState("");
@@ -219,6 +239,14 @@ export default function CardioRespiratory({ student, students, allPatients, curr
     try { localStorage.setItem(`cardio_scales_${sid}`, JSON.stringify(next)); } catch {}
   };
   const cardioColors = { ...C, accent: C.red, font: F };
+  const isMobile = useMediaQuery("(max-width:767px)");
+  // CIF auto
+  const autoCifCardio = generateCIFCardio({ evaMov: enhancer.pain.evaMov, sintomas: sintomasCardio, limitacoes: limitacoesCardio });
+  const matchedCif = Object.entries(CARDIO_EVIDENCE).find(([key]) =>
+    (queixaCardio||"").toLowerCase().includes(key.replace(/_/g," ")) ||
+    (comorbidadesCardio||[]).some(c => c.toLowerCase().includes(key.replace(/_/g," ")))
+  );
+  const cifSuggestionsCardio = matchedCif ? matchedCif[1].cif || [] : [];
 
   useEffect(() => {
     if (student?.id || student?.nome) {
@@ -256,6 +284,8 @@ export default function CardioRespiratory({ student, students, allPatients, curr
         setMinnesotaScores(saved.minnesotaScores || {});
         setMinnesotaResult(saved.minnesotaResult || null);
         setEvolucaoCardio(saved.evolucaoCardio || "");
+        setHdaCardio(saved.hdaCardio || "");
+        setDiagnosticoCinesioCardio(saved.diagnosticoCinesioCardio || "");
         if (saved.pain) enhancer.setPain(saved.pain);
         if (saved.logs) enhancer.setLogs(saved.logs);
         if (saved.redFlags) enhancer.setRedFlags(saved.redFlags);
@@ -268,7 +298,7 @@ export default function CardioRespiratory({ student, students, allPatients, curr
     if (!student?.id && !student?.nome) return;
     const sid = student.id || student.nome;
     saveCardioData(sid, {
-      queixaCardio, historicoTabagismo, comorbidadesCardio, medicamentosCardio,
+      queixaCardio, hdaCardio, diagnosticoCinesioCardio, historicoTabagismo, comorbidadesCardio, medicamentosCardio,
       cirurgiasCardio, alergiasCardio, historicoFamiliarCardio, sintomasCardio, limitacoesCardio,
       fc, fr, paSist, paDiast, spo2, auscultaPulmonar, auscultaCardiaca,
       padraoRespiratorio, tosse, secrecao, edema, jugular,
@@ -283,10 +313,6 @@ export default function CardioRespiratory({ student, students, allPatients, curr
   if (studentListView) return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text, padding:24 }}>
       <div style={{ maxWidth:680, margin:"0 auto" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
-          <span style={{ fontSize:16, fontWeight:800, color:C.text, letterSpacing:"0.05em" }}>❤️ Cardio-Respiratória</span>
-          <button onClick={() => { localStorage.removeItem("sasyra_module"); window.location.reload(); }} style={ghostBtn({ fontSize:12 })}>Sair</button>
-        </div>
         <div style={{ fontSize:13, color:C.textMuted, marginBottom:6 }}>Selecione um paciente para iniciar o atendimento</div>
 
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
@@ -447,30 +473,29 @@ export default function CardioRespiratory({ student, students, allPatients, curr
 
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
-      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:60 }}>
+      {/* Header */}
+      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:isMobile?"10px 12px":"0 24px", display:"flex", flexWrap:"wrap", alignItems:"center", justifyContent:"space-between", minHeight:isMobile?"auto":60, gap:isMobile?8:0 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <button onClick={() => setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>← Pacientes</button>
-          <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>❤️ Cardio-Respiratória</span>
+          <LogoSVG C={C} F={F}/>
+          <button onClick={()=>setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+          {onAgenda && <button onClick={onAgenda} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Agenda">📅 Agenda</button>}
+          {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
-        <div style={{ display:"flex", gap:4 }}>
+        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
           {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
-            <button key={k} onClick={() => setTab(k)} style={{
-              background: tab === k ? C.redBg : "transparent",
-              border: `1px solid ${tab === k ? C.red + "50" : "transparent"}`,
-              borderRadius: 8, padding: "7px 14px", fontSize: 12,
-              fontWeight: tab === k ? 700 : 400,
-              color: tab === k ? C.red : C.textMuted, cursor: "pointer", fontFamily: F,
-            }}>{ic} {lb}</button>
+            <button key={k} onClick={() => setTab(k)} style={{ background:tab === k ? C.redBg : "transparent", border:`1px solid ${tab === k ? C.red + "50" : "transparent"}`, borderRadius:8, padding:isMobile?"5px 10px":"7px 16px", fontSize:isMobile?11:13, fontWeight:tab === k ? 700 : 400, color:tab === k ? C.red : C.textMuted, cursor:"pointer", fontFamily:F }}>{ic} {lb}</button>
           ))}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          {onSubscription && (
+            <button onClick={onSubscription}
+              style={{ background:plan==="start"?`${C.amber}15`:"transparent", border:`1px solid ${plan==="start"?C.amber+"50":C.border}`, borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, color:plan==="start"?C.amber:C.green, cursor:"pointer", fontFamily:F, whiteSpace:"nowrap" }}>
+              {plan === "start" ? "⭐ Start" : `⭐ ${planLabel || ""}`}
+            </button>
+          )}
           {student?.nome && (
-            <>
-              <div style={{ width:30, height:30, background:C.redBg, border:`1px solid ${C.red}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.red }}>
-                {student.nome[0]?.toUpperCase()}
-              </div>
-              <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span>
-            </>
+            <><div style={{ width:30, height:30, background:C.redBg, border:`1px solid ${C.red}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.red }}>{student.nome[0]?.toUpperCase()}</div>
+              <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span></>
           )}
         </div>
       </div>
@@ -485,12 +510,20 @@ export default function CardioRespiratory({ student, students, allPatients, curr
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
                 <div>
                   <span style={lbl()}>Queixa principal / Diagnóstico cardiorrespiratório</span>
-                  <input type="text" value={queixaCardio} onChange={e => setQueixaCardio(e.target.value)} style={inp()} placeholder="Ex: ICC descompensada, DPOC exacerbação, Pós-IAM" />
+                  <AudioField value={queixaCardio} onChange={v => setQueixaCardio(typeof v === "function" ? v(queixaCardio) : v)} placeholder="Ex: ICC descompensada, DPOC exacerbação, Pós-IAM..." rows={2} />
                 </div>
                 <div>
                   <span style={lbl()}>Histórico de tabagismo</span>
                   <input type="text" value={historicoTabagismo} onChange={e => setHistoricoTabagismo(e.target.value)} style={inp()} placeholder="Ex: 30 anos-maço, ex-tabagista há 5 anos" />
                 </div>
+              </div>
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>HDA — História da Doença Atual</span>
+                <AudioField value={hdaCardio} onChange={v => setHdaCardio(typeof v === "function" ? v(hdaCardio) : v)} placeholder="Início, evolução, tratamentos prévios, exames realizados…" rows={3} />
+              </div>
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>Diagnóstico Cinesioterapêutico (DCT)</span>
+                <input value={diagnosticoCinesioCardio} onChange={e => setDiagnosticoCinesioCardio(e.target.value)} style={inp()} placeholder="Ex: ICC com limitação funcional, intolerância ao exercício e dessaturação aos esforços" />
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginTop:12 }}>
                 <div>
@@ -528,6 +561,10 @@ export default function CardioRespiratory({ student, students, allPatients, curr
                   value={limitacoesCardio} onChange={setLimitacoesCardio} activeColor={C.red} />
               </div>
             </Section>
+
+            <GeneralAssessment storageKey="cardio" studentId={sid} colors={{ ...C, accent: C.red }} />
+
+            <CifSection cifSuggestions={cifSuggestionsCardio} autoCif={autoCifCardio} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
               <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Anamnese</button>

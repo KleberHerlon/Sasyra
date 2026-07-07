@@ -1,9 +1,14 @@
 import { useState, useEffect } from "react";
 import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 import CifAndHonorarios from "../components/CifAndHonorarios";
-import { CollapsibleSection, CollapsibleSub } from "../components";
+import CifSection from "../components/CifSection";
+import { CIF } from "../data/cif";
+import { CollapsibleSection, CollapsibleSub, AudioField } from "../components";
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
+import GeneralAssessment from "../components/GeneralAssessment";
+import { calcMEEM, calcGDS15, calcSarcF, calcKatz, calcLawton, calcTinetti, calcFragilidade } from "../data/geriatriaScales";
+import LogoSVG from "../components/LogoSVG";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -75,56 +80,6 @@ function saveGeriatriaData(studentId, data) {
 }
 function loadGeriatriaData(studentId) {
   try { const d = localStorage.getItem(`geriatria_data_${studentId}`); return d ? JSON.parse(d) : null; } catch { return null; }
-}
-
-function calcMEEM(score) {
-  const total = Math.min(30, Math.max(0, Number(score) || 0));
-  const level = total >= 24 ? "Normal / Sem déficit" : total >= 18 ? "Déficit leve" : total >= 10 ? "Déficit moderado" : "Déficit grave";
-  const color = total >= 24 ? C.green : total >= 18 ? C.amber : total >= 10 ? C.purple : C.red;
-  return { total, level, color };
-}
-
-function calcGDS15(score) {
-  const total = Math.min(15, Math.max(0, Number(score) || 0));
-  const level = total <= 5 ? "Normal" : total <= 10 ? "Depressão leve" : "Depressão grave";
-  const color = total <= 5 ? C.green : total <= 10 ? C.amber : C.red;
-  return { total, level, color };
-}
-
-function calcSarcF(scores) {
-  const total = Object.values(scores).reduce((a, b) => a + (Number(b) || 0), 0);
-  const risk = total >= 4 ? "Alto risco de sarcopenia" : "Baixo risco de sarcopenia";
-  const color = total >= 4 ? C.red : C.green;
-  return { total, risk, color };
-}
-
-function calcKatz(katz) {
-  const indep = Object.values(katz).filter(v => v === "Independente").length;
-  const level = indep === 6 ? "A - Independência total" : indep >= 4 ? "B-D - Dependência parcial" : indep >= 2 ? "E-F - Dependência moderada" : "G - Dependência total";
-  return { indep, total: indep, level };
-}
-
-function calcLawton(scores) {
-  const total = Object.values(scores).reduce((a, b) => a + (Number(b) || 0), 0);
-  const level = total >= 24 ? "Independência completa" : total >= 16 ? "Dependência leve/moderada" : total >= 8 ? "Dependência moderada/grave" : "Dependência grave";
-  const color = total >= 24 ? C.green : total >= 16 ? C.amber : C.red;
-  return { total, max: 27, level, color };
-}
-
-function calcTinetti(balanceScores, gaitScores) {
-  const bal = Object.values(balanceScores).reduce((a, b) => a + (Number(b) || 0), 0);
-  const ga = Object.values(gaitScores).reduce((a, b) => a + (Number(b) || 0), 0);
-  const total = bal + ga;
-  const level = total >= 24 ? "Baixo risco de queda" : total >= 19 ? "Médio risco de queda" : "Alto risco de queda";
-  const color = total >= 24 ? C.green : total >= 19 ? C.amber : C.red;
-  return { total, balance: bal, gait: ga, level, color };
-}
-
-function calcFragilidade(indicators) {
-  const count = Object.values(indicators).filter(v => v).length;
-  const level = count === 0 ? "Não frágil" : count <= 2 ? "Pré-frágil" : "Frágil";
-  const color = count === 0 ? C.green : count <= 2 ? C.amber : C.red;
-  return { count, level, color };
 }
 
 const SARC_F_QUESTIONS = [
@@ -228,7 +183,19 @@ const GERIATRIA_EVIDENCE = {
   },
 };
 
-export default function Geriatria({ student, students, allPatients, currentModuleId, onSelectStudent, onAddStudent, onUpdateStudent, onUpdateStudentById, onDeleteStudent }) {
+function generateCIFGeriatria({ evaMov, limitacoes }) {
+  const result = [];
+  if (evaMov >= 7) result.push({ code:"b280", desc:"Sensação de dor intensa", qualifier:3 });
+  else if (evaMov >= 4) result.push({ code:"b280", desc:"Sensação de dor moderada", qualifier:2 });
+  else if (evaMov >= 1) result.push({ code:"b280", desc:"Sensação de dor leve", qualifier:1 });
+  if (limitacoes?.some(c => c.includes("Deamb") || c.includes("Andar") || c.includes("Caminhar"))) result.push({ code:"d450", desc:"Andar", qualifier:2 });
+  if (limitacoes?.some(c => c.includes("Transfer"))) result.push({ code:"d410", desc:"Mudar posição corporal básica", qualifier:2 });
+  if (limitacoes?.some(c => c.includes("Preparar refei"))) result.push({ code:"d640", desc:"Realizar tarefas domésticas", qualifier:2 });
+  result.push({ code:"b730", desc:"Força muscular", qualifier:2 });
+  return result;
+}
+
+export default function Geriatria({ student, students, allPatients, currentModuleId, onSelectStudent, onAddStudent, onUpdateStudent, onUpdateStudentById, onDeleteStudent, plan, onAgenda, onFinanceiro, onSubscription, planLabel }) {
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -240,6 +207,8 @@ export default function Geriatria({ student, students, allPatients, currentModul
   const [regiao, setRegiao] = useState("Centro-Oeste");
 
   const [queixaGeriatria, setQueixaGeriatria] = useState("");
+  const [hdaGeriatria, setHdaGeriatria] = useState("");
+  const [diagnosticoCinesioGeriatria, setDiagnosticoCinesioGeriatria] = useState("");
   const [comorbidadesGeriatria, setComorbidadesGeriatria] = useState([]);
   const [medicamentosGeriatria, setMedicamentosGeriatria] = useState("");
   const [historicoQuedas, setHistoricoQuedas] = useState("");
@@ -287,12 +256,20 @@ export default function Geriatria({ student, students, allPatients, currentModul
     try { localStorage.setItem(`geriatria_scales_${sid}`, JSON.stringify(next)); } catch {}
   };
   const geriatriaColors = { ...C, accent: C.green, font: F };
+  const autoCifGeriatria = generateCIFGeriatria({ evaMov: enhancer.pain.evaMov, limitacoes: atividadesDiarias });
+  const matchedCif = Object.entries(GERIATRIA_EVIDENCE).find(([key]) =>
+    (queixaGeriatria||"").toLowerCase().includes(key.replace(/_/g," ")) ||
+    (comorbidadesGeriatria||[]).some(c => c.toLowerCase().includes(key.replace(/_/g," ")))
+  );
+  const cifSuggestionsGeriatria = matchedCif ? matchedCif[1].cif || [] : [];
 
   useEffect(() => {
     if (student?.id || student?.nome) {
       const saved = loadGeriatriaData(sid);
       if (saved) {
         setQueixaGeriatria(saved.queixaGeriatria || "");
+        setHdaGeriatria(saved.hdaGeriatria || "");
+        setDiagnosticoCinesioGeriatria(saved.diagnosticoCinesioGeriatria || "");
         setComorbidadesGeriatria(saved.comorbidadesGeriatria || []);
         setMedicamentosGeriatria(saved.medicamentosGeriatria || "");
         setHistoricoQuedas(saved.historicoQuedas || "");
@@ -333,7 +310,7 @@ export default function Geriatria({ student, students, allPatients, currentModul
     if (!student?.id && !student?.nome) return;
     const sid = student.id || student.nome;
     saveGeriatriaData(sid, {
-      queixaGeriatria, comorbidadesGeriatria, medicamentosGeriatria, historicoQuedas,
+      queixaGeriatria, hdaGeriatria, diagnosticoCinesioGeriatria, comorbidadesGeriatria, medicamentosGeriatria, historicoQuedas,
       fraturaPrevia, usoDispositivoAuxilio, moradiaSozinho, suporteFamiliar, atividadesDiarias,
       meemScore, gds15Score, meemResult, gds15Result,
       katzScores, katzResult, lawtonScores, lawtonResult,
@@ -349,10 +326,7 @@ export default function Geriatria({ student, students, allPatients, currentModul
   if (studentListView) return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text, padding:24 }}>
       <div style={{ maxWidth:680, margin:"0 auto" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
-          <span style={{ fontSize:16, fontWeight:800, color:C.text, letterSpacing:"0.05em" }}>👴 Fisioterapia Geriátrica</span>
-          <button onClick={() => { localStorage.removeItem("sasyra_module"); window.location.reload(); }} style={ghostBtn({ fontSize:12 })}>Sair</button>
-        </div>
+
         <div style={{ fontSize:13, color:C.textMuted, marginBottom:6 }}>Selecione um paciente</div>
 
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
@@ -513,30 +487,28 @@ export default function Geriatria({ student, students, allPatients, currentModul
 
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
-      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:60 }}>
+      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"0 24px", display:"flex", flexWrap:"wrap", alignItems:"center", justifyContent:"space-between", minHeight:60, gap:0 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <button onClick={() => setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>← Pacientes</button>
-          <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>👴 Geriátrica</span>
+          <LogoSVG C={C} F={F}/>
+          <button onClick={()=>setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+          {onAgenda && <button onClick={onAgenda} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Agenda">📅 Agenda</button>}
+          {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
-        <div style={{ display:"flex", gap:4 }}>
+        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
           {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
-            <button key={k} onClick={() => setTab(k)} style={{
-              background: tab === k ? C.greenBg : "transparent",
-              border: `1px solid ${tab === k ? C.green + "50" : "transparent"}`,
-              borderRadius: 8, padding: "7px 14px", fontSize: 12,
-              fontWeight: tab === k ? 700 : 400,
-              color: tab === k ? C.green : C.textMuted, cursor: "pointer", fontFamily: F,
-            }}>{ic} {lb}</button>
+            <button key={k} onClick={() => setTab(k)} style={{ background:tab === k ? C.greenBg : "transparent", border:`1px solid ${tab === k ? C.green + "50" : "transparent"}`, borderRadius:8, padding:"7px 16px", fontSize:13, fontWeight:tab === k ? 700 : 400, color:tab === k ? C.green : C.textMuted, cursor:"pointer", fontFamily:F }}>{ic} {lb}</button>
           ))}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          {onSubscription && (
+            <button onClick={onSubscription}
+              style={{ background:plan==="start"?`${C.amber}15`:"transparent", border:`1px solid ${plan==="start"?C.amber+"50":C.border}`, borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, color:plan==="start"?C.amber:C.green, cursor:"pointer", fontFamily:F, whiteSpace:"nowrap" }}>
+              {plan === "start" ? "⭐ Start" : `⭐ ${planLabel || ""}`}
+            </button>
+          )}
           {student?.nome && (
-            <>
-              <div style={{ width:30, height:30, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.green }}>
-                {student.nome[0]?.toUpperCase()}
-              </div>
-              <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span>
-            </>
+            <><div style={{ width:30, height:30, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.green }}>{student.nome[0]?.toUpperCase()}</div>
+              <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span></>
           )}
         </div>
       </div>
@@ -549,7 +521,11 @@ export default function Geriatria({ student, students, allPatients, currentModul
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
                 <div>
                   <span style={lbl()}>Queixa principal / Motivo da consulta</span>
-                  <input type="text" value={queixaGeriatria} onChange={e => setQueixaGeriatria(e.target.value)} style={inp()} placeholder="Ex: Dificuldade para andar, quedas frequentes, fraqueza..." />
+                  <AudioField value={queixaGeriatria} onChange={v => setQueixaGeriatria(typeof v === "function" ? v(queixaGeriatria) : v)} placeholder="Ex: Dificuldade para andar, quedas frequentes, fraqueza..." rows={2} />
+                </div>
+                <div>
+                  <span style={lbl()}>História da Doença Atual (HDA)</span>
+                  <AudioField value={hdaGeriatria} onChange={v => setHdaGeriatria(typeof v === "function" ? v(hdaGeriatria) : v)} placeholder="Início, evolução, tratamentos anteriores, exames realizados..." rows={3} />
                 </div>
                 <div>
                   <span style={lbl()}>Número de quedas no último ano</span>
@@ -588,7 +564,16 @@ export default function Geriatria({ student, students, allPatients, currentModul
                 <TagSelect options={["Banho","Vestir","Alimentação","Higiene","Transferências","Deambulação","Subir escadas","Uso do banheiro","Preparar refeições","Administrar finanças"]}
                   value={atividadesDiarias} onChange={setAtividadesDiarias} activeColor={C.green} />
               </div>
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>Diagnóstico Cinesioterapêutico (DCT)</span>
+                <input type="text" value={diagnosticoCinesioGeriatria} onChange={e => setDiagnosticoCinesioGeriatria(e.target.value)} style={inp()} placeholder="Ex: Síndrome de fragilidade com risco de quedas e dependência funcional" />
+              </div>
             </Section>
+
+            <GeneralAssessment storageKey="geriatria" studentId={sid} colors={{ ...C, accent: C.green }} />
+
+            <CifSection cifSuggestions={cifSuggestionsGeriatria} autoCif={autoCifGeriatria} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
+
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
               <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Anamnese</button>
             </div>
@@ -651,7 +636,7 @@ export default function Geriatria({ student, students, allPatients, currentModul
               </div>
 
               <div>
-                <div style={{ fontSize:12, fontWeight:700, color:C.green, marginBottom:10, letterSpacing:"0.05em" }}>Índice de Lawton — AVDs Instrumentais (0-3 cada, max 27)</div>
+                <div style={{ fontSize:12, fontWeight:700, color:C.green, marginBottom:10, letterSpacing:"0.05em" }}>Índice de Lawton — AVDs Instrumentais (0-3 cada, max 24)</div>
                 {LAWTON_ITEMS.map(item => (
                   <div key={item.id} style={{ marginBottom:8 }}>
                     <span style={{ ...lbl({ fontSize:10, marginBottom:3 }) }}>{item.label}</span>
@@ -830,7 +815,7 @@ export default function Geriatria({ student, students, allPatients, currentModul
               colors={geriatriaColors} />
             <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={geriatriaColors} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
-              summaryText={`Paciente: ${student?.nome || "—"}\nQueixa: ${queixaGeriatria}\nQuedas (1 ano): ${historicoQuedas}\nComorbidades: ${comorbidadesGeriatria.join(", ")}\nDispositivo: ${usoDispositivoAuxilio}\nMEEM: ${meemResult?.total || "—"}\nGDS-15: ${gds15Result?.total || "—"}\nKatz: ${katzResult?.indep || "—"}/6\nLawton: ${lawtonResult?.total || "—"}/27\nSARC-F: ${sarcFResult?.total || "—"}\nTinetti: ${tinettiResult?.total || "—"}/28\nTUG: ${tugSegundos || "—"}s\nFried: ${fragilidadeResult?.count || "—"}/5\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nEvolução: ${evolucaoGeriatria}`}
+              summaryText={`Paciente: ${student?.nome || "—"}\nQueixa: ${queixaGeriatria}\nQuedas (1 ano): ${historicoQuedas}\nComorbidades: ${comorbidadesGeriatria.join(", ")}\nDispositivo: ${usoDispositivoAuxilio}\nMEEM: ${meemResult?.total || "—"}\nGDS-15: ${gds15Result?.total || "—"}\nKatz: ${katzResult?.indep || "—"}/6\nLawton: ${lawtonResult?.total || "—"}/24\nSARC-F: ${sarcFResult?.total || "—"}\nTinetti: ${tinettiResult?.total || "—"}/28\nTUG: ${tugSegundos || "—"}s\nFried: ${fragilidadeResult?.count || "—"}/5\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nEvolução: ${evolucaoGeriatria}`}
               colors={geriatriaColors} />
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
               <button onClick={handleSave} style={primaryBtn({ padding:"11px 26px", fontSize:14 })}>💾 Salvar Tudo</button>

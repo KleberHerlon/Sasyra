@@ -1,9 +1,14 @@
 import { useState, useEffect } from "react";
 import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 import CifAndHonorarios from "../components/CifAndHonorarios";
-import { CollapsibleSection, CollapsibleSub } from "../components";
+import CifSection from "../components/CifSection";
+import { CIF } from "../data/cif";
+import { CollapsibleSection, CollapsibleSub, AudioField } from "../components";
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
+import GeneralAssessment from "../components/GeneralAssessment";
+import LogoSVG from "../components/LogoSVG";
+import { calcECOG, calcKPS, calcEORTC, calcESAS } from "../data/oncologyScales";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -77,63 +82,6 @@ function loadOncoData(studentId) {
   try { const d = localStorage.getItem(`onco_data_${studentId}`); return d ? JSON.parse(d) : null; } catch { return null; }
 }
 
-function calcECOG(value) {
-  const labels = [
-    "0 — Atividade normal, sem restrições",
-    "1 — Restrito para atividade física intensa, deambula",
-    "2 — Deambula, capaz de autocuidado, incapaz para trabalhar",
-    "3 — Autocuidado limitado, confinado ao leito >50% do dia",
-    "4 — Incapacidade completa, confinado ao leito",
-    "5 — Óbito",
-  ];
-  const colors = [C.green, C.green, C.amber, C.amber, C.red, C.red];
-  return { value: Number(value), label: labels[value] || "", color: colors[value] || C.textMuted };
-}
-
-function calcKPS(value) {
-  const v = Number(value);
-  let label, color;
-  if (v >= 80) { label = "Atividade normal, sem queixas"; color = C.green; }
-  else if (v >= 60) { label = "Autocuidado, incapaz para trabalho"; color = C.amber; }
-  else if (v >= 40) { label = "Incapaz para atividade, necessita cuidados"; color = C.red; }
-  else if (v >= 10) { label = "Confinado ao leito, doença progressiva"; color = C.red; }
-  else { label = "Óbito"; color = C.textDim; }
-  return { value: v, label, color };
-}
-
-function calcEORTC(scores) {
-  const functionalItems = ["physical","role","emotional","cognitive","social"];
-  const symptomItems = ["fatigue","nauseaVomiting","pain","dyspnea","insomnia","appetiteLoss","constipation","diarrhea"];
-  const functional = {};
-  let fSum = 0, fCount = 0;
-  functionalItems.forEach(k => {
-    const raw = Number(scores[k]) || 0;
-    const transformed = raw === 0 ? 100 : 100 - (raw - 1) * 100 / 3;
-    functional[k] = { raw, transformed: Math.round(transformed) };
-    if (scores[k] !== undefined && scores[k] !== "") { fSum += Math.round(transformed); fCount++; }
-  });
-  const symptom = {};
-  let sSum = 0, sCount = 0;
-  symptomItems.forEach(k => {
-    const raw = Number(scores[k]) || 0;
-    const transformed = raw === 0 ? 0 : (raw - 1) * 100 / 3;
-    symptom[k] = { raw, transformed: Math.round(transformed) };
-    if (scores[k] !== undefined && scores[k] !== "") { sSum += Math.round(transformed); sCount++; }
-  });
-  const globalRaw = Number(scores.global) || 0;
-  const global = globalRaw === 0 ? 0 : Math.round((globalRaw - 1) * 100 / 6);
-  const functionalAvg = fCount > 0 ? Math.round(fSum / fCount) : 0;
-  const symptomAvg = sCount > 0 ? Math.round(sSum / sCount) : 0;
-  return { functional, functionalAvg, symptom, symptomAvg, global };
-}
-
-function calcESAS(scores) {
-  const total = Object.values(scores).reduce((a, b) => a + (Number(b) || 0), 0);
-  const level = total <= 10 ? "Sintomas leves" : total <= 30 ? "Sintomas moderados" : "Sintomas graves";
-  const color = total <= 10 ? C.green : total <= 30 ? C.amber : C.red;
-  return { total, level, color };
-}
-
 const ONCO_EVIDENCE = {
   cancer_mama: {
     cif:["s730","b130","b152","d510","d540","d850"],
@@ -186,7 +134,22 @@ const ONCO_EVIDENCE = {
   },
 };
 
-export default function Oncology({ student, students, allPatients, currentModuleId, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById }) {
+function generateCIFOnco({ evaMov, limitacoes }) {
+  const result = [];
+  if (evaMov >= 7) result.push({ code:"b280", desc:"Sensação de dor intensa", qualifier:3 });
+  else if (evaMov >= 4) result.push({ code:"b280", desc:"Sensação de dor moderada", qualifier:2 });
+  else if (evaMov >= 1) result.push({ code:"b280", desc:"Sensação de dor leve", qualifier:1 });
+  result.push({ code:"b130", desc:"Funções energéticas (fadiga)", qualifier:2 });
+  result.push({ code:"b730", desc:"Força muscular", qualifier:2 });
+  if (limitacoes?.some(c => c.includes("Deamb") || c.includes("Andar") || c.includes("Caminhar"))) result.push({ code:"d450", desc:"Andar", qualifier:2 });
+  if (limitacoes?.some(c => c.includes("Atividade física") || c.includes("Trabalho") || c.includes("AVDs"))) result.push({ code:"d640", desc:"Realizar tarefas domésticas", qualifier:2 });
+  return result;
+}
+
+export default function Oncology({ student, students, onSelectStudent, onAddStudent, onUpdateStudent, onUpdateStudentById, onDeleteStudent,
+  plan, onUpgrade, canUseFeature, tryFeature, aiRemaining, aiLimit, hasExpansion, purchaseAIExpansion, currentModuleId, allPatients,
+  onAgenda, onFinanceiro, onSubscription, planLabel,
+}) {
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -198,6 +161,8 @@ export default function Oncology({ student, students, allPatients, currentModule
   const [regiao, setRegiao] = useState("Centro-Oeste");
 
   const [queixaOnco, setQueixaOnco] = useState("");
+  const [hdaOnco, setHdaOnco] = useState("");
+  const [diagnosticoCinesioOnco, setDiagnosticoCinesioOnco] = useState("");
   const [diagnosticoOnco, setDiagnosticoOnco] = useState("");
   const [tipoCancer, setTipoCancer] = useState("");
   const [estadiamento, setEstadiamento] = useState("");
@@ -246,12 +211,18 @@ export default function Oncology({ student, students, allPatients, currentModule
     try { localStorage.setItem(`onco_scales_${sid}`, JSON.stringify(next)); } catch {}
   };
   const oncoColors = { ...C, accent: C.amber, font: F };
+  const autoCifOnco = generateCIFOnco({ evaMov: enhancer.pain.evaMov, limitacoes: impactoFadiga });
+  const matchedCif = Object.entries(ONCO_EVIDENCE).find(([key]) =>
+    (queixaOnco||"").toLowerCase().includes(key.replace(/_/g," ")) ||
+    (tipoCancer||"").toLowerCase().includes(key.replace(/_/g," "))
+  );
+  const cifSuggestionsOnco = matchedCif ? matchedCif[1].cif || [] : [];
 
   useEffect(() => {
     if (student?.id || student?.nome) {
       const saved = loadOncoData(sid);
       if (saved) {
-        setQueixaOnco(saved.queixaOnco||""); setDiagnosticoOnco(saved.diagnosticoOnco||""); setTipoCancer(saved.tipoCancer||""); setEstadiamento(saved.estadiamento||"");
+        setQueixaOnco(saved.queixaOnco||""); setHdaOnco(saved.hdaOnco||""); setDiagnosticoCinesioOnco(saved.diagnosticoCinesioOnco||""); setDiagnosticoOnco(saved.diagnosticoOnco||""); setTipoCancer(saved.tipoCancer||""); setEstadiamento(saved.estadiamento||"");
         setDataDiagnostico(saved.dataDiagnostico||""); setTratamentosRealizados(saved.tratamentosRealizados||[]); setDataCirurgia(saved.dataCirurgia||"");
         setQuimioterapiaCiclos(saved.quimioterapiaCiclos||""); setRadioterapiaSessoes(saved.radioterapiaSessoes||"");
         setPerimetriaMembros(saved.perimetriaMembros||{});
@@ -275,7 +246,7 @@ export default function Oncology({ student, students, allPatients, currentModule
     if (!student?.id && !student?.nome) return;
     const sid = student.id || student.nome;
     saveOncoData(sid, {
-      queixaOnco,diagnosticoOnco,tipoCancer,estadiamento,dataDiagnostico,tratamentosRealizados,
+      queixaOnco,hdaOnco,diagnosticoCinesioOnco,diagnosticoOnco,tipoCancer,estadiamento,dataDiagnostico,tratamentosRealizados,
       dataCirurgia,quimioterapiaCiclos,radioterapiaSessoes,
       perimetriaMembros,bioimpedancia,sensacaoPeso,sinalGodet,classificacaoLinfedema,
       factFScore,escalaFadigaNumeric,impactoFadiga,ecog,kps,
@@ -289,10 +260,6 @@ export default function Oncology({ student, students, allPatients, currentModule
   if (studentListView) return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text, padding:24 }}>
       <div style={{ maxWidth:680, margin:"0 auto" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
-          <span style={{ fontSize:16, fontWeight:800, color:C.text, letterSpacing:"0.05em" }}>🎗️ Fisioterapia Oncológica</span>
-          <button onClick={() => { localStorage.removeItem("sasyra_module"); window.location.reload(); }} style={ghostBtn({ fontSize:12 })}>Sair</button>
-        </div>
         <div style={{ fontSize:13, color:C.textMuted, marginBottom:6 }}>Selecione um paciente para iniciar o atendimento</div>
 
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
@@ -449,10 +416,13 @@ export default function Oncology({ student, students, allPatients, currentModule
 
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
+      {/* Header */}
       <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:"0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height:60 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <button onClick={() => setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>← Pacientes</button>
-          <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>🎗️ Oncológica</span>
+          <LogoSVG C={C} F={F}/>
+          <button onClick={() => setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+          {onAgenda && <button onClick={onAgenda} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Agenda">📅 Agenda</button>}
+          {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
         <div style={{ display:"flex", gap:4 }}>
           {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
@@ -460,13 +430,15 @@ export default function Oncology({ student, students, allPatients, currentModule
           ))}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          {onSubscription && (
+            <button onClick={onSubscription}
+              style={{ background:plan==="start"?`${C.amber}15`:"transparent", border:`1px solid ${plan==="start"?C.amber+"50":C.border}`, borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, color:plan==="start"?C.amber:C.green, cursor:"pointer", fontFamily:F, whiteSpace:"nowrap" }}>
+              {plan === "start" ? "⭐ Start" : `⭐ ${planLabel || ""}`}
+            </button>
+          )}
           {student?.nome && (
-            <>
-              <div style={{ width:30, height:30, background:C.amberBg, border:`1px solid ${C.amber}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.amber }}>
-                {student.nome[0]?.toUpperCase()}
-              </div>
-              <span style={{ fontSize:12, color:C.textSub, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{student.nome}</span>
-            </>
+            <><div style={{width:30,height:30,background:C.amberBg,border:`1px solid ${C.amber}40`,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:C.amber}}>{student.nome[0]?.toUpperCase()}</div>
+              <span style={{fontSize:12,color:C.textSub,maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{student.nome}</span></>
           )}
         </div>
       </div>
@@ -479,12 +451,23 @@ export default function Oncology({ student, students, allPatients, currentModule
                 Preencha os dados da avaliação oncológica, tipo de câncer, estadiamento e tratamentos realizados.
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
-                <div><span style={lbl()}>Queixa principal</span><input type="text" value={queixaOnco} onChange={e=>setQueixaOnco(e.target.value)} style={inp()} placeholder="Dor pós-cirurgia, fraqueza..." /></div>
+                <div>
+                  <span style={lbl()}>Queixa principal</span>
+                  <AudioField value={queixaOnco} onChange={v => setQueixaOnco(typeof v === "function" ? v(queixaOnco) : v)} placeholder="Dor pós-cirurgia, fraqueza..." rows={2} />
+                </div>
                 <div><span style={lbl()}>Diagnóstico oncológico</span><input type="text" value={diagnosticoOnco} onChange={e=>setDiagnosticoOnco(e.target.value)} style={inp()} placeholder="Carcinoma ductal invasivo..." /></div>
                 <div><span style={lbl()}>Tipo de câncer</span><input type="text" value={tipoCancer} onChange={e=>setTipoCancer(e.target.value)} style={inp()} placeholder="Mama, Próstata, Pulmão..." /></div>
                 <div><span style={lbl()}>Estadiamento (TNM/Grupo)</span><input type="text" value={estadiamento} onChange={e=>setEstadiamento(e.target.value)} style={inp()} placeholder="T2N1M0, Estádio IIB" /></div>
                 <div><span style={lbl()}>Data do diagnóstico</span><input type="date" value={dataDiagnostico} onChange={e=>setDataDiagnostico(e.target.value)} style={inp()} /></div>
                 <div><span style={lbl()}>Data da cirurgia</span><input type="date" value={dataCirurgia} onChange={e=>setDataCirurgia(e.target.value)} style={inp()} /></div>
+              </div>
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>HDA — História da Doença Atual</span>
+                <AudioField value={hdaOnco} onChange={v => setHdaOnco(typeof v === "function" ? v(hdaOnco) : v)} placeholder="Início, evolução, tratamentos anteriores, exames realizados..." rows={3} />
+              </div>
+              <div style={{ marginTop:12 }}>
+                <span style={lbl()}>Diagnóstico Cinesioterapêutico (DCT)</span>
+                <input type="text" value={diagnosticoCinesioOnco} onChange={e => setDiagnosticoCinesioOnco(e.target.value)} style={inp()} placeholder="Ex: Disfunção oncológica com limitação funcional e fadiga" />
               </div>
               <div style={{ marginTop:12 }}>
                 <span style={lbl()}>Tratamentos realizados</span>
@@ -495,6 +478,10 @@ export default function Oncology({ student, students, allPatients, currentModule
                 <div><span style={lbl()}>RT — Sessões</span><input type="text" value={radioterapiaSessoes} onChange={e=>setRadioterapiaSessoes(e.target.value)} style={inp()} placeholder="25 sessões" /></div>
               </div>
             </Section>
+
+            <GeneralAssessment storageKey="oncology" studentId={sid} colors={{ ...C, accent: C.amber }} />
+
+            <CifSection cifSuggestions={cifSuggestionsOnco} autoCif={autoCifOnco} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
               <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Anamnese</button>
@@ -739,11 +726,21 @@ export default function Oncology({ student, students, allPatients, currentModule
           </>
         )}
 
-        {tab === "relatorio" && (
-          <ReportSection pain={enhancer.pain} logs={enhancer.logs} redFlags={enhancer.redFlags}
-            aiRes={enhancer.aiRes} patientName={student?.nome || "—"}
-            moduleLabel="Fisioterapia Oncológica" colors={oncoColors} />
-        )}
+        {tab === "relatorio" && (() => {
+          const matched = Object.entries(ONCO_EVIDENCE).find(([key]) =>
+            (queixaOnco||"").toLowerCase().includes(key.replace(/_/g," ")) ||
+            (tipoCancer||"").toLowerCase().includes(key.replace(/_/g," "))
+          );
+          const cifCodes = matched ? matched[1].cif || [] : [];
+          return (
+            <>
+              <CifAndHonorarios cifCodes={cifCodes} convenio={student?.convenio} regiao={regiao} setRegiao={setRegiao} sessoesAuth={student?.sessoesAuth} color={C.amber} />
+              <ReportSection pain={enhancer.pain} logs={enhancer.logs} redFlags={enhancer.redFlags}
+                aiRes={enhancer.aiRes} patientName={student?.nome || "—"}
+                moduleLabel="Fisioterapia Oncológica" colors={oncoColors} />
+            </>
+          );
+        })()}
 
         {tab === "evidencias" && (() => {
           const matched = Object.entries(ONCO_EVIDENCE).find(([key]) =>

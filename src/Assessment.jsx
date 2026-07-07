@@ -18,14 +18,7 @@ const sel = (extra = {}) => ({ ...inp(), cursor: "pointer", ...extra });
 const lbl = (extra = {}) => ({ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: C.textMuted, marginBottom: 5, ...extra });
 const primaryBtn = (extra = {}) => ({ background: C.green, color: "#061A0C", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: F, display: "inline-flex", alignItems: "center", gap: 6, ...extra });
 
-const CREFITO_REGIOES = {
-  "Sul (RS/SC/PR)": { consulta: 180, sessao: 160, avaliacao: 250, relatorio: 120 },
-  "Sudeste SP": { consulta: 220, sessao: 200, avaliacao: 320, relatorio: 150 },
-  "Sudeste RJ/ES/MG": { consulta: 190, sessao: 170, avaliacao: 280, relatorio: 130 },
-  "Centro-Oeste": { consulta: 170, sessao: 150, avaliacao: 240, relatorio: 110 },
-  "Nordeste": { consulta: 150, sessao: 140, avaliacao: 220, relatorio: 100 },
-  "Norte": { consulta: 140, sessao: 130, avaliacao: 210, relatorio: 95 },
-};
+import CREFITO_REGIOES from "./data/crefito";
 
 const CIF = {
   b280: "Sensação de dor", b28010: "Dor em cabeça e pescoço", b28013: "Dor nas costas",

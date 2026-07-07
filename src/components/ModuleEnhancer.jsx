@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { GonioRow, MRCRow, JOINTS, MVMT, MUSCLES } from "../components";
 import { AI_LIMITS, AI_OVERAGE } from "../data/plans";
 
 const STYLE = {
@@ -88,6 +89,16 @@ function addInvoice(amount, desc) {
 
 export function useEnhancer(moduleName, studentId, storageKey) {
   const STORAGE_KEY = storageKey || `${moduleName}_enhancer_${studentId}`;
+  const abortRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (abortRef.current) {
+        abortRef.current.abort();
+        abortRef.current = null;
+      }
+    };
+  }, []);
 
   const load = (fallback) => {
     try { const d = localStorage.getItem(STORAGE_KEY); return d ? JSON.parse(d) : fallback; } catch { return fallback; }
@@ -115,6 +126,12 @@ export function useEnhancer(moduleName, studentId, storageKey) {
   };
 
   const runAI = async (summaryText) => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     const { sub, plan, aiAnalysesUsed, aiLimit, remaining } = readQuota();
     const baseLimit = AI_LIMITS[plan] || 0;
     const overage = AI_OVERAGE[plan] || AI_OVERAGE.avulso;
@@ -132,6 +149,7 @@ export function useEnhancer(moduleName, studentId, storageKey) {
       const res = await fetch("/api/anthropic", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           model: "claude-sonnet-4-6", max_tokens: 2800,
           _patientName: studentId,
@@ -148,9 +166,14 @@ ${summaryText}` }],
       });
       const d = await res.json();
       const text = d.content?.map(c => c.text || "").join("\n") || "Sem resposta.";
-      setAiRes(text);
-    } catch {
-      setAiRes("Erro ao consultar IA.");
+      if (!controller.signal.aborted) {
+        setAiRes(text);
+      }
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      if (!controller.signal.aborted) {
+        setAiRes("Erro ao consultar IA.");
+      }
     }
   };
 
@@ -219,22 +242,50 @@ export function RedFlagsSection({ redFlags, setRedFlags, flags, colors }) {
   );
 }
 
+const PROCEDIMENTOS_CATEGORIES = [
+  { category: "Eletroterapia", items: ["TENS", "FES", "Ultrassom terapêutico", "Laser de baixa potência", "Magnetoterapia"] },
+  { category: "Termoterapia", items: ["Crioterapia", "Termoterapia"] },
+  { category: "Terapia Manual", items: ["Massagem terapêutica", "Mobilização articular", "Manipulação", "Tração", "Dry needling", "Ventosaterapia", "Liberação miofascial"] },
+  { category: "Bandagens Funcionais", items: ["Bandagem funcional", "Kinesio taping"] },
+  { category: "Cinesioterapia e Exercícios", items: ["RPG", "Pilates clínico", "Cinesioterapia", "Treino de força", "Treino proprioceptivo", "Treino funcional", "Exercício neuromotor"] },
+  { category: "Hidroterapia", items: ["Hidroterapia"] },
+  { category: "Alongamento", items: ["Alongamento global"] },
+  { category: "Abordagens Cognitivo-Comportamentais", items: ["PNE – Educação em Dor", "Graded Exposure", "CFT – Terapia Funcional Cognitiva"] },
+];
+
+function ProcedimentosCategorizados({ value, onChange, colors }) {
+  const [expanded, setExpanded] = useState([]);
+  return (
+    <div>
+      {PROCEDIMENTOS_CATEGORIES.map(cat => {
+        const open = expanded.includes(cat.category);
+        return (
+          <div key={cat.category} style={{ marginBottom: 6 }}>
+            <div onClick={() => setExpanded(p => open ? p.filter(x => x !== cat.category) : [...p, cat.category])}
+              style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "8px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, userSelect: "none" }}>
+              <span style={{ fontSize: 10, color: colors.textMuted, transition: "transform 0.15s", transform: open ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: colors.text, flex: 1 }}>{cat.category}</span>
+              <span style={{ fontSize: 10, color: colors.textMuted }}>{cat.items.length} procedimento{cat.items.length > 1 ? "s" : ""}</span>
+            </div>
+            {open && (
+              <div style={{ padding: "8px 4px 4px 10px" }}>
+                <TagSelect options={cat.items} value={value} onChange={onChange} colors={colors} />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function SessionLogSection({ logs, addLog, colors }) {
   const [showForm, setShowForm] = useState(false);
-  const [f, setF] = useState({ eva: 0, procedimentos: [], evolucao: "", metas: "" });
-
-  const PROCEDIMENTOS = [
-    "Avaliação", "Exercício terapêutico", "Fortalecimento muscular", "Alongamento",
-    "Mobilização articular", "Treino funcional", "Treino proprioceptivo",
-    "Terapia manual", "Eletroterapia", "Crioterapia", "Termoterapia",
-    "Orientação/postura", "Treino de marcha", "Treino de equilíbrio",
-    "Estimulação motora", "Integração sensorial", "Atividades lúdicas",
-    "Exercícios respiratórios", "Relaxamento", "Reavaliação",
-  ];
+  const [f, setF] = useState({ data: new Date().toISOString().slice(0, 10), eva: 0, procedimentos: [], resposta: "", evolucao: "", metas: "", adms: [], mrcs: [] });
 
   const handleSave = () => {
     addLog({ ...f });
-    setF({ eva: 0, procedimentos: [], evolucao: "", metas: "" });
+    setF({ data: new Date().toISOString().slice(0, 10), eva: 0, procedimentos: [], resposta: "", evolucao: "", metas: "", adms: [], mrcs: [] });
     setShowForm(false);
   };
 
@@ -255,12 +306,25 @@ export function SessionLogSection({ logs, addLog, colors }) {
         </button>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <div>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: colors.textSub, marginBottom: 5, display: "block" }}>Data</span>
+              <input type="date" value={f.data} onChange={e => setF(p => ({ ...p, data: e.target.value }))}
+                style={{ width: "100%", boxSizing: "border-box", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, color: colors.text, fontSize: 13, padding: "9px 12px", outline: "none", fontFamily: colors.font || "'Inter',sans-serif" }} />
+            </div>
             <EvaSlider label="EVA da sessão" value={f.eva} onChange={(v) => setF(p => ({ ...p, eva: v }))} colors={colors} />
             <div>
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: colors.textSub, marginBottom: 5, display: "block" }}>Procedimentos</span>
-              <TagSelect options={PROCEDIMENTOS} value={f.procedimentos} onChange={(v) => setF(p => ({ ...p, procedimentos: v }))} colors={colors} />
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: colors.textSub, marginBottom: 5, display: "block" }}>Resposta</span>
+              <select value={f.resposta} onChange={e => setF(p => ({ ...p, resposta: e.target.value }))}
+                style={{ width: "100%", boxSizing: "border-box", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, color: colors.text, fontSize: 12, padding: "9px 12px", outline: "none", cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif" }}>
+                <option value="">Selecionar…</option>
+                {["Excelente melhora", "Boa melhora", "Melhora parcial", "Sem melhora", "Piora", "Intercorrência"].map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
             </div>
+          </div>
+          <div>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: colors.textSub, marginBottom: 5, display: "block" }}>Procedimentos realizados</span>
+            <ProcedimentosCategorizados value={f.procedimentos} onChange={(v) => setF(p => ({ ...p, procedimentos: v }))} colors={colors} />
           </div>
           <div>
             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: colors.textSub, marginBottom: 5, display: "block" }}>Evolução / Observação</span>
@@ -284,6 +348,44 @@ export function SessionLogSection({ logs, addLog, colors }) {
               }}
               placeholder="Critérios de progressão, nova carga..." />
           </div>
+          <div style={{ display: "flex", gap: 14, marginTop: 4, marginBottom: 6 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: colors.textMuted, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer", userSelect: "none" }}
+              onClick={() => setF(p => ({ ...p, _showAdm: !p._showAdm }))}>
+              📐 ADM {f._showAdm ? "▲" : "▼"}
+            </span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: colors.textMuted, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer", userSelect: "none" }}
+              onClick={() => setF(p => ({ ...p, _showMrc: !p._showMrc }))}>
+              💪 MRC {f._showMrc ? "▲" : "▼"}
+            </span>
+          </div>
+          {f._showAdm && (
+            <div style={{ background: colors.card, borderRadius: 10, padding: "10px 12px" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: colors.textMuted, marginBottom: 6 }}>Registrar ADM desta sessão</div>
+              {f.adms.map((row, i) => (
+                <GonioRow key={row._id || i} row={row} onUpdate={(u) => setF(p => {
+                  const next = [...p.adms]; next[i] = u; return { ...p, adms: next };
+                })} onRemove={() => setF(p => ({ ...p, adms: p.adms.filter((_, j) => j !== i) }))} />
+              ))}
+              <button onClick={() => setF(p => ({ ...p, adms: [...p.adms, { _id: Date.now() + Math.random(), joint: JOINTS[0], movement: Object.keys(MVMT)[0], value: "" }] }))}
+                style={{ background: "transparent", border: `1px dashed ${colors.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 11, color: colors.textMuted, cursor: "pointer", width: "100%", fontFamily: colors.font || "'Inter',sans-serif", marginTop: 4 }}>
+                + ADM
+              </button>
+            </div>
+          )}
+          {f._showMrc && (
+            <div style={{ background: colors.card, borderRadius: 10, padding: "10px 12px" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: colors.textMuted, marginBottom: 6 }}>Registrar Força MRC desta sessão</div>
+              {f.mrcs.map((row, i) => (
+                <MRCRow key={row._id || i} row={row} onUpdate={(u) => setF(p => {
+                  const next = [...p.mrcs]; next[i] = u; return { ...p, mrcs: next };
+                })} onRemove={() => setF(p => ({ ...p, mrcs: p.mrcs.filter((_, j) => j !== i) }))} />
+              ))}
+              <button onClick={() => setF(p => ({ ...p, mrcs: [...p.mrcs, { _id: Date.now() + Math.random(), muscle: (MUSCLES[0]?.id || MUSCLES[0]), value: "" }] }))}
+                style={{ background: "transparent", border: `1px dashed ${colors.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 11, color: colors.textMuted, cursor: "pointer", width: "100%", fontFamily: colors.font || "'Inter',sans-serif", marginTop: 4 }}>
+                + MRC
+              </button>
+            </div>
+          )}
           <div style={{ display: "flex", gap: 8 }}>
             <button type="button" onClick={handleSave}
               style={{
@@ -335,19 +437,26 @@ export function SessionLogSection({ logs, addLog, colors }) {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ fontSize: 10, fontWeight: 700, color: colors.accent || colors.green, background: `${colors.accent || colors.green}0C`, padding: "2px 8px", borderRadius: 6 }}>Sessão</span>
-                  <span style={{ fontSize: 11, color: colors.textMuted }}>{log.date}</span>
+                  <span style={{ fontSize: 11, color: colors.textMuted }}>{log.data || log.date}</span>
                 </div>
                 <span style={{ fontSize: 18, fontWeight: 900, color: STYLE.evaColor(log.eva), lineHeight: 1 }}>{log.eva}<span style={{ fontSize: 9, fontWeight: 400, color: colors.textMuted }}>/10</span></span>
               </div>
-              {log.procedimentos.length > 0 && (
+              {log.procedimentos?.length > 0 && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 4 }}>
                   {log.procedimentos.map((p) => (
                     <span key={p} style={{ fontSize: 9, color: colors.textMuted, background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 6, padding: "2px 7px" }}>{p}</span>
                   ))}
                 </div>
               )}
+              {log.resposta && <p style={{ margin: "4px 0", fontSize: 11, color: colors.amber }}>📋 {log.resposta}</p>}
               {log.evolucao && <p style={{ margin: "4px 0", fontSize: 12, color: colors.text, lineHeight: 1.5 }}>{log.evolucao}</p>}
               {log.metas && <p style={{ margin: "4px 0 0", fontSize: 10, color: colors.textMuted }}>→ {log.metas}</p>}
+              {(log.adms?.length > 0 || log.mrcs?.length > 0) && (
+                <div style={{ marginTop: 6, display: "flex", gap: 8, fontSize: 10, color: colors.textMuted }}>
+                  {log.adms?.length > 0 && <span>📐 {log.adms.filter(a => a.value).map(a => `${a.joint} ${a.movement}:${a.value}°`).join(", ")}</span>}
+                  {log.mrcs?.length > 0 && <span>💪 {log.mrcs.filter(m => m.value).map(m => `${m.muscle}:${m.value}`).join(", ")}</span>}
+                </div>
+              )}
             </div>
           ))}
         </div>

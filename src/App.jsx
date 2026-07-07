@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useMemo, useCallback, Suspense, startTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { EvaSlider, TagSelect, SingleSelect, AudioField, useProgress, Section, Row, Field, SubHeading, useMediaQuery, GonioRow, MRCRow, MUSCLES, JOINTS, MVMT, getRef, isOutOfRange, PaywallModal } from "./components";
 import LanguageSwitcher from "./components/LanguageSwitcher";
@@ -6,29 +6,30 @@ import ScaleModal from "./ScaleModal";
 import SCALES from "./scales";
 import { useSubscription } from "./hooks/useSubscription";
 import { useSupabasePatients, useSupabaseAssessments, useSupabaseLogs } from "./hooks/useSupabaseData";
-import { detectKB, detectMultipleKB } from "./utils/clinicalDetection";
+import { detectKB, detectMultipleKB, detectLocalDor } from "./utils/clinicalDetection";
 import { FISIO_SUB_MODULES, FISIO_MODULE_MAP } from "./data/modules";
 import { filterPatientsByModule, MODULE_LABELS } from "./data/moduleAssignment";
 import AssignModulesModal from "./components/AssignModulesModal";
 
-const Assessment = React.lazy(() => import("./Assessment"));
-const Agenda = React.lazy(() => import("./screens/Agenda"));
-const Financeiro = React.lazy(() => import("./screens/Financeiro"));
-const Plans = React.lazy(() => import("./screens/Plans"));
-const SubscriptionSettings = React.lazy(() => import("./screens/SubscriptionSettings"));
-const Integrations = React.lazy(() => import("./screens/Integrations"));
-const ExpressAssessment = React.lazy(() => import("./components/ExpressAssessment"));
-const EvidencePanel = React.lazy(() => import("./components/EvidencePanel"));
-const Neuro = React.lazy(() => import("./screens/Neuro"));
-const Pediatria = React.lazy(() => import("./screens/Pediatria"));
-const CardioRespiratory = React.lazy(() => import("./screens/CardioRespiratory"));
-const UroGynecology = React.lazy(() => import("./screens/UroGynecology"));
-const Geriatria = React.lazy(() => import("./screens/Geriatria"));
-const DermatoFunctional = React.lazy(() => import("./screens/DermatoFunctional"));
-const Rheumatology = React.lazy(() => import("./screens/Rheumatology"));
-const SportsPhysio = React.lazy(() => import("./screens/SportsPhysio"));
-const Oncology = React.lazy(() => import("./screens/Oncology"));
-const GlobalDashboard = React.lazy(() => import("./screens/GlobalDashboard"));
+import Assessment from "./Assessment";
+import Agenda from "./screens/Agenda";
+import Financeiro from "./screens/Financeiro";
+import Plans from "./screens/Plans";
+import SubscriptionSettings from "./screens/SubscriptionSettings";
+import Integrations from "./screens/Integrations";
+import ExpressAssessment from "./components/ExpressAssessment";
+import EvidencePanel from "./components/EvidencePanel";
+import LogoSVG from "./components/LogoSVG";
+import Neuro from "./screens/Neuro";
+import Pediatria from "./screens/Pediatria";
+import CardioRespiratory from "./screens/CardioRespiratory";
+import UroGynecology from "./screens/UroGynecology";
+import Geriatria from "./screens/Geriatria";
+import DermatoFunctional from "./screens/DermatoFunctional";
+import Rheumatology from "./screens/Rheumatology";
+import SportsPhysio from "./screens/SportsPhysio";
+import Oncology from "./screens/Oncology";
+import GlobalDashboard from "./screens/GlobalDashboard";
 
 const FISIO_SCREEN_MAP = {
   Neuro,
@@ -42,6 +43,7 @@ const FISIO_SCREEN_MAP = {
   Oncology,
 };
 
+// No longer needed for lazy imports, but kept for Suspense boundary safety
 const LazyFallback = () => (
   <div style={{ padding: 40, textAlign: "center", color: "var(--textSub)", fontSize: 13 }}>
     Carregando...
@@ -916,22 +918,7 @@ function generateCIF({ evaMov, avds, localDor, gonio, tests, yellowFlags, tempoD
 }
 
 
-// ── Logo ──────────────────────────────────────────────────────────────────────
-function LogoSVG() {
-  return (
-    <svg viewBox="0 0 320 56" width="195" height="44" style={{ display:"block" }}>
-      <g transform="translate(26,28)">
-        <line x1="0" y1="-22" x2="0" y2="22" stroke={C.textDim} strokeWidth="1.5" strokeDasharray="2 5"/>
-        <path d="M -17 11 C -9 3,0 0,17 -11" fill="none" stroke={C.green} strokeWidth="4" strokeLinecap="round"/>
-        <path d="M -17 -4 C -4 0,4 3,17 12" fill="none" stroke={C.greenDim} strokeWidth="3" strokeLinecap="round"/>
-        <path d="M -10 19 C -3 10,3 -5,13 -19" fill="none" stroke={C.greenDeep} strokeWidth="2.5" strokeLinecap="round"/>
-        <circle cx="0" cy="0" r="4.8" fill={C.amber}/>
-      </g>
-      <text x="58" y="40" fill={C.text} fontSize="30" fontWeight="900" letterSpacing="7" fontFamily={F}>SASYRA</text>
-      <text x="40" y="52" fill={C.green} fontSize="11" fontWeight="800" letterSpacing="5" fontFamily={F}>REABILITAÇÃO E EVIDÊNCIA</text>
-    </svg>
-  );
-}
+
 
 
 
@@ -1227,8 +1214,8 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, onViewChan
       <div style={{ maxWidth:680, margin:"0 auto" }}>
         {!noHeader && (
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
-            <LogoSVG/>
-            <div style={{ display:"flex", gap:8 }}>
+          <LogoSVG C={C} F={F}/>
+          <div style={{ display:"flex", gap:8 }}>
               <div style={{ display:"flex", gap:8, alignItems:"center" }}>
                 <LanguageSwitcher styles={{ alignSelf:"center" }} />
                 <button onClick={onToggleTheme} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.textMuted, padding:"5px 8px", fontSize:14, lineHeight:1, cursor:"pointer", fontFamily:F, transition:"all 0.2s" }}>
@@ -1517,16 +1504,28 @@ export default function Sasyra() {
   const { logs: supabaseLogs, setLogs: setSupabaseLogs } = useSupabaseLogs(userId);
 
   const [patients, setPatients] = useState(() => { try { const d = localStorage.getItem("sasyra_patients"); return d ? JSON.parse(d) : []; } catch { return []; } });
-  const [patientView, setPatientView] = useState(true);
+  const [patientView, setPatientViewState] = useState(true);
+  const setPatientView = useCallback((v) => {
+    startTransition(() => setPatientViewState(v));
+  }, []);
   const [tab, setTab] = useState("avaliacao");
   const [regiao, setRegiao] = useState("Centro-Oeste");
   const [assessmentHistory, setAssessmentHistory] = useState(() => { try { const d = localStorage.getItem("sasyra_assessments"); return d ? JSON.parse(d) : []; } catch { return []; } });
-  const [appView, setAppView] = useState("patients");
-  const [module, setModule] = useState(() => {
+  const [appView, setAppViewState] = useState("patients");
+  const setAppView = useCallback((v) => {
+    startTransition(() => setAppViewState(v));
+  }, []);
+  const [module, setModuleState] = useState(() => {
     const saved = localStorage.getItem("sasyra_module");
     return saved === "fisioterapia" ? saved : null;
   });
-  const [subModule, setSubModule] = useState(null);
+  const setModule = useCallback((v) => {
+    startTransition(() => setModuleState(v));
+  }, []);
+  const [subModule, setSubModuleState] = useState(null);
+  const setSubModule = useCallback((v) => {
+    startTransition(() => setSubModuleState(v));
+  }, []);
 
   // Sync Supabase data when hooks finish loading (replaces localStorage on first Supabase load)
   useEffect(() => {
@@ -1660,6 +1659,42 @@ export default function Sasyra() {
   const addG = () => setGonio(g=>[...g,{id:_gId++,joint:"",movement:"",value:""}]);
   const updG = (id,row) => setGonio(g=>g.map(r=>r.id===id?row:r));
   const remG = id => setGonio(g=>g.filter(r=>r.id!==id));
+
+  const REGION_TO_JOINT = {
+    "Cervical":"Coluna Cervical","Torácica":"Coluna Torácica","Lombar":"Coluna Lombar",
+    "Ombro D":"Ombro D","Ombro E":"Ombro E",
+    "Braço D":"Ombro D","Braço E":"Ombro E",
+    "Antebraço D":"Cotovelo D","Antebraço E":"Cotovelo E",
+    "Mão D":"Punho D","Mão E":"Punho E",
+    "Quadril D":"Quadril D","Quadril E":"Quadril E",
+    "Joelho D":"Joelho D","Joelho E":"Joelho E",
+    "Perna D":"Joelho D","Perna E":"Joelho E",
+    "Tornozelo D":"Tornozelo D","Tornozelo E":"Tornozelo E",
+    "Pé D":"Tornozelo D","Pé E":"Tornozelo E",
+    "Sacroilíaca":"Coluna Lombar","Glúteos":"Quadril D","Peitoral":"Ombro D",
+  };
+
+  useEffect(() => {
+    if (!queixa) return;
+    const regions = detectLocalDor(queixa);
+    if (regions.length === 0) return;
+    const currentJoints = gonio.map(g => g.joint);
+    const jointsToAdd = [...new Set(
+      regions.map(r => REGION_TO_JOINT[r]).filter(Boolean)
+    )].filter(j => !currentJoints.includes(j));
+    if (jointsToAdd.length === 0) return;
+    setGonio(g => {
+      const existing = [...g];
+      const onlyEmpty = existing.length === 1 && !existing[0].joint && !existing[0].movement && !existing[0].value;
+      if (onlyEmpty) {
+        existing[0] = { ...existing[0], joint: jointsToAdd[0] };
+        jointsToAdd.slice(1).forEach(j => existing.push({ id:_gId++, joint:j, movement:"", value:"" }));
+      } else {
+        jointsToAdd.forEach(j => existing.push({ id:_gId++, joint:j, movement:"", value:"" }));
+      }
+      return existing;
+    });
+  }, [queixa, REGION_TO_JOINT]);
 
   // Testes
   const [tests, setTests] = useState({});
@@ -1926,69 +1961,81 @@ NÃO cite nem recomende cirurgias, medicamentos, infiltrações ou qualquer proc
 
   // ── Fisioterapia sub-modules (data-driven) ──
   if (module === "fisioterapia" && subModule && subModule !== "ortopedica") {
+    // Global views must be checked BEFORE sub-module rendering, or navigation gets stuck
+    if (appView === "plans") return <ErrorBoundary><Suspense fallback={<LazyFallback />}><Plans onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} /></Suspense></ErrorBoundary>;
+    if (appView === "subscription") return <ErrorBoundary><Suspense fallback={<LazyFallback />}><SubscriptionSettings onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} /></Suspense></ErrorBoundary>;
+    if (appView === "agenda") return <ErrorBoundary><Suspense fallback={<LazyFallback />}><Agenda patients={patients} onNavigateToPatient={navigateToPatientFromAgenda} onNavigate={(v) => setAppView(v)} /></Suspense></ErrorBoundary>;
+    if (appView === "financeiro") return <ErrorBoundary><Suspense fallback={<LazyFallback />}><Financeiro onNavigateToPatient={navigateToPatientFromAgenda} onNavigate={(v) => setAppView(v)} /></Suspense></ErrorBoundary>;
+    if (appView === "integrations") return <ErrorBoundary><Suspense fallback={<LazyFallback />}><Integrations onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} /></Suspense></ErrorBoundary>;
     const mod = FISIO_MODULE_MAP[subModule];
     if (mod && mod.screen && FISIO_SCREEN_MAP[mod.screen]) {
       const Comp = FISIO_SCREEN_MAP[mod.screen];
       const filteredPatients = filterPatientsByModule(patients, subModule);
       return (
-        <SubModuleLayout title={mod.title} onBack={() => setSubModule(null)} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} onAgenda={() => setAppView("agenda")} onFinanceiro={() => setAppView("financeiro")}>
-          <Suspense fallback={<LazyFallback />}>
-            <Comp
-              students={filteredPatients}
-              allPatients={patients}
-              currentModuleId={subModule}
-              student={pt}
-              onSelectStudent={selectPatient}
-              onAddStudent={addPatient}
-              onUpdateStudent={up}
-              onDeleteStudent={deletePatient}
-              onUpdateStudentById={updatePatientById}
-              plan={plan}
-              onUpgrade={() => { setAppView("plans"); }}
-              canUseFeature={canUseFeature}
-              tryFeature={tryFeature}
-              aiRemaining={aiRemaining}
-              aiLimit={aiLimit}
-              hasExpansion={hasExpansion}
-              purchaseAIExpansion={purchaseAIExpansion}
-            />
-          </Suspense>
-        </SubModuleLayout>
+        <ErrorBoundary>
+          <SubModuleLayout title={mod.title} onBack={() => setSubModule(null)} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} onAgenda={() => setAppView("agenda")} onFinanceiro={() => setAppView("financeiro")}>
+            <Suspense fallback={<LazyFallback />}>
+              <Comp key={subModule}
+                students={filteredPatients}
+                allPatients={patients}
+                currentModuleId={subModule}
+                student={pt}
+                onSelectStudent={selectPatient}
+                onAddStudent={addPatient}
+                onUpdateStudent={up}
+                onDeleteStudent={deletePatient}
+                onUpdateStudentById={updatePatientById}
+                plan={plan}
+                onUpgrade={() => { setAppView("plans"); }}
+                canUseFeature={canUseFeature}
+                tryFeature={tryFeature}
+                aiRemaining={aiRemaining}
+                aiLimit={aiLimit}
+                hasExpansion={hasExpansion}
+                purchaseAIExpansion={purchaseAIExpansion}
+                onAgenda={() => setAppView("agenda")}
+                onFinanceiro={() => setAppView("financeiro")}
+                onSubscription={() => setAppView("subscription")}
+                planLabel={planLabel}
+              />
+            </Suspense>
+          </SubModuleLayout>
+        </ErrorBoundary>
       );
     }
   }
 
   if (appView === "agenda") return (
-    <Suspense fallback={<LazyFallback />}>
+    <ErrorBoundary><Suspense fallback={<LazyFallback />}>
       <Agenda patients={patients} onNavigateToPatient={navigateToPatientFromAgenda} onNavigate={(v) => setAppView(v)} />
-    </Suspense>
+    </Suspense></ErrorBoundary>
   );
   if (appView === "financeiro") return (
-    <Suspense fallback={<LazyFallback />}>
+    <ErrorBoundary><Suspense fallback={<LazyFallback />}>
       <Financeiro onNavigateToPatient={navigateToPatientFromAgenda} onNavigate={(v) => setAppView(v)} />
-    </Suspense>
+    </Suspense></ErrorBoundary>
   );
-  if (appView === "plans") return <Suspense fallback={<LazyFallback />}><Plans onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} /></Suspense>;
-  if (appView === "subscription") return <Suspense fallback={<LazyFallback />}><SubscriptionSettings onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} /></Suspense>;
-  if (appView === "integrations") return <Suspense fallback={<LazyFallback />}><Integrations onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} /></Suspense>;
+  if (appView === "plans") return <ErrorBoundary><Suspense fallback={<LazyFallback />}><Plans onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} /></Suspense></ErrorBoundary>;
+  if (appView === "subscription") return <ErrorBoundary><Suspense fallback={<LazyFallback />}><SubscriptionSettings onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} /></Suspense></ErrorBoundary>;
+  if (appView === "integrations") return <ErrorBoundary><Suspense fallback={<LazyFallback />}><Integrations onNavigate={(v) => v === "back" ? setAppView("patients") : setAppView(v)} /></Suspense></ErrorBoundary>;
   if (appView === "globalDashboard") return (
-    <Suspense fallback={<LazyFallback />}>
+    <ErrorBoundary><Suspense fallback={<LazyFallback />}>
       <GlobalDashboard patient={pt} onBack={() => { setAppView("patients"); setPatientView(true); }} />
-    </Suspense>
+    </Suspense></ErrorBoundary>
   );
   if (patientView) {
     const content = (
-      <>
+      <ErrorBoundary key="patientView">
         <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} onAgenda={() => setAppView("agenda")} onViewChange={(v) => setAppView(v)} user={user} assessmentHistory={assessmentHistory} onDelete={deletePatient} onDashboard={goToDashboard} plan={plan} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} noHeader={subModule === "ortopedica"} onUpdatePatientById={updatePatientById} />
         <PaywallModal open={paywallOpen} onClose={() => setPaywallOpen(false)}
           featureName={paywallFeature.name} featureDesc={paywallFeature.desc}
           onUpgrade={() => { setPaywallOpen(false); setAppView("plans"); }} />
         {renderExpressModal()}
-      </>
+      </ErrorBoundary>
     );
     if (subModule === "ortopedica") {
       const mod = FISIO_MODULE_MAP["ortopedica"];
-      return <SubModuleLayout title={mod?.title || "Fisioterapia Ortopédica"} onBack={() => setSubModule(null)} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} onAgenda={() => setAppView("agenda")} onFinanceiro={() => setAppView("financeiro")}>{content}</SubModuleLayout>;
+      return <ErrorBoundary key="ortopedica"><SubModuleLayout title={mod?.title || "Fisioterapia Ortopédica"} onBack={() => setSubModule(null)} theme={theme} onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")} onAgenda={() => setAppView("agenda")} onFinanceiro={() => setAppView("financeiro")}>{content}</SubModuleLayout></ErrorBoundary>;
     }
     return content;
   }
@@ -2030,7 +2077,7 @@ NÃO cite nem recomende cirurgias, medicamentos, infiltrações ou qualquer proc
       {/* Header */}
       <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:isMobile?"10px 12px":"0 24px", display:"flex", flexWrap:"wrap", alignItems:"center", justifyContent:"space-between", minHeight:isMobile?"auto":60, gap:isMobile?8:0 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <LogoSVG/>
+          <LogoSVG C={C} F={F}/>
           <button onClick={()=>{if(pt.id||pt.nome)saveAssessment();setPatientView(true);}} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
           <button onClick={()=>setAppView("agenda")} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Agenda">📅 Agenda</button>
           <button onClick={()=>setAppView("financeiro")} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>
@@ -2128,7 +2175,7 @@ NÃO cite nem recomende cirurgias, medicamentos, infiltrações ou qualquer proc
               assessmentHistory={assessmentHistory} saveAssessment={saveAssessment}
               loadAssessment={loadAssessment} resetAssessment={resetAssessment}
               patientId={pt.id || pt.nome}
-              tryFeature={tryFeature} plan={plan}
+              tryFeature={tryFeature} plan={plan} canUseFeature={canUseFeature}
               onUpgrade={() => { setPaywallOpen(false); setAppView("plans"); }}
               aiRemaining={aiRemaining} aiLimit={aiLimit}
               hasExpansion={hasExpansion} purchaseAIExpansion={purchaseAIExpansion}
