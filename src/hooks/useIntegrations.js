@@ -10,7 +10,10 @@ import {
 import {
   isWhatsAppConfigured,
   sendAppointmentReminder,
+  sendEvaluationReminder,
+  sendPaymentConfirmation,
   sendPatientAccessCode,
+  sendTextMessage,
 } from "../integrations/whatsApp";
 
 export function useIntegrations() {
@@ -59,7 +62,10 @@ export function useIntegrations() {
     whatsApp: {
       configured: isWhatsAppConfigured(),
       sendReminder: sendAppointmentReminder,
+      sendEvaluationReminder: sendEvaluationReminder,
+      sendPaymentConfirmation: sendPaymentConfirmation,
       sendAccessCode: sendPatientAccessCode,
+      sendTextMessage: sendTextMessage,
     },
   };
 }

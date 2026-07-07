@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useIntegrations } from "../hooks/useIntegrations";
 
 const C = {
   bg: "var(--bg)", surface: "var(--surface)", card: "var(--card)", cardAlt: "var(--cardAlt)",
@@ -179,7 +180,7 @@ function DeleteConfirmModal({ open, onClose, onConfirm, appt }) {
   );
 }
 
-function ApptDetailModal({ open, onClose, appt, patients, onStartSession, onEdit, onDelete, onCancel }) {
+function ApptDetailModal({ open, onClose, appt, patients, onStartSession, onEdit, onDelete, onCancel, onWhatsAppReminder }) {
   const [tab, setTab] = useState("view");
   const [editData, setEditData] = useState(null);
 
@@ -287,8 +288,14 @@ function ApptDetailModal({ open, onClose, appt, patients, onStartSession, onEdit
               <div style={{ fontSize: 12, color: C.textSub, marginBottom: 4 }}>
                 Tipo: <strong style={{ color: C.text }}>{appt.type === "avaliacao" ? "Avaliação" : "Sessão"}</strong>
               </div>
-              <div style={{ fontSize: 12, color: C.textSub, marginBottom: 4 }}>
-                Telefone: <strong style={{ color: C.text }}>{appt.phone || "—"}</strong>
+              <div style={{ fontSize: 12, color: C.textSub, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+                <span>Telefone: <strong style={{ color: C.text }}>{appt.phone || "—"}</strong></span>
+                {appt.phone && (
+                  <button onClick={() => onWhatsAppReminder?.(appt)}
+                    style={{ ...ghostBtn({ fontSize: 10, padding: "2px 8px" }), color: "#25D366", border: "1px solid #25D36650" }}>
+                    📲 Lembrete
+                  </button>
+                )}
               </div>
               {appt.convenio && (
                 <div style={{ fontSize: 12, color: C.textSub, marginBottom: 14 }}>
@@ -605,6 +612,7 @@ export default function Agenda({ patients, onNavigateToPatient, onNavigate }) {
     try { return JSON.parse(localStorage.getItem("sasyra_appointments") || "[]"); }
     catch { return []; }
   });
+  const { googleCalendar, whatsApp } = useIntegrations();
   const [showMiniForm, setShowMiniForm] = useState(false);
   const [miniFormData, setMiniFormData] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
@@ -692,6 +700,13 @@ export default function Agenda({ patients, onNavigateToPatient, onNavigate }) {
       }
       return [...prev, appt];
     });
+    googleCalendar.syncAppointment(appt).then(eventId => {
+      if (eventId && eventId !== appt.googleEventId) {
+        setAppointments(prev => prev.map(a =>
+          a.id === appt.id ? { ...a, googleEventId: eventId } : a
+        ));
+      }
+    }).catch(() => {});
   };
 
   const handleDrop = (apptId, newDate, newStart) => {
@@ -707,6 +722,7 @@ export default function Agenda({ patients, onNavigateToPatient, onNavigate }) {
 
   const handleEdit = (appt) => {
     setAppointments(prev => prev.map(a => a.id === appt.id ? appt : a));
+    googleCalendar.syncAppointment(appt).catch(() => {});
   };
 
   const handleCancel = (appt, reason) => {
@@ -725,6 +741,7 @@ export default function Agenda({ patients, onNavigateToPatient, onNavigate }) {
     } else if (action === "cancel") {
       setAppointments(prev => prev.map(a => a.id === deleteTarget?.id ? { ...a, status: "cancelado_paciente" } : a));
     }
+    googleCalendar.deleteEvent(deleteTarget?.googleEventId).catch(() => {});
     setShowDeleteConfirm(false);
     setDeleteTarget(null);
   };
@@ -733,6 +750,12 @@ export default function Agenda({ patients, onNavigateToPatient, onNavigate }) {
     setDeleteTarget(appt);
     setShowDeleteConfirm(true);
   };
+
+  const handleWhatsAppReminder = useCallback((appt) => {
+    if (!appt?.phone) return;
+    whatsApp.sendReminder(appt.phone, appt.patientName, appt.date, appt.start, "")
+      .catch(() => {});
+  }, [whatsApp]);
 
   const blockedAppts = useMemo(() =>
     appointments.filter(a => a.status === "bloqueado"),
@@ -913,6 +936,7 @@ export default function Agenda({ patients, onNavigateToPatient, onNavigate }) {
           onEdit={handleEdit}
           onDelete={handleDeleteRequest}
           onCancel={handleCancel}
+          onWhatsAppReminder={handleWhatsAppReminder}
         />
       )}
 

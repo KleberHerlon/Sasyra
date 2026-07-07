@@ -82,9 +82,10 @@ function toGoogleEvent(appointment) {
   const date = appointment.date;
   const startTime = appointment.start_time || appointment.start || "08:00";
   const endTime = appointment.end_time || appointment.end || "09:00";
+  const patientName = appointment.patient_name || appointment.patientName || "Paciente";
   return {
-    summary: `${appointment.patient_name} — ${appointment.type === "avaliacao" ? "Avaliação" : appointment.type === "sessao" ? "Sessão" : "Bloqueio"}`,
-    description: `Paciente: ${appointment.patient_name}\nConvênio: ${appointment.convenio || "—"}\nTelefone: ${appointment.phone || "—"}`,
+    summary: `${patientName} — ${appointment.type === "avaliacao" ? "Avaliação" : appointment.type === "sessao" ? "Sessão" : "Bloqueio"}`,
+    description: `Paciente: ${patientName}\nConvênio: ${appointment.convenio || "—"}\nTelefone: ${appointment.phone || "—"}`,
     start: { dateTime: `${date}T${startTime}:00`, timeZone: "America/Sao_Paulo" },
     end: { dateTime: `${date}T${endTime}:00`, timeZone: "America/Sao_Paulo" },
     reminders: {
@@ -101,11 +102,13 @@ export async function syncAppointmentToGoogle(appointment) {
   if (!isGoogleCalendarConnected()) return null;
   const event = toGoogleEvent(appointment);
 
+  let result;
   if (appointment.googleEventId) {
-    return request("PUT", `/calendars/primary/events/${appointment.googleEventId}`, event);
+    result = await request("PUT", `/calendars/primary/events/${appointment.googleEventId}`, event);
+  } else {
+    result = await request("POST", "/calendars/primary/events", event);
   }
-  const result = await request("POST", "/calendars/primary/events", event);
-  return result.id; // googleEventId para persistir
+  return result?.id || null;
 }
 
 export async function deleteGoogleEvent(googleEventId) {
