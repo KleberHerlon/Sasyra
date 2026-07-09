@@ -13,6 +13,7 @@ import LogoSVG from "../components/LogoSVG";
 import StopwatchField from "../components/StopwatchField";
 import DermatomeMap from "../components/DermatomeMap";
 import ReflexMatrix from "../components/ReflexMatrix";
+import BrainMap from "../components/BrainMap";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -476,6 +477,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
   const [tempoIctus, setTempoIctus] = useState("");
   const [progressaoLesao, setProgressaoLesao] = useState("");
   const [reacoesPosturais, setReacoesPosturais] = useState([]);
+  const [brainMap, setBrainMap] = useState([]);
   const [orteses, setOrteses] = useState([]);
   const [marchaIndependente, setMarchaIndependente] = useState("");
   const [metasCurtoPrazo, setMetasCurtoPrazo] = useState([]);
@@ -595,6 +597,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
       if (saved.logs) enhancer.setLogs(saved.logs);
       if (saved.redFlags) enhancer.setRedFlags(saved.redFlags);
       if (saved.aiRes) enhancer.setAiRes(saved.aiRes);
+      setBrainMap(saved.brainMap || []);
     } else {
       setExpandedSections(["identificacao"]);
     }
@@ -618,6 +621,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
       tisScores, tisResult, tugSegundos,
       reflexosMatriz, sensibilidadeMap,
       tempoIctus, progressaoLesao, reacoesPosturais,
+      brainMap,
       orteses, marchaIndependente,
       metasCurtoPrazo, metasLongoPrazo, planoAcao,
     });
@@ -1093,6 +1097,11 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
               <span style={lbl()}>Reações posturais</span>
               <TagSelect options={["Endireitamento", "Equilíbrio", "Proteção", "Anfíbia", "Ausentes"]} value={reacoesPosturais} onChange={setReacoesPosturais} activeColor={C.purple} />
             </div>
+          </CollapsibleSection>
+
+          {/* 🧠 Mapeamento Cerebral */}
+          <CollapsibleSection title="Mapeamento Cerebral" icon="🗺️" expanded={expandedSections.includes("brain")} onToggle={()=>toggleSection("brain")}>
+            <BrainMap value={brainMap} onChange={setBrainMap} colors={{ ...C, accent: C.purple }} />
           </CollapsibleSection>
 
           {/* 🔬 Exame Físico */}
