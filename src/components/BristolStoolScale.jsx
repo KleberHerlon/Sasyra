@@ -43,7 +43,7 @@ export default function BristolStoolScale({ value, onChange, colors }) {
       </div>
 
       {/* Imagem interativa com zonas clicáveis sobrepostas */}
-      <div style={{ position: "relative", marginBottom: 10, background: "#fff", borderRadius: 8, border: `1px solid ${border}`, overflow: "hidden" }}>
+      <div style={{ position: "relative", marginBottom: 10, background: "#fff", borderRadius: 8, border: `1px solid ${border}`, overflow: "hidden", maxWidth: 320, marginLeft: "auto", marginRight: "auto" }}>
         <img
           src="/bristol-stool-scale.png"
           alt="Escala de Bristol"
@@ -103,21 +103,28 @@ export default function BristolStoolScale({ value, onChange, colors }) {
       </div>
 
       {/* Legenda de seleção + detalhe */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {BRISTOL_TYPES.map((t) => {
           const active = value === t.type;
           const typeColor = t.type <= 2 ? red : t.type <= 4 ? green : red;
           return (
             <button key={t.type} onClick={() => onChange(active ? null : t.type)}
               style={{
-                background: active ? `${typeColor}18` : card,
-                border: `1px solid ${active ? typeColor : border}`,
-                color: active ? typeColor : textMuted,
-                borderRadius: 6, padding: "3px 10px", fontSize: 10,
+                display: "flex", alignItems: "center", gap: 10,
+                background: active ? `${typeColor}18` : "transparent",
+                border: `1px solid ${active ? typeColor : "transparent"}`,
+                color: active ? typeColor : text,
+                borderRadius: 6, padding: "5px 10px", fontSize: 11,
                 fontWeight: active ? 700 : 400,
                 cursor: "pointer", fontFamily: font, transition: "all 0.12s",
+                textAlign: "left", lineHeight: 1.4,
               }}>
-              {active ? `✓ ${t.label}: ${t.desc}` : `${t.label}`}
+              <span style={{ minWidth: 18, fontWeight: 800, fontSize: 11, color: active ? typeColor : textMuted }}>
+                {active ? "✓" : t.type}
+              </span>
+              <span style={{ fontWeight: 600 }}>{t.label}:</span>
+              <span style={{ color: active ? typeColor : textMuted }}>{t.desc}</span>
+              <span style={{ color: textMuted, fontSize: 10, marginLeft: "auto", opacity: 0.7 }}>{t.detail}</span>
             </button>
           );
         })}
