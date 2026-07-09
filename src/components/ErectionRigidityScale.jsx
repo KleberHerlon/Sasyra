@@ -8,10 +8,10 @@ const EHS_STAGES = [
 ];
 
 const TYPE_ZONES = [
-  { y: 0.6,  h: 22.9 },   // E0
-  { y: 24.7, h: 22.9 },   // E1
-  { y: 48.8, h: 23.5 },   // E2
-  { y: 73.5, h: 25.9 },   // E3
+  { y: 0,  h: 25 },   // E0
+  { y: 25, h: 25 },   // E1
+  { y: 50, h: 25 },   // E2
+  { y: 75, h: 25 },   // E3
 ];
 
 export default function ErectionRigidityScale({ value, onChange, colors }) {
@@ -37,9 +37,9 @@ export default function ErectionRigidityScale({ value, onChange, colors }) {
 
       <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
         {/* Imagem à esquerda */}
-        <div style={{ position: "relative", background: "#fff", borderRadius: 8, border: `1px solid ${border}`, overflow: "hidden", width: 100, flexShrink: 0 }}>
+        <div style={{ position: "relative", background: "#fff", borderRadius: 8, border: `1px solid ${border}`, overflow: "hidden", width: 110, flexShrink: 0 }}>
           <img
-            src="/ehs-erection-scale.svg"
+            src="/ehs-erection-scale.png"
             alt="Escala de Rigidez da Ereção"
             style={{ width: "100%", height: "auto", display: "block" }}
           />
