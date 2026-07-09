@@ -10,7 +10,6 @@ const BRISTOL_TYPES = [
   { type: 7, label: "Tipo 7", desc: "Líquido, sem peças sólidas", detail: "Diarreia franca" },
 ];
 
-const CHART_HEIGHT = 100; // % da altura da imagem que o chart ocupa
 // Posições Y aproximadas de cada tipo na imagem da escala de Bristol
 const TYPE_ZONES = [
   { y: 2,  h: 10 },  // Tipo 1
@@ -38,105 +37,107 @@ export default function BristolStoolScale({ value, onChange, colors }) {
 
   return (
     <div style={{ background: surface, border: `1px solid ${border}`, borderRadius: 10, padding: "14px 16px" }}>
-      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: textMuted, marginBottom: 10 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: textMuted, marginBottom: 10 }}>
         Escala de Bristol — Consistência das Fezes
       </div>
 
-      {/* Imagem interativa com zonas clicáveis sobrepostas */}
-      <div style={{ position: "relative", marginBottom: 10, background: "#fff", borderRadius: 8, border: `1px solid ${border}`, overflow: "hidden", maxWidth: 320, marginLeft: "auto", marginRight: "auto" }}>
-        <img
-          src="/bristol-stool-scale.png"
-          alt="Escala de Bristol"
-          style={{ width: "100%", height: "auto", display: "block" }}
-        />
-        {/* Zonas clicáveis sobrepostas — uma para cada tipo */}
-        {TYPE_ZONES.map((zone, i) => {
-          const t = BRISTOL_TYPES[i];
-          const active = value === t.type;
-          const isHovered = hovered === t.type;
-          const zoneColor = t.type <= 2 ? red : t.type <= 4 ? green : red;
-          return (
-            <div key={t.type}
-              onClick={() => onChange(active ? null : t.type)}
-              onMouseEnter={() => setHovered(t.type)}
-              onMouseLeave={() => setHovered(null)}
-              style={{
-                position: "absolute",
-                left: 0, right: 0,
-                top: `${zone.y}%`,
-                height: `${zone.h}%`,
-                cursor: "pointer",
-                background: active
-                  ? `${zoneColor}28`
-                  : isHovered
-                    ? `${zoneColor}10`
-                    : "transparent",
-                border: active
-                  ? `2px solid ${zoneColor}`
-                  : isHovered
-                    ? `1px dashed ${zoneColor}50`
-                    : "1px solid transparent",
-                transition: "all 0.12s",
-                display: "flex", alignItems: "center", justifyContent: "flex-end",
-                paddingRight: 12,
-                boxSizing: "border-box",
-              }}>
-              {active && (
-                <span style={{
-                  background: zoneColor,
-                  color: "#fff",
-                  borderRadius: "50%",
-                  width: 22, height: 22,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 11, fontWeight: 800,
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
-                }}>✓</span>
-              )}
-              {isHovered && !active && (
-                <span style={{ fontSize: 9, color: zoneColor, fontWeight: 700, opacity: 0.8 }}>
-                  {t.desc}
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Legenda de seleção + detalhe */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {BRISTOL_TYPES.map((t) => {
-          const active = value === t.type;
-          const typeColor = t.type <= 2 ? red : t.type <= 4 ? green : red;
-          return (
-            <button key={t.type} onClick={() => onChange(active ? null : t.type)}
-              style={{
-                display: "flex", alignItems: "center", gap: 10,
-                background: active ? `${typeColor}18` : "transparent",
-                border: `1px solid ${active ? typeColor : "transparent"}`,
-                color: active ? typeColor : text,
-                borderRadius: 6, padding: "5px 10px", fontSize: 11,
-                fontWeight: active ? 700 : 400,
-                cursor: "pointer", fontFamily: font, transition: "all 0.12s",
-                textAlign: "left", lineHeight: 1.4,
-              }}>
-              <span style={{ minWidth: 18, fontWeight: 800, fontSize: 11, color: active ? typeColor : textMuted }}>
-                {active ? "✓" : t.type}
-              </span>
-              <span style={{ fontWeight: 600 }}>{t.label}:</span>
-              <span style={{ color: active ? typeColor : textMuted }}>{t.desc}</span>
-              <span style={{ color: textMuted, fontSize: 10, marginLeft: "auto", opacity: 0.7 }}>{t.detail}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {value && (
-        <div style={{ marginTop: 8, fontSize: 10, color: textMuted, fontFamily: font }}>
-          Selecionado: <strong style={{ color: value <= 2 ? red : value <= 4 ? green : red }}>
-            Tipo {value} — {BRISTOL_TYPES[value - 1]?.desc}
-          </strong> — {BRISTOL_TYPES[value - 1]?.detail}
+      {/* Layout lado a lado: imagem à esquerda, descrições à direita */}
+      <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+        {/* Imagem interativa com zonas clicáveis sobrepostas */}
+        <div style={{ position: "relative", background: "#fff", borderRadius: 8, border: `1px solid ${border}`, overflow: "hidden", width: 100, flexShrink: 0 }}>
+          <img
+            src="/bristol-stool-scale.png"
+            alt="Escala de Bristol"
+            style={{ width: "100%", height: "auto", display: "block" }}
+          />
+          {/* Zonas clicáveis sobrepostas — uma para cada tipo */}
+          {TYPE_ZONES.map((zone, i) => {
+            const t = BRISTOL_TYPES[i];
+            const active = value === t.type;
+            const isHovered = hovered === t.type;
+            const zoneColor = t.type <= 2 ? red : t.type <= 4 ? green : red;
+            return (
+              <div key={t.type}
+                onClick={() => onChange(active ? null : t.type)}
+                onMouseEnter={() => setHovered(t.type)}
+                onMouseLeave={() => setHovered(null)}
+                style={{
+                  position: "absolute",
+                  left: 0, right: 0,
+                  top: `${zone.y}%`,
+                  height: `${zone.h}%`,
+                  cursor: "pointer",
+                  background: active
+                    ? `${zoneColor}28`
+                    : isHovered
+                      ? `${zoneColor}10`
+                      : "transparent",
+                  border: active
+                    ? `2px solid ${zoneColor}`
+                    : isHovered
+                      ? `1px dashed ${zoneColor}50`
+                      : "1px solid transparent",
+                  transition: "all 0.12s",
+                  display: "flex", alignItems: "center", justifyContent: "flex-end",
+                  paddingRight: 8,
+                  boxSizing: "border-box",
+                }}>
+                {active && (
+                  <span style={{
+                    background: zoneColor,
+                    color: "#fff",
+                    borderRadius: "50%",
+                    width: 18, height: 18,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 10, fontWeight: 800,
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+                  }}>✓</span>
+                )}
+                {isHovered && !active && (
+                  <span style={{ fontSize: 8, color: zoneColor, fontWeight: 700, opacity: 0.8 }}>
+                    {t.desc}
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
-      )}
+
+        {/* Legenda de seleção + detalhe */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
+          {BRISTOL_TYPES.map((t) => {
+            const active = value === t.type;
+            const typeColor = t.type <= 2 ? red : t.type <= 4 ? green : red;
+            return (
+              <button key={t.type} onClick={() => onChange(active ? null : t.type)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  background: active ? `${typeColor}18` : "transparent",
+                  border: `1px solid ${active ? typeColor : "transparent"}`,
+                  color: active ? typeColor : text,
+                  borderRadius: 6, padding: "6px 10px", fontSize: 12,
+                  fontWeight: active ? 700 : 400,
+                  cursor: "pointer", fontFamily: font, transition: "all 0.12s",
+                  textAlign: "left", lineHeight: 1.4,
+                }}>
+                <span style={{ minWidth: 18, fontWeight: 800, fontSize: 12, color: active ? typeColor : textMuted }}>
+                  {active ? "✓" : t.type}
+                </span>
+                <span style={{ fontWeight: 600 }}>{t.label}:</span>
+                <span style={{ color: active ? typeColor : textMuted }}>{t.desc}</span>
+                <span style={{ color: textMuted, fontSize: 11, marginLeft: "auto", opacity: 0.7 }}>{t.detail}</span>
+              </button>
+            );
+          })}
+          {value && (
+            <div style={{ marginTop: 4, fontSize: 11, color: textMuted, fontFamily: font }}>
+              Selecionado: <strong style={{ color: value <= 2 ? red : value <= 4 ? green : red }}>
+                Tipo {value} — {BRISTOL_TYPES[value - 1]?.desc}
+              </strong> — {BRISTOL_TYPES[value - 1]?.detail}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
