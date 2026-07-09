@@ -253,11 +253,12 @@ const PROCEDIMENTOS_CATEGORIES = [
   { category: "Abordagens Cognitivo-Comportamentais", items: ["PNE – Educação em Dor", "Graded Exposure", "CFT – Terapia Funcional Cognitiva"] },
 ];
 
-function ProcedimentosCategorizados({ value, onChange, colors }) {
+function ProcedimentosCategorizados({ value, onChange, colors, categories }) {
+  const cats = categories || PROCEDIMENTOS_CATEGORIES;
   const [expanded, setExpanded] = useState([]);
   return (
     <div>
-      {PROCEDIMENTOS_CATEGORIES.map(cat => {
+      {cats.map(cat => {
         const open = expanded.includes(cat.category);
         return (
           <div key={cat.category} style={{ marginBottom: 6 }}>
@@ -279,20 +280,21 @@ function ProcedimentosCategorizados({ value, onChange, colors }) {
   );
 }
 
-export function SessionLogSection({ logs, addLog, colors }) {
-  const [showForm, setShowForm] = useState(false);
-  const [f, setF] = useState({ data: new Date().toISOString().slice(0, 10), eva: 0, procedimentos: [], resposta: "", evolucao: "", metas: "", adms: [], mrcs: [] });
+export function SessionLogSection({ logs, addLog, colors, sessionLabel = "Sessão", proceduresCategories, specialty, defaultExpanded, pain, setPain }) {
+  const [showForm, setShowForm] = useState(defaultExpanded || false);
+  const neuroBase = specialty === "neuro" ? { fadiga: 0, tonusHoje: "", queixaDia: "", toleranciaOrtostatica: "", fadigaCentral: [], pa: "", heartRate: "", spo2: "", masSession: {} } : {};
+  const [f, setF] = useState({ data: new Date().toISOString().slice(0, 10), eva: 0, procedimentos: [], resposta: "", evolucao: "", metas: "", adms: [], mrcs: [], ...neuroBase });
 
   const handleSave = () => {
     addLog({ ...f });
-    setF({ data: new Date().toISOString().slice(0, 10), eva: 0, procedimentos: [], resposta: "", evolucao: "", metas: "", adms: [], mrcs: [] });
+    setF({ data: new Date().toISOString().slice(0, 10), eva: 0, procedimentos: [], resposta: "", evolucao: "", metas: "", adms: [], mrcs: [], ...neuroBase });
     setShowForm(false);
   };
 
   return (
     <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 14, padding: "20px 22px", marginBottom: 14 }}>
       <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 700, color: colors.text, display: "flex", alignItems: "center", gap: 8 }}>
-        <span>📅</span> Registro de Sessões
+        <span>📅</span> {sessionLabel === "Evolução" ? "Registro de Evoluções" : "Registro de Sessões"}
       </h3>
 
       {!showForm ? (
@@ -302,7 +304,7 @@ export function SessionLogSection({ logs, addLog, colors }) {
             borderRadius: 10, padding: "10px 20px", fontSize: 13, fontWeight: 700,
             cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif",
           }}>
-          + Nova Sessão
+          + Nova {sessionLabel}
         </button>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -322,9 +324,105 @@ export function SessionLogSection({ logs, addLog, colors }) {
               </select>
             </div>
           </div>
+
+          {/* ── Neuro: Status de Entrada + Sinais Vitais ── */}
+          {specialty === "neuro" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, background: colors.card, borderRadius: 10, padding: "12px 14px", border: `1px solid ${colors.border}` }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: colors.textMuted, letterSpacing: "0.06em", textTransform: "uppercase" }}>🧠 Status de Entrada — Avaliação Neurológica</div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div>
+                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: colors.textSub, marginBottom: 5, display: "block" }}>Flutuação diária de tônus</span>
+                  <select value={f.tonusHoje} onChange={e => setF(p => ({ ...p, tonusHoje: e.target.value }))}
+                    style={{ width: "100%", boxSizing: "border-box", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, color: colors.text, fontSize: 12, padding: "9px 12px", outline: "none", cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif" }}>
+                    <option value="">Selecionar…</option>
+                    {["Normal", "Aumentado", "Reduzido", "Variável"].map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: colors.textSub, marginBottom: 5, display: "block" }}>Tolerância ortostática</span>
+                  <select value={f.toleranciaOrtostatica} onChange={e => setF(p => ({ ...p, toleranciaOrtostatica: e.target.value }))}
+                    style={{ width: "100%", boxSizing: "border-box", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, color: colors.text, fontSize: 12, padding: "9px 12px", outline: "none", cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif" }}>
+                    <option value="">Selecionar…</option>
+                    {["Boa", "Regular", "Limitada", "Intolerante"].map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: colors.textSub, marginBottom: 5, display: "block" }}>Nível de fadiga — {f.fadiga || 0}/10</span>
+                <input type="range" min={0} max={10} value={f.fadiga || 0} onChange={e => setF(p => ({ ...p, fadiga: Number(e.target.value) }))}
+                  style={{ width: "100%", accentColor: (f.fadiga || 0) <= 3 ? "#4ADE80" : (f.fadiga || 0) <= 6 ? "#FBBF24" : "#F87171", height: 6, borderRadius: 3 }} />
+              </div>
+
+              <div>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: colors.textSub, marginBottom: 5, display: "block" }}>Queixa do dia</span>
+                <input value={f.queixaDia} onChange={e => setF(p => ({ ...p, queixaDia: e.target.value }))}
+                  placeholder="Relato do paciente sobre o dia..."
+                  style={{ width: "100%", boxSizing: "border-box", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, color: colors.text, fontSize: 13, padding: "10px 12px", outline: "none", fontFamily: colors.font || "'Inter',sans-serif" }} />
+              </div>
+
+              <div>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: colors.textSub, marginBottom: 5, display: "block" }}>Sinais de fadiga central</span>
+                <TagSelect options={["Bocejo", "Dormência", "Irritabilidade", "Perda de atenção", "Cefaleia", "Nenhum"]} value={f.fadigaCentral} onChange={v => setF(p => ({ ...p, fadigaCentral: v }))} colors={colors} />
+              </div>
+
+              {/* Vitais */}
+              <div style={{ marginTop: 6 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: colors.textMuted, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>💓 Sinais Vitais</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                  {[
+                    { k: "pa", label: "PA (mmHg)", placeholder: "120x80", alert: (v) => { if (!v) return null; const [s, d] = (v || "").split(/[xX/]/).map(Number); if (!s || !d) return null; if (s < 90 || d < 60) return { color: "#F87171", text: "Hipotensão" }; if (s > 140 || d > 90) return { color: "#F87171", text: "Hipertensão" }; return s > 130 || d > 85 ? { color: "#FBBF24", text: "Elevado" } : null; } },
+                    { k: "heartRate", label: "FC (bpm)", placeholder: "72", type: "number", alert: (v) => { const n = Number(v); if (!n) return null; if (n < 50 || n > 120) return { color: "#F87171", text: "Alerta" }; if (n < 60 || n > 100) return { color: "#FBBF24", text: "Atenção" }; return null; } },
+                    { k: "spo2", label: "SpO₂ (%)", placeholder: "98", type: "number", alert: (v) => { const n = Number(v); if (!n) return null; if (n < 90) return { color: "#F87171", text: "Hipoxemia" }; if (n < 95) return { color: "#FBBF24", text: "Baixo" }; return null; } },
+                  ].map(({ k, label, placeholder, type, alert: al }) => {
+                    const a = al(f[k]);
+                    return (
+                      <div key={k}>
+                        <span style={{ fontSize: 9, fontWeight: 700, color: colors.textSub, marginBottom: 3, display: "block" }}>{label}</span>
+                        <input type={type || "text"} value={f[k] ?? ""} onChange={e => setF(p => ({ ...p, [k]: e.target.value }))} placeholder={placeholder}
+                          style={{ width: "100%", boxSizing: "border-box", background: colors.surface, border: `1.5px solid ${a ? a.color : colors.border}`, borderRadius: 10, color: colors.text, fontSize: 12, padding: "7px 8px", outline: "none", fontFamily: colors.font || "'Inter',sans-serif", textAlign: "center" }} />
+                        {a && <span style={{ fontSize: 8, fontWeight: 700, color: a.color, display: "block", marginTop: 2 }}>{a.text}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ⚡ Dor e Funcionalidade — colapsado */}
+          {specialty === "neuro" && pain && setPain && (
+            <div style={{ background: colors.card, borderRadius: 10, border: `1px solid ${colors.border}` }}>
+              <div onClick={() => setF(p => ({ ...p, _showPain: !p._showPain }))}
+                style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "10px 14px", userSelect: "none" }}>
+                <span style={{ fontSize: 10, color: colors.textMuted, transition: "transform 0.15s", transform: f._showPain ? "rotate(90deg)" : "rotate(0deg)" }}>▶</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: colors.textMuted, letterSpacing: "0.06em", textTransform: "uppercase", flex: 1 }}>⚡ Dor e Funcionalidade</span>
+              </div>
+              {f._showPain && (
+                <div style={{ padding: "0 14px 12px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <EvaSlider label="EVA — Movimento" value={pain.evaMov} onChange={(v) => setPain(p => ({ ...p, evaMov: v }))} colors={colors} />
+                    <EvaSlider label="EVA — Repouso" value={pain.evaRep} onChange={(v) => setPain(p => ({ ...p, evaRep: v }))} colors={colors} />
+                  </div>
+                  <div style={{ marginTop: 8 }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: colors.textSub, marginBottom: 4, display: "block" }}>Localização da dor</span>
+                    <TagSelect options={["Cervical", "Torácica", "Lombar", "Ombro", "Braço", "Cotovelo", "Antebraço", "Punho/Mão", "Quadril", "Joelho", "Perna", "Tornozelo/Pé", "Cabeça", "Abdome"]}
+                      value={pain.localDor} onChange={(v) => setPain(p => ({ ...p, localDor: v }))} colors={colors} />
+                  </div>
+                  <div style={{ marginTop: 8 }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: colors.textSub, marginBottom: 4, display: "block" }}>Caráter</span>
+                    <TagSelect options={["Latejante", "Queimação", "Pontada", "Pressão", "Facada", "Formigamento", "Peso", "Cãibra", "Choques"]}
+                      value={pain.caraterDor} onChange={(v) => setPain(p => ({ ...p, caraterDor: v }))} colors={colors} />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div>
             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: colors.textSub, marginBottom: 5, display: "block" }}>Procedimentos realizados</span>
-            <ProcedimentosCategorizados value={f.procedimentos} onChange={(v) => setF(p => ({ ...p, procedimentos: v }))} colors={colors} />
+            <ProcedimentosCategorizados value={f.procedimentos} onChange={(v) => setF(p => ({ ...p, procedimentos: v }))} colors={colors} categories={proceduresCategories} />
           </div>
           <div>
             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: colors.textSub, marginBottom: 5, display: "block" }}>Evolução / Observação</span>
@@ -338,7 +436,7 @@ export function SessionLogSection({ logs, addLog, colors }) {
               placeholder="Evolução clínica, resposta ao tratamento..." />
           </div>
           <div>
-            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: colors.textSub, marginBottom: 5, display: "block" }}>Meta para próxima sessão</span>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: colors.textSub, marginBottom: 5, display: "block" }}>Meta para próxima {sessionLabel.toLowerCase()}</span>
             <input value={f.metas} onChange={(e) => setF(p => ({ ...p, metas: e.target.value }))}
               style={{
                 width: "100%", boxSizing: "border-box", background: colors.surface,
@@ -348,6 +446,7 @@ export function SessionLogSection({ logs, addLog, colors }) {
               }}
               placeholder="Critérios de progressão, nova carga..." />
           </div>
+
           <div style={{ display: "flex", gap: 14, marginTop: 4, marginBottom: 6 }}>
             <span style={{ fontSize: 10, fontWeight: 700, color: colors.textMuted, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer", userSelect: "none" }}
               onClick={() => setF(p => ({ ...p, _showAdm: !p._showAdm }))}>
@@ -357,6 +456,12 @@ export function SessionLogSection({ logs, addLog, colors }) {
               onClick={() => setF(p => ({ ...p, _showMrc: !p._showMrc }))}>
               💪 MRC {f._showMrc ? "▲" : "▼"}
             </span>
+            {specialty === "neuro" && (
+              <span style={{ fontSize: 10, fontWeight: 700, color: colors.textMuted, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer", userSelect: "none" }}
+                onClick={() => setF(p => ({ ...p, _showMas: !p._showMas }))}>
+                🦵 MAS {f._showMas ? "▲" : "▼"}
+              </span>
+            )}
           </div>
           {f._showAdm && (
             <div style={{ background: colors.card, borderRadius: 10, padding: "10px 12px" }}>
@@ -386,13 +491,35 @@ export function SessionLogSection({ logs, addLog, colors }) {
               </button>
             </div>
           )}
+          {f._showMas && (
+            <div style={{ background: colors.card, borderRadius: 10, padding: "10px 12px" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: colors.textMuted, marginBottom: 6 }}>MAS — Espasticidade (0-4) — Abreviado</div>
+              {[
+                { id: "flexoresCotoveloD", label: "Flexores cotovelo D" },
+                { id: "flexoresCotoveloE", label: "Flexores cotovelo E" },
+                { id: "extensoresJoelhoD", label: "Extensores joelho D" },
+                { id: "extensoresJoelhoE", label: "Extensores joelho E" },
+                { id: "flexoresPlantaresD", label: "Flexores plantares D" },
+                { id: "flexoresPlantaresE", label: "Flexores plantares E" },
+              ].map(q => (
+                <div key={q.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: 10, color: colors.textSub, flex: 1 }}>{q.label}</span>
+                  <select value={(f.masSession || {})[q.id] || ""} onChange={e => setF(p => ({ ...p, masSession: { ...(p.masSession || {}), [q.id]: e.target.value } }))}
+                    style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 11, padding: "4px 8px", outline: "none", cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif", width: 60 }}>
+                    <option value="">—</option>
+                    {[0,1,2,3,4].map(g => <option key={g} value={String(g)}>{g}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
           <div style={{ display: "flex", gap: 8 }}>
             <button type="button" onClick={handleSave}
               style={{
                 background: colors.accent || colors.green, color: "#fff", border: "none",
                 borderRadius: 10, padding: "10px 20px", fontSize: 13, fontWeight: 700,
                 cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif",
-              }}>Salvar sessão</button>
+              }}>Salvar {sessionLabel.toLowerCase()}</button>
             <button type="button" onClick={() => setShowForm(false)}
               style={{
                 background: "transparent", border: `1px solid ${colors.border}`,
@@ -427,7 +554,7 @@ export function SessionLogSection({ logs, addLog, colors }) {
       {logs.length > 0 && (
         <div style={{ marginTop: 16 }}>
           <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: colors.textSub, marginBottom: 8, display: "block" }}>
-            Histórico — {logs.length} sessão(ões)
+            Histórico — {logs.length} {sessionLabel.toLowerCase()}(ões)
           </span>
           {logs.map((log) => (
             <div key={log.id} style={{
@@ -436,7 +563,7 @@ export function SessionLogSection({ logs, addLog, colors }) {
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: colors.accent || colors.green, background: `${colors.accent || colors.green}0C`, padding: "2px 8px", borderRadius: 6 }}>Sessão</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: colors.accent || colors.green, background: `${colors.accent || colors.green}0C`, padding: "2px 8px", borderRadius: 6 }}>{sessionLabel}</span>
                   <span style={{ fontSize: 11, color: colors.textMuted }}>{log.data || log.date}</span>
                 </div>
                 <span style={{ fontSize: 18, fontWeight: 900, color: STYLE.evaColor(log.eva), lineHeight: 1 }}>{log.eva}<span style={{ fontSize: 9, fontWeight: 400, color: colors.textMuted }}>/10</span></span>
@@ -455,6 +582,25 @@ export function SessionLogSection({ logs, addLog, colors }) {
                 <div style={{ marginTop: 6, display: "flex", gap: 8, fontSize: 10, color: colors.textMuted }}>
                   {log.adms?.length > 0 && <span>📐 {log.adms.filter(a => a.value).map(a => `${a.joint} ${a.movement}:${a.value}°`).join(", ")}</span>}
                   {log.mrcs?.length > 0 && <span>💪 {log.mrcs.filter(m => m.value).map(m => `${m.muscle}:${m.value}`).join(", ")}</span>}
+                </div>
+              )}
+              {/* ── Neuro chips ── */}
+              {(log.fadiga || log.tonusHoje || log.pa || log.heartRate || log.spo2 || (log.masSession && Object.values(log.masSession).some(v=>v))) && (
+                <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 4, fontSize: 9 }}>
+                  {log.fadiga > 0 && <span style={{ color: log.fadiga <= 3 ? "#4ADE80" : log.fadiga <= 6 ? "#FBBF24" : "#F87171", background: `${log.fadiga <= 3 ? "#4ADE80" : log.fadiga <= 6 ? "#FBBF24" : "#F87171"}15`, borderRadius: 4, padding: "2px 6px", fontWeight: 700 }}>⚡ Fadiga {log.fadiga}/10</span>}
+                  {log.tonusHoje && <span style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 4, padding: "2px 6px", color: colors.textMuted }}>🦵 {log.tonusHoje}</span>}
+                  {log.toleranciaOrtostatica && <span style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 4, padding: "2px 6px", color: colors.textMuted }}>↕ {log.toleranciaOrtostatica}</span>}
+                  {log.pa && <span style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 4, padding: "2px 6px", color: colors.textMuted }}>💓 {log.pa}</span>}
+                  {log.heartRate && <span style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 4, padding: "2px 6px", color: colors.textMuted }}>{log.heartRate} bpm</span>}
+                  {log.spo2 && <span style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: 4, padding: "2px 6px", color: colors.textMuted }}>SpO₂ {log.spo2}%</span>}
+                  {log.masSession && Object.values(log.masSession).filter(v=>v).length > 0 && (
+                    <span style={{ background: `${colors.accent || "#4ADE80"}15`, border: `1px solid ${(colors.accent || "#4ADE80")}40`, borderRadius: 4, padding: "2px 6px", color: colors.accent || "#4ADE80", fontWeight: 700 }}>
+                      🦵 MAS {Object.values(log.masSession).filter(v=>v).reduce((a,b)=>a+Number(b),0)}
+                    </span>
+                  )}
+                  {log.fadigaCentral?.length > 0 && log.fadigaCentral.filter(f=>f!=="Nenhum").length > 0 && (
+                    <span style={{ background: "#FBBF2415", border: "1px solid #FBBF2440", borderRadius: 4, padding: "2px 6px", color: "#FBBF24", fontWeight: 700 }}>😵 {log.fadigaCentral.filter(f=>f!=="Nenhum").length} fadiga(s)</span>
+                  )}
                 </div>
               )}
             </div>

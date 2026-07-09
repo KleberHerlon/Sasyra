@@ -798,10 +798,22 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
               </div>
             )}
 
-            <div style={{marginBottom:12}}>
-              <span style={{...lbl({color:C.red})}}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</span>
-              <TagSelect options={mergedRedFlags} value={enhancer.redFlags} onChange={enhancer.setRedFlags} activeColor={C.red} />
-              {enhancer.redFlags.length > 0 && <div style={{fontSize:11,color:C.red,marginTop:4}}>⚠ {enhancer.redFlags.length} red flag(s) selecionada(s)</div>}
+            <div style={{ background:C.redBg, border:`1px solid ${C.red}40`, borderRadius:8, padding:"8px 12px", marginTop:12, marginBottom:10 }}>
+              <div style={{ fontSize:10, fontWeight:800, color:C.red, letterSpacing:"0.1em", marginBottom:6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                {mergedRedFlags.map(f => {
+                  const active = enhancer.redFlags.includes(f);
+                  return (
+                    <button key={f} onClick={() => enhancer.setRedFlags(active ? enhancer.redFlags.filter(x=>x!==f) : [...enhancer.redFlags, f])}
+                      style={{ fontSize:11, color:active?"#fff":C.red, background:active?C.red:C.redBg, border:`1px solid ${C.red}50`, borderRadius:6, padding:"3px 10px", cursor:"pointer", fontFamily:F, fontWeight:active?700:400, transition:"all 0.12s" }}>
+                      {active && "✓ "}{f}
+                    </button>
+                  );
+                })}
+              </div>
+              {enhancer.redFlags.length > 0 && (
+                <div style={{ marginTop:6, fontSize:10, color:C.red, fontWeight:600 }}>⚠ {enhancer.redFlags.length} red flag(s) selecionada(s)</div>
+              )}
             </div>
 
             <CollapsibleSub title="Caracterização da Dor">
@@ -892,7 +904,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
             </CollapsibleSub>
           </CollapsibleSection>
 
-          <GeneralAssessment storageKey="pediatria" studentId={sid} colors={{ ...C, accent: C.blue }} />
+          <GeneralAssessment storageKey="pediatria" studentId={sid} colors={{ ...C, accent: C.blue }} initialBodyPain={localDor} pediatric />
 
           {/* 🔬 Exame Físico */}
           <CollapsibleSection title="Exame Físico" icon="🔬" expanded={expandedSections.includes("exame")} onToggle={()=>toggleSection("exame")}>
@@ -1131,8 +1143,22 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
         {tab === "sessoes" && (
           <>
             <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={pedColors} />
-            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
-              flags={mergedRedFlags} colors={pedColors} />
+            {enhancer.redFlags.length > 0 && (
+              <div style={{ background:C.redBg, border:`1px solid ${C.red}40`, borderRadius:8, padding:"8px 12px", marginTop:12, marginBottom:10 }}>
+                <div style={{ fontSize:10, fontWeight:800, color:C.red, letterSpacing:"0.1em", marginBottom:6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                  {mergedRedFlags.map(f => {
+                  const active = enhancer.redFlags.includes(f);
+                  return (
+                    <button key={f} onClick={() => enhancer.setRedFlags(active ? enhancer.redFlags.filter(x=>x!==f) : [...enhancer.redFlags, f])}
+                      style={{ fontSize:11, color:active?"#fff":C.red, background:active?C.red:C.redBg, border:`1px solid ${C.red}50`, borderRadius:6, padding:"3px 10px", cursor:"pointer", fontFamily:F, fontWeight:active?700:400, transition:"all 0.12s" }}>
+                      {active && "✓ "}{f}
+                    </button>
+                  );
+                })}
+                </div>
+              </div>
+            )}
             <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={pedColors} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Paciente pediátrico: ${student?.nome || "—"}\nQueixa: ${queixaPrincipal}\nDiagnóstico: ${diagnosticoMedico}\nComorbidades: ${comorbidades.join(", ")}\nGMFCS: ${gmfcs || "—"}\nAIMS: ${aimsScore || "—"}\nM-CHAT: ${mchat.length} itens\nTônus: ${tonus}\nEVA Mov: ${enhancer.pain.evaMov || evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep || evaRep}/10\nDor local: ${enhancer.pain.localDor || localDor}\nMarcos motores: ${allMarcos.join(", ")}\nAtividades: ${atividadesTerapeuticas.join(", ")}\nYellow Flags: ${yellowFlags.join(", ")}\nDCT: ${diagnosticoCinesio}\nEvolução: ${evolucao}`}

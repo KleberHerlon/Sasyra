@@ -84,20 +84,32 @@ export function detectLocalDor(txt) {
 
   if (hasHemiparesia) {
     const lat = expandLaterality(t);
-    if (lat === "Direito" || !lat) RIGHT_REGIONS.forEach(r => found.add(r));
-    if (lat === "Esquerdo" || !lat) LEFT_REGIONS.forEach(r => found.add(r));
-    if (lat === "Bilateral") {
+    if (lat === "Direito") RIGHT_REGIONS.forEach(r => found.add(r));
+    if (lat === "Esquerdo") LEFT_REGIONS.forEach(r => found.add(r));
+    if (lat === "Bilateral" || !lat) {
+      // Se explicitamente bilateral OU se nenhuma lateralidade foi detectada (ex: "hemiparesia" sem lado),
+      // marcamos ambos os lados — o fisioterapeuta poderá refinar depois.
       RIGHT_REGIONS.forEach(r => found.add(r));
       LEFT_REGIONS.forEach(r => found.add(r));
     }
   }
 
   if (hasMMSS) {
-    MMSS_REGIONS.forEach(r => found.add(r));
+    const latMMSS = expandLaterality(t);
+    const msD = ["Ombro D","Braço D","Antebraço D","Mão D"];
+    const msE = ["Ombro E","Braço E","Antebraço E","Mão E"];
+    if (latMMSS === "Direito") msD.forEach(r => found.add(r));
+    else if (latMMSS === "Esquerdo") msE.forEach(r => found.add(r));
+    else MMSS_REGIONS.forEach(r => found.add(r));
   }
 
   if (hasMMII) {
-    MMII_REGIONS.forEach(r => found.add(r));
+    const latMMII = expandLaterality(t);
+    const miD = ["Quadril D","Joelho D","Perna D","Tornozelo D","Pé D","Adutores D"];
+    const miE = ["Quadril E","Joelho E","Perna E","Tornozelo E","Pé E","Adutores E"];
+    if (latMMII === "Direito") miD.forEach(r => found.add(r));
+    else if (latMMII === "Esquerdo") miE.forEach(r => found.add(r));
+    else MMII_REGIONS.forEach(r => found.add(r));
   }
 
   return [...found];

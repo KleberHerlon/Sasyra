@@ -8,8 +8,11 @@ import { detectLocalDor, extractClinicalEntities } from "../utils/clinicalDetect
 import { CIF } from "../data/cif.js";
 import ScaleSelector from "../components/ScaleSelector";
 import GeneralAssessment from "../components/GeneralAssessment";
-import { calcMAS, calcBBS, calcMIF } from "../data/neuroScales";
+import { calcMAS, calcBBS, calcMIF, calcGlasgow, calcTIS } from "../data/neuroScales";
 import LogoSVG from "../components/LogoSVG";
+import StopwatchField from "../components/StopwatchField";
+import DermatomeMap from "../components/DermatomeMap";
+import ReflexMatrix from "../components/ReflexMatrix";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -77,6 +80,12 @@ const MAS_QUESTIONS = [
   { id:"extensoresJoelhoE",label:"Extensores de joelho E",lado:"E" },
   { id:"flexoresPlantaresD",label:"Flexores plantares D",lado:"D" },
   { id:"flexoresPlantaresE",label:"Flexores plantares E",lado:"E" },
+  { id:"flexoresPunhoD",label:"Flexores de punho D",lado:"D" },
+  { id:"flexoresPunhoE",label:"Flexores de punho E",lado:"E" },
+  { id:"adutoresQuadrilD",label:"Adutores de quadril D",lado:"D" },
+  { id:"adutoresQuadrilE",label:"Adutores de quadril E",lado:"E" },
+  { id:"flexoresQuadrilD",label:"Flexores de quadril D",lado:"D" },
+  { id:"flexoresQuadrilE",label:"Flexores de quadril E",lado:"E" },
 ];
 const BBS_QUESTIONS = [
   { id:"sentaPe",label:"Sentado para em pé (0-4)" },
@@ -118,9 +127,25 @@ const MIF_OPTIONS = [
   { value:"7",label:"7 - Independente" },
 ];
 
+const PROCEDIMENTOS_CATEGORIES_NEURO = [
+  { category: "Treino de Marcha", items: ["Marcha em solo", "Marcha em esteira", "Marcha com suporte parcial de peso", "Marcha com pistas auditivas/visuais", "Marcha em tandem", "Marcha com obstáculos"] },
+  { category: "Controle de Tronco & Equilíbrio", items: ["Sentado estático", "Sentado dinâmico", "Bipedestação", "Apoio unipodal", "Superfície instável", "Dupla tarefa", "Alcance funcional"] },
+  { category: "Facilitação Neuromuscular", items: ["PNF", "Treino orientado a tarefa", "CIMT (membro superior)", "Integração sensorial", "Espelho", "Biofeedback"] },
+  { category: "Fortalecimento Funcional", items: ["Fortalecimento MMSS", "Fortalecimento MMII", "Cadência", "Potência", "Resistência"] },
+  { category: "Transferências", items: ["Cadeira ↔ cama", "Sentar / levantar", "Chão ↔ pé", "Carro"] },
+  { category: "Recursos Adjuvantes", items: ["FES", "Estimulação cortical", "Realidade virtual", "Órteses / AFO", "Tecnologia assistiva"] },
+  { category: "Manutenção e Suporte", items: ["Alongamento passivo", "Posicionamento", "Mobilização articular", "Ventilação (C1-C4)", "Cuidados com integridade cutânea"] },
+  { category: "Educação e Orientação", items: ["Orientação ao cuidador", "Prescrição domiciliar", "PNE — Educação em Dor", "Adesão ao tratamento", "Prevenção de quedas"] },
+  { category: "Hidroterapia", items: ["Hidroterapia"] },
+];
+
 // ── CIF Neuro ────────────────────────────────────────────────────────────────
 const CIF_NEURO = {
   ...CIF,
+  b110:{desc:"Funções da consciência",cat:"funcoes"},
+  b167:{desc:"Funções mentais da linguagem",cat:"funcoes"},
+  b280:{desc:"Sensação de dor",cat:"funcoes"},
+  b265:{desc:"Função tátil",cat:"funcoes"},
   b7350:{desc:"Tônus de grupos musculares isolados",cat:"funcoes"},
   b735:{desc:"Funções tônus muscular",cat:"funcoes"},
   b770:{desc:"Padrão de marcha",cat:"funcoes"},
@@ -133,11 +158,15 @@ const CIF_NEURO = {
   d510:{desc:"Lavar-se",cat:"atividades"},
   d420:{desc:"Transferir-se",cat:"atividades"},
   d465:{desc:"Deslocar-se usando transporte",cat:"atividades"},
+  d450:{desc:"Andar",cat:"atividades"},
+  d330:{desc:"Falar",cat:"atividades"},
   s120:{desc:"Medula espinhal",cat:"estruturas"},
   s110:{desc:"Estrutura do cérebro",cat:"estruturas"},
 };
 const CIF_AUTO_KEYS = [
   {code:"b28013",label:"Dor no dorso",map:()=>{}},
+  {code:"b110",label:"Consciência alterada",map:(d)=>d.gcsResult?.total<13?2:0},
+  {code:"b167",label:"Alteração de linguagem",map:(d)=>(d.comunicacao&&d.comunicacao!=="Fluente")?2:0},
   {code:"b7350",label:"Tônus muscular alterado",map:(d)=>d.tono&&d.tono!=="Normal"?2:0},
   {code:"b770",label:"Alteração da marcha",map:(d)=>d.tipoMarcha?.length>0?2:0},
   {code:"b7300",label:"Força muscular reduzida",map:(d)=>Object.values(d.forcaNeuro||{}).filter(v=>v!==0&&v!==5).length>0?2:0},
@@ -149,10 +178,16 @@ const CIF_AUTO_KEYS = [
   {code:"b152",label:"Comprometimento emocional",map:(d)=>0},
 ];
 const CIF_SUGGESTIONS_BY_COND = {
-  avc:{codes:["b7300","b7350","b770","d540","d510","s110"]},
+  avc:{codes:["b7300","b7350","b770","d540","d510","s110","b167","b110"]},
   "lesão medular":{codes:["b7300","b7350","d420","d465","s120","b28013"]},
   parkinson:{codes:["b735","b770","d450","b755","d540","b152"]},
-  "esclerose múltipla":{codes:["b7300","b7350","d450","b144","d540","b770"]},
+  "esclerose múltipla":{codes:["b7300","b7350","d450","b144","d540","b770","b167"]},
+  tce:{codes:["b144","b164","b7300","d540","s110","b110"]},
+  ela:{codes:["b7300","d540","d510","s120","b167"]},
+  ataxia:{codes:["b760","b755","b770","d450"]},
+  neuropatia:{codes:["b28015","b7300","d450","b780","b265"]},
+  paralisia_facial:{codes:["b7300","b28010","d330"]},
+  distrofia:{codes:["b7300","b7350","d450","d540","b7400"]},
 };
 
 // ── Knowledge Base for Neurology ─────────────────────────────────────────────
@@ -427,6 +462,25 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
   const [postura, setPostura] = useState([]);
   const [marcha, setMarcha] = useState("");
   const [edema, setEdema] = useState("");
+
+  // ── Neuro-specific new fields ─────────────────────────────────────────────────
+  const [gcsScores, setGcsScores] = useState({}); // { aberturaOcular, respostaVerbal, respostaMotora }
+  const [gcsResult, setGcsResult] = useState(null);
+  const [orientacao, setOrientacao] = useState([]);
+  const [comunicacao, setComunicacao] = useState("");
+  const [tisScores, setTisScores] = useState({}); // { sentadoEstatico, sentadoDinamico, transferencias }
+  const [tisResult, setTisResult] = useState(null);
+  const [tugSegundos, setTugSegundos] = useState("");
+  const [reflexosMatriz, setReflexosMatriz] = useState({}); // matriz 0-4 + patológicos
+  const [sensibilidadeMap, setSensibilidadeMap] = useState([]); // [{dermatomo, lado, modalidade, valor}]
+  const [tempoIctus, setTempoIctus] = useState("");
+  const [progressaoLesao, setProgressaoLesao] = useState("");
+  const [reacoesPosturais, setReacoesPosturais] = useState([]);
+  const [orteses, setOrteses] = useState([]);
+  const [marchaIndependente, setMarchaIndependente] = useState("");
+  const [metasCurtoPrazo, setMetasCurtoPrazo] = useState([]);
+  const [metasLongoPrazo, setMetasLongoPrazo] = useState("");
+  const [planoAcao, setPlanoAcao] = useState([]); // [{ nomeFase, numSessoes, frequencia, intervencoes }]
   const [palpacao, setPalpacao] = useState("");
   const [obs, setObs] = useState("");
 
@@ -479,13 +533,13 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
 
   // ── CIF auto calculation ──────────────────────────────────────────────────────
   useEffect(() => {
-    const data = { tono, tipoMarcha, forcaNeuro, bbsResult, mifResult, avdsNeuro, sintomas, evaMov, evaRep, localDor };
+    const data = { tono, tipoMarcha, forcaNeuro, bbsResult, mifResult, avdsNeuro, sintomas, evaMov, evaRep, localDor, gcsResult, comunicacao };
     const computed = CIF_AUTO_KEYS.map(({code,label,map}) => {
       const q = map(data) || 1;
       return q > 0 ? { code, label, qualifier: q } : null;
     }).filter(Boolean);
     setCifAuto(computed);
-  }, [tono, tipoMarcha, forcaNeuro, bbsResult, mifResult, avdsNeuro, sintomas, evaMov, evaRep]);
+  }, [tono, tipoMarcha, forcaNeuro, bbsResult, mifResult, avdsNeuro, sintomas, evaMov, evaRep, gcsResult, comunicacao]);
 
   // ── Load saved data ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -559,6 +613,13 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
       tests, yellowFlags, evolucaoNeuro, diagnosticoCinesio, regiao, expandedSections, assessmentHistory,
       pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
+      // Novos campos neuro
+      gcsScores, gcsResult, orientacao, comunicacao,
+      tisScores, tisResult, tugSegundos,
+      reflexosMatriz, sensibilidadeMap,
+      tempoIctus, progressaoLesao, reacoesPosturais,
+      orteses, marchaIndependente,
+      metasCurtoPrazo, metasLongoPrazo, planoAcao,
     });
   };
 
@@ -600,6 +661,16 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
     if (saved.logs) enhancer.setLogs(saved.logs);
     if (saved.redFlags) enhancer.setRedFlags(saved.redFlags);
     if (saved.aiRes) enhancer.setAiRes(saved.aiRes);
+    setGcsScores(saved.gcsScores || {}); setGcsResult(saved.gcsResult || null);
+    setOrientacao(saved.orientacao || []); setComunicacao(saved.comunicacao || "");
+    setTisScores(saved.tisScores || {}); setTisResult(saved.tisResult || null);
+    setTugSegundos(saved.tugSegundos || "");
+    setReflexosMatriz(saved.reflexosMatriz || {}); setSensibilidadeMap(saved.sensibilidadeMap || []);
+    setTempoIctus(saved.tempoIctus || ""); setProgressaoLesao(saved.progressaoLesao || "");
+    setReacoesPosturais(saved.reacoesPosturais || []);
+    setOrteses(saved.orteses || []); setMarchaIndependente(saved.marchaIndependente || "");
+    setMetasCurtoPrazo(saved.metasCurtoPrazo || []); setMetasLongoPrazo(saved.metasLongoPrazo || "");
+    setPlanoAcao(saved.planoAcao || []);
   };
   const resetAssessment = () => {
     setQueixa(""); setDiagnosticoMedico(""); setTempoLesao(""); setMecanismoLesao("");
@@ -615,6 +686,12 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
     setTests({}); setYellowFlags([]); setEvolucaoNeuro(""); setDiagnosticoCinesio(""); setRegiao("");
     enhancer.setPain({ evaMov:0, evaRep:0, localDor:[], caraterDor:[], melhora:[], piora:[] });
     enhancer.setLogs([]); enhancer.setRedFlags([]); enhancer.setAiRes("");
+    setGcsScores({}); setGcsResult(null); setOrientacao([]); setComunicacao("");
+    setTisScores({}); setTisResult(null); setTugSegundos("");
+    setReflexosMatriz({}); setSensibilidadeMap([]);
+    setTempoIctus(""); setProgressaoLesao(""); setReacoesPosturais([]);
+    setOrteses([]); setMarchaIndependente("");
+    setMetasCurtoPrazo([]); setMetasLongoPrazo(""); setPlanoAcao([]);
   };
 
   // ── Derived ───────────────────────────────────────────────────────────────────
@@ -758,7 +835,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
           {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
         <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
-          {[["avaliacao","📋",isMobile?"":"Avaliação"],["sessoes","📅",isMobile?"":"Sessões"],["relatorio","📊",isMobile?"":"Relatório"],["evidencias","🔬",isMobile?"":"Evidências"]].map(([k,ic,lb])=>(
+          {[["avaliacao","📋",isMobile?"":"Avaliação"],["evolucao","📈",isMobile?"":"Evolução"],["relatorio","📊",isMobile?"":"Relatório"],["evidencias","🔬",isMobile?"":"Evidências"]].map(([k,ic,lb])=>(
             <button key={k} onClick={()=>setTab(k)} style={{background:tab===k?C.purpleBg:"transparent",border:`1px solid ${tab===k?C.purple+"50":"transparent"}`,borderRadius:8,padding:isMobile?"5px 10px":"7px 16px",fontSize:isMobile?11:13,fontWeight:tab===k?700:400,color:tab===k?C.purple:C.textMuted,cursor:"pointer",fontFamily:F}}>{ic} {lb}</button>
           ))}
         </div>
@@ -817,16 +894,26 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
 
           {/* 📝 Queixa Principal e Anamnese */}
           <CollapsibleSection title="Queixa Principal e Anamnese" icon="📝" expanded={expandedSections.includes("queixa")} onToggle={()=>toggleSection("queixa")}>
-            <div style={{fontSize:12,color:C.textMuted,marginBottom:10,lineHeight:1.5}}>Registre a queixa principal, historico e comorbidades do paciente neurologico.</div>
-            <span style={lbl()}>Queixa principal</span>
-            <AudioField value={queixa} onChange={v=>{const t=typeof v==="function"?v(queixa):v;setQueixa(t)}} placeholder="Digite ou use o microfone para ditar a queixa..." rows={2} style={{background:C.surface,border:`1px solid ${C.red}40`,borderRadius:8,color:C.text,fontSize:13,padding:"9px 12px",fontFamily:F,lineHeight:1.5}} />
+            <div style={{fontSize:12,color:C.textMuted,marginBottom:10,lineHeight:1.5}}>Registre a queixa principal, histórico e comorbidades do paciente neurológico. A IA cruzará os dados com evidências científicas.</div>
+            <div style={{ background:C.redBg, border:`1.5px solid ${C.red}`, borderRadius:12, padding:"14px 16px", marginBottom:12 }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:8 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.1em", color:C.red }}>Queixa principal</span>
+                  <span style={{ fontSize:9, fontWeight:800, color:"#fff", background:C.red, borderRadius:6, padding:"2px 8px", letterSpacing:"0.05em", textTransform:"uppercase" }}>OBRIGATÓRIO</span>
+                </div>
+                <span style={{ fontSize:10, color:C.red, opacity:0.7 }}>— digite ou use o microfone</span>
+              </div>
+              <AudioField value={queixa} onChange={v=>{const t=typeof v==="function"?v(queixa):v;setQueixa(t)}} placeholder="Ex: Hemiparesia espástica esquerda pós-AVC isquêmico..." rows={2} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,padding:"9px 12px",fontFamily:F,lineHeight:1.5}} />
+            </div>
 
-            {entities && (entities.muscles?.length>0||entities.laterality) && (
-              <div style={{background:C.blueBg,borderRadius:10,padding:"10px 14px",marginTop:8,fontSize:11,color:C.textSub,lineHeight:1.7}}>
-                <strong style={{color:C.blue}}>🔍 Varredura Semântica</strong><br/>
-                {entities.muscles?.length>0&&<>Músculos: {entities.muscles.join(", ")}<br/></>}
-                {entities.laterality&&<>Lateralidade: {entities.laterality}<br/></>}
-                {entities.painChars?.length>0&&<>Caráter da dor: {entities.painChars.join(", ")}</>}
+            {entities && (entities.muscles?.length>0||entities.laterality||entities.painChars?.length>0) && (
+              <div style={{ background:C.blueBg, border:`1px solid ${C.blue}40`, borderRadius:10, padding:"10px 14px", margin:"12px 0" }}>
+                <div style={{ fontSize:10, fontWeight:800, color:C.blue, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:8 }}>🔍 Varredura Semântica</div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:6, fontSize:12 }}>
+                  {entities.muscles?.length>0 && <span style={{color:C.textSub}}>Músculos: <strong style={{color:C.text}}>{entities.muscles.join(", ")}</strong></span>}
+                  {entities.laterality && <span style={{color:C.textSub}}>Lateralidade: <strong style={{color:C.text}}>{entities.laterality}</strong></span>}
+                  {entities.painChars?.length>0 && <span style={{color:C.textSub}}>Caráter: <strong style={{color:C.text}}>{entities.painChars.join(", ")}</strong></span>}
+                </div>
               </div>
             )}
 
@@ -862,10 +949,30 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
               </div>
             )}
 
-            <div style={{marginTop:12}}>
-              <span style={{...lbl({color:C.red})}}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</span>
-              <TagSelect options={mergedRedFlags} value={enhancer.redFlags} onChange={enhancer.setRedFlags} activeColor={C.red} />
-              {enhancer.redFlags.length > 0 && <div style={{fontSize:11,color:C.red,marginTop:4}}>⚠ {enhancer.redFlags.length} red flag(s) selecionada(s)</div>}
+            <div style={{ background:C.redBg, border:`1px solid ${C.red}40`, borderRadius:8, padding:"8px 12px", marginBottom:10, marginTop:12 }}>
+              <div style={{ fontSize:10, fontWeight:800, color:C.red, letterSpacing:"0.1em", marginBottom:6 }}>
+                🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR
+              </div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                {mergedRedFlags.map(f => {
+                  const active = enhancer.redFlags.includes(f);
+                  return (
+                    <button key={f} onClick={() => enhancer.setRedFlags(active ? enhancer.redFlags.filter(x=>x!==f) : [...enhancer.redFlags, f])}
+                      style={{
+                        fontSize:11, color:active?"#fff":C.red, background:active?C.red:C.redBg,
+                        border:`1px solid ${C.red}50`, borderRadius:6, padding:"3px 10px",
+                        cursor:"pointer", fontFamily:F, fontWeight:active?700:400, transition:"all 0.12s",
+                      }}>
+                      {active && "✓ "}{f}
+                    </button>
+                  );
+                })}
+              </div>
+              {enhancer.redFlags.length > 0 && (
+                <div style={{ marginTop:6, fontSize:10, color:C.red, fontWeight:600 }}>
+                  ⚠ {enhancer.redFlags.length} red flag(s) selecionada(s)
+                </div>
+              )}
             </div>
 
 
@@ -917,22 +1024,104 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
             </Row>
           </CollapsibleSection>
 
+          {/* 🧠 Estado Cognitivo e Consciência */}
+          <CollapsibleSection title="Estado Cognitivo e Consciência" icon="🧠" expanded={expandedSections.includes("cognitivo")} onToggle={()=>toggleSection("cognitivo")}>
+            <CollapsibleSub title="Escala de Coma de Glasgow (GCS) — Cálculo em tempo real">
+              <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 8 }}>Avaliação do nível de consciência: 3-15. Use os seletores abaixo.</div>
+              <Row cols={isMobile ? "1fr" : "1fr 1fr 1fr"} gap="8px 14px">
+                <div>
+                  <span style={lbl()}>Abertura Ocular (1-4)</span>
+                  <SingleSelect options={[
+                    { value: "4", label: "4 — Espontânea" },
+                    { value: "3", label: "3 — Ao comando" },
+                    { value: "2", label: "2 — À dor" },
+                    { value: "1", label: "1 — Nenhuma" },
+                  ]} value={gcsScores.aberturaOcular || ""} onChange={v => { const next = { ...gcsScores, aberturaOcular: v }; setGcsScores(next); setGcsResult(calcGlasgow(next)); }} activeColor={C.purple} />
+                </div>
+                <div>
+                  <span style={lbl()}>Resposta Verbal (1-5)</span>
+                  <SingleSelect options={[
+                    { value: "5", label: "5 — Orientada" },
+                    { value: "4", label: "4 — Confusa" },
+                    { value: "3", label: "3 — Palavras inapropriadas" },
+                    { value: "2", label: "2 — Sons incompreensíveis" },
+                    { value: "1", label: "1 — Nenhuma" },
+                  ]} value={gcsScores.respostaVerbal || ""} onChange={v => { const next = { ...gcsScores, respostaVerbal: v }; setGcsScores(next); setGcsResult(calcGlasgow(next)); }} activeColor={C.purple} />
+                </div>
+                <div>
+                  <span style={lbl()}>Resposta Motora (1-6)</span>
+                  <SingleSelect options={[
+                    { value: "6", label: "6 — Obedece comandos" },
+                    { value: "5", label: "5 — Localiza dor" },
+                    { value: "4", label: "4 — Retira" },
+                    { value: "3", label: "3 — Flexão anormal" },
+                    { value: "2", label: "2 — Extensão" },
+                    { value: "1", label: "1 — Nenhuma" },
+                  ]} value={gcsScores.respostaMotora || ""} onChange={v => { const next = { ...gcsScores, respostaMotora: v }; setGcsScores(next); setGcsResult(calcGlasgow(next)); }} activeColor={C.purple} />
+                </div>
+              </Row>
+              {gcsResult && (
+                <div style={{ marginTop: 10, background: C.purpleBg, border: `1px solid ${C.purple}40`, borderRadius: 10, padding: "12px", textAlign: "center" }}>
+                  <div style={{ fontSize: 10, color: C.textMuted, fontWeight: 700, textTransform: "uppercase" }}>Glasgow</div>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: gcsResult.color }}>{gcsResult.total}/15</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: gcsResult.color }}>{gcsResult.level}</div>
+                </div>
+              )}
+            </CollapsibleSub>
+            <div style={{ marginTop: 10 }}>
+              <span style={lbl()}>Orientação</span>
+              <TagSelect options={["Tempo", "Espaço", "Pessoa", "Situação"]} value={orientacao} onChange={setOrientacao} activeColor={C.purple} />
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <span style={lbl()}>Comunicação</span>
+              <SingleSelect options={["Fluente", "Disartria", "Afasia expressiva", "Afasia receptiva", "Muta", "Alternativa/aumentativa"]} value={comunicacao} onChange={setComunicacao} activeColor={C.purple} />
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <span style={lbl()}>Tempo de Ictus / Lesão</span>
+              <SingleSelect options={[
+                { value: "agudo", label: "Aguda (<72h)" },
+                { value: "subagudo", label: "Subaguda (72h–3m)" },
+                { value: "cronico", label: "Crônica (3m–1a)" },
+                { value: "cronicoEstavel", label: "Crônica estável (>1a)" },
+              ]} value={tempoIctus} onChange={setTempoIctus} activeColor={C.purple} />
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <span style={lbl()}>Progressão da lesão</span>
+              <SingleSelect options={["Progressiva", "Estacionária", "Regredida (melhora)", "Flutuante / Surtos"]} value={progressaoLesao} onChange={setProgressaoLesao} activeColor={C.purple} />
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <span style={lbl()}>Reações posturais</span>
+              <TagSelect options={["Endireitamento", "Equilíbrio", "Proteção", "Anfíbia", "Ausentes"]} value={reacoesPosturais} onChange={setReacoesPosturais} activeColor={C.purple} />
+            </div>
+          </CollapsibleSection>
+
           {/* 🔬 Exame Físico */}
           <CollapsibleSection title="Exame Físico" icon="🔬" expanded={expandedSections.includes("exame")} onToggle={()=>toggleSection("exame")}>
             <CollapsibleSub title="Inspeção, Tônus e Marcha">
               <Row cols={isMobile?"1fr":"1fr 1fr"} gap="12px 16px">
                 <div><span style={lbl()}>Tônus</span><SingleSelect options={["Normal","Hipotonia","Espasticidade","Rigidez plástica","Rigidez em roda denteada"]} value={tono} onChange={setTono} activeColor={C.purple} /></div>
-                <div><span style={lbl()}>Sensibilidade</span><SingleSelect options={["Normal","Hipoestesia","Hiperestesia","Alodinia","Perda proprioceptiva","Anestesia"]} value={sensibilidade} onChange={v=>setSensibilidade([v])} activeColor={C.purple} /></div>
+                <div><span style={lbl()}>Marcha independente</span><SingleSelect options={["Independente","Supervisão","Assistência mínima","Assistência máxima","Não deambula"]} value={marchaIndependente} onChange={setMarchaIndependente} activeColor={C.purple} /></div>
               </Row>
               <div style={{marginTop:8,display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"8px 16px"}}>
                 <div><span style={lbl()}>Postura</span><TagSelect options={["Anteriorização de cabeça","Protração de ombros","Hipercifose torácica","Escoliose","Pelve anteriorizada","Pelve posteriorizada","Sem alterações"]} value={postura} onChange={setPostura} activeColor={C.purple} /></div>
                 <div><span style={lbl()}>Marcha</span><TagSelect options={["Hemiparética","Parkinsoniana","Atáxica","Escarvante","Anserina","Miotônica","Não deambula","Normal"]} value={tipoMarcha} onChange={setTipoMarcha} activeColor={C.purple} /></div>
               </div>
-              <Row cols={isMobile?"1fr":"1fr 1fr"} gap="12px 16px" style={{marginTop:8}}>
-                <div><span style={lbl()}>Coordenação</span><TagSelect options={["Normal","Dismetria","Ataxia apendicular","Ataxia de marcha","Disdiadococinesia","Tremor intencional"]} value={coordenacao} onChange={setCoordenacao} activeColor={C.purple} /></div>
-                <div><span style={lbl()}>Reflexos</span><TagSelect options={["Normorreflexia","Hiperreflexia","Hiporreflexia","Clônus","Babinski","Hoffman"]} value={reflexos} onChange={setReflexos} activeColor={C.purple} /></div>
-              </Row>
+              <div style={{marginTop:8}}>
+                <span style={lbl()}>Órteses / Dispositivos</span>
+                <TagSelect options={["Bengala","Andador","AFO","Cadeira de rodas","Muleta","Órtese de punho","Sem dispositivo"]} value={orteses} onChange={setOrteses} activeColor={C.purple} />
+              </div>
+              <div style={{marginTop:8}}><span style={lbl()}>Coordenação</span><TagSelect options={["Normal","Dismetria","Ataxia apendicular","Ataxia de marcha","Disdiadococinesia","Tremor intencional"]} value={coordenacao} onChange={setCoordenacao} activeColor={C.purple} /></div>
               <div style={{marginTop:8}}><span style={lbl()}>Edema</span><select value={edema} onChange={e=>setEdema(e.target.value)} style={sel()}>{["","Ausente","Edema leve (1+)","Edema moderado (2+)","Edema importante (3+)","Calor local","Rubor"].map(o=><option key={o} value={o}>{o||"Selecionar…"}</option>)}</select></div>
+            </CollapsibleSub>
+
+            {/* Sensibilidade — DermatomeMap */}
+            <CollapsibleSub title="Sensibilidade — Mapa de Dermátomos" defaultOpen={false}>
+              <DermatomeMap value={sensibilidadeMap} onChange={setSensibilidadeMap} colors={{...C, accent: C.purple, font: F}} />
+            </CollapsibleSub>
+
+            {/* Reflexos — Matriz Interativa */}
+            <CollapsibleSub title="Reflexos Osteotendíneos e Patológicos" defaultOpen={false}>
+              <ReflexMatrix reflexos={reflexosMatriz} onChange={setReflexosMatriz} colors={{...C, accent: C.purple, font: F}} />
             </CollapsibleSub>
 
             {/* MAS */}
@@ -946,7 +1135,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
               ))}
               {masResult && <div style={{marginTop:8,background:C.purpleBg,border:`1px solid ${C.purple}40`,borderRadius:10,padding:"12px",textAlign:"center"}}>
                 <div style={{fontSize:10,color:C.textMuted,fontWeight:700,textTransform:"uppercase"}}>MAS</div>
-                <div style={{fontSize:28,fontWeight:900,color:masResult.color}}>{masResult.total}/24</div>
+                <div style={{fontSize:28,fontWeight:900,color:masResult.color}}>{masResult.total}/{masResult.max}</div>
                 <div style={{fontSize:13,fontWeight:700,color:masResult.color}}>{masResult.level}</div>
               </div>}
             </CollapsibleSub>
@@ -967,6 +1156,17 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
               </div>}
             </CollapsibleSub>
 
+            {/* TUG */}
+            <CollapsibleSub title="Timed Up and Go (TUG) — Cronômetro Integrado" defaultOpen={false}>
+              <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 8 }}>Avalia mobilidade funcional e risco de queda. Paciente levanta, anda 3m, vira, retorna e senta.</div>
+              <StopwatchField value={tugSegundos} onChange={setTugSegundos} label="TUG — Timed Up and Go" unit="s" colors={{...C, accent: C.purple, font: F}} />
+              {tugSegundos && (
+                <div style={{ marginTop: 8, fontSize: 12, fontWeight: 700, color: Number(tugSegundos) <= 10 ? C.green : Number(tugSegundos) <= 20 ? C.amber : C.red }}>
+                  {Number(tugSegundos) <= 10 ? "✓ Normal (<10s)" : Number(tugSegundos) <= 20 ? "⚠ Risco moderado de queda (10–20s)" : "🚩 Alto risco de queda (>20s)"}
+                </div>
+              )}
+            </CollapsibleSub>
+
             {/* MIF */}
             <CollapsibleSub title="Medida de Independência Funcional (MIF)">
               <div style={{fontSize:12,color:C.textMuted,marginBottom:8}}>Funcionalidade: 0=Dep. total, 7=Indep. Max 42.</div>
@@ -983,6 +1183,29 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
               </div>}
             </CollapsibleSub>
 
+            {/* TIS */}
+            <CollapsibleSub title="Trunk Impairment Scale (TIS) — Controle de Tronco" defaultOpen={false}>
+              <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 8 }}>Avalia controle de tronco: sentado estático (0-7), dinâmico (0-10), transferências (0-6). Max 23.</div>
+              {[
+                { id: "sentadoEstatico", label: "Sentado estático (0-7)" },
+                { id: "sentadoDinamico", label: "Sentado dinâmico (0-10)" },
+                { id: "transferencias", label: "Transferências (0-6)" },
+              ].map(q => (
+                <div key={q.id} style={{ marginBottom: 4 }}>
+                  <span style={{ ...lbl({ fontSize: 10, marginBottom: 2 }) }}>{q.label}</span>
+                  <input type="number" min="0" max={q.id === "sentadoDinamico" ? 10 : q.id === "transferencias" ? 6 : 7} value={tisScores[q.id] || ""} onChange={e => { const next = { ...tisScores, [q.id]: e.target.value }; setTisScores(next); setTisResult(calcTIS(next)); }}
+                    style={inp({ textAlign: "center", fontSize: 14, fontWeight: 700 })} placeholder="Score" />
+                </div>
+              ))}
+              {tisResult && (
+                <div style={{ marginTop: 8, background: C.purpleBg, border: `1px solid ${C.purple}40`, borderRadius: 10, padding: "12px", textAlign: "center" }}>
+                  <div style={{ fontSize: 10, color: C.textMuted, fontWeight: 700, textTransform: "uppercase" }}>TIS</div>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: tisResult.color }}>{tisResult.total}/{tisResult.max}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: tisResult.color }}>{tisResult.level}</div>
+                </div>
+              )}
+            </CollapsibleSub>
+
             {/* MRC */}
             <CollapsibleSub title="Força Muscular — MRC (0-5)">
               {forcaRows.map((row,i)=>(
@@ -991,6 +1214,18 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
                   colors={{surface:C.surface,border:C.border,text:C.text,textMuted:C.textMuted,red:C.red,font:F}} />
               ))}
               <button onClick={()=>setForcaRows(p=>[...p,{id:Date.now(),muscle:"",value:""}])} style={ghostBtn({fontSize:11,marginTop:4})}>+ Adicionar músculo</button>
+              {forcaRows.filter(r=>r.value).length >= 2 && (()=>{
+                const withVals = forcaRows.filter(r=>r.value);
+                const avg = (withVals.reduce((a,r)=>a+Number(r.value),0)/withVals.length).toFixed(1);
+                const c = avg >= 4 ? C.green : avg >= 3 ? C.amber : C.red;
+                return (
+                  <div style={{marginTop:8,background:C.purpleBg,border:`1px solid ${C.purple}40`,borderRadius:8,padding:"8px 12px",textAlign:"center"}}>
+                    <span style={{fontSize:10,color:C.textMuted,fontWeight:700}}>Média MRC: </span>
+                    <span style={{fontSize:16,fontWeight:900,color:c}}>{avg}/5</span>
+                    <span style={{fontSize:10,color:C.textMuted}}> ({withVals.length} grupos)</span>
+                  </div>
+                );
+              })()}
             </CollapsibleSub>
           </CollapsibleSection>
 
@@ -1028,6 +1263,40 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
               <span style={lbl()}>Evolução clínica</span>
               <textarea value={evolucaoNeuro} onChange={e=>setEvolucaoNeuro(e.target.value)} rows={3} style={{...inp({resize:"vertical",lineHeight:1.5})}} placeholder="Evolução desde a última sessão..." />
             </div>
+          </CollapsibleSection>
+
+          {/* 🎯 Metas e Plano de Ação */}
+          <CollapsibleSection title="Metas e Plano de Ação" icon="🎯" expanded={expandedSections.includes("metas")} onToggle={()=>toggleSection("metas")}>
+            <CollapsibleSub title="Metas de Curto Prazo">
+              <div style={{fontSize:11,color:C.textMuted,marginBottom:6}}>Selecione as metas para as próximas 4-8 semanas.</div>
+              <TagSelect options={["Ganhar ADM", "Sentar sem apoio", "Deambular com bengala", "Reduzir EVA em 2 pts", "Melhorar equilíbrio estático", "Melhorar equilíbrio dinâmico", "Transferências independentes", "Vestir-se com mín. assistência", "Higiene pessoal independente", "Reduzir fadiga", "Aumentar cadência"]} value={metasCurtoPrazo} onChange={setMetasCurtoPrazo} activeColor={C.purple} />
+            </CollapsibleSub>
+            <CollapsibleSub title="Metas de Longo Prazo" defaultOpen={false}>
+              <textarea value={metasLongoPrazo} onChange={e=>setMetasLongoPrazo(e.target.value)} rows={3} placeholder="Ex: Marcha independente em 6 meses, retorno ao trabalho, independência funcional..."
+                style={{...inp({resize:"vertical",lineHeight:1.5})}} />
+            </CollapsibleSub>
+            <CollapsibleSub title="Plano de Ação — Fases do Tratamento" defaultOpen={false}>
+              <div style={{fontSize:11,color:C.textMuted,marginBottom:8}}>Defina as fases do plano de reabilitação. Cada fase contém objetivos, número de sessões e intervenções.</div>
+              {planoAcao.map((fase, i) => (
+                <div key={i} style={{background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px",marginBottom:8}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                    <span style={{fontSize:11,fontWeight:700,color:C.purple}}>Fase {i+1}</span>
+                    <button onClick={()=>setPlanoAcao(p=>p.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:C.textDim,cursor:"pointer",fontSize:14,fontFamily:F}}>×</button>
+                  </div>
+                  <input value={fase.nomeFase||""} onChange={e=>{const next=[...planoAcao];next[i]={...next[i],nomeFase:e.target.value};setPlanoAcao(next)}} placeholder="Nome da fase (ex: Fase 1 — Analgesia e Controle Motor)"
+                    style={{...inp({fontSize:12,marginBottom:6})}} />
+                  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:6}}>
+                    <input value={fase.numSessoes||""} onChange={e=>{const next=[...planoAcao];next[i]={...next[i],numSessoes:e.target.value};setPlanoAcao(next)}} placeholder="Nº de sessões (ex: 1-4)"
+                      style={{...inp({fontSize:11})}} />
+                    <input value={fase.frequencia||""} onChange={e=>{const next=[...planoAcao];next[i]={...next[i],frequencia:e.target.value};setPlanoAcao(next)}} placeholder="Frequência semanal (ex: 2x/semana)"
+                      style={{...inp({fontSize:11})}} />
+                  </div>
+                  <textarea value={fase.intervencoes||""} onChange={e=>{const next=[...planoAcao];next[i]={...next[i],intervencoes:e.target.value};setPlanoAcao(next)}} rows={2} placeholder="Intervenções detalhadas da fase..."
+                    style={{...inp({resize:"vertical",lineHeight:1.4,marginTop:6,fontSize:11})}} />
+                </div>
+              ))}
+              <button onClick={()=>setPlanoAcao(p=>[...p,{nomeFase:"",numSessoes:"",frequencia:"",intervencoes:""}])} style={ghostBtn({fontSize:11})}>+ Adicionar fase</button>
+            </CollapsibleSub>
           </CollapsibleSection>
 
           {/* 📊 Escalas Padronizadas */}
@@ -1079,14 +1348,12 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
         </>}
 
         {/* ════════ TAB: SESSÕES ════════ */}
-        {tab === "sessoes" && <>
-          <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={neuroColors} />
-          <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
-            flags={mergedRedFlags} colors={neuroColors} />
-          <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={neuroColors} />
-          <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
-              summaryText={`Paciente: ${student?.nome||"—"}\nDiagnóstico: ${diagnosticoMedico}\nTempo lesão: ${tempoLesao}\nLado afetado: ${ladoAfetado}\nSintomas: ${sintomas.join(", ")}\nComorbidades: ${comorbidadesNeuro.join(", ")}\nNível atividade: ${nivelAti}\nMAS: ${masResult?.total||"—"}/24\nBBS: ${bbsResult?.total||"—"}/20\nMIF: ${mifResult?.total||"—"}/${mifResult?.max||"—"}\nForça MRC: ${forcaRows.filter(r=>r.value).map(r=>`${r.muscle}:${r.value}`).join(", ")}\nMarcha: ${tipoMarcha.join(", ")}\nCoordenação: ${coordenacao.join(", ")}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nYellow Flags: ${yellowFlags.join(", ")}\nEvolução: ${evolucaoNeuro}`}
-            patientName={student?.nome} moduleLabel="Neurofuncional" colors={neuroColors} />
+        {tab === "evolucao" && <>
+          {enhancer.redFlags.length > 0 && (
+            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
+              flags={mergedRedFlags} colors={neuroColors} />
+          )}
+          <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={neuroColors} sessionLabel="Evolução" specialty="neuro" proceduresCategories={PROCEDIMENTOS_CATEGORIES_NEURO} defaultExpanded={true} pain={enhancer.pain} setPain={enhancer.setPain} />
           <div style={{display:"flex",justifyContent:"flex-end",gap:10,marginTop:4}}>
             <button onClick={handleSave} style={primaryBtn({padding:"11px 26px",fontSize:14})}>💾 Salvar Tudo</button>
           </div>

@@ -1060,12 +1060,23 @@ const SCALES = {
 
   // ════════════════════ NEURO ════════════════════
 
-  "Modified Ashworth Scale (MAS)": simpleScale("mas","MAS",["MAS","Modified Ashworth Scale","Ashworth"], [0,48], "highIsBad", s=>{
-    if(s===0) return pct({level:"Sem espasticidade", desc:"Tônus normal.", color:"#16A34A"});
-    if(s<=12) return pct({level:"Espasticidade leve", desc:"Leve aumento do tônus.", color:"#D97706"});
-    if(s<=24) return pct({level:"Espasticidade moderada", desc:"Aumento moderado, ADM possível.", color:"#DC2626"});
-    return pct({level:"Espasticidade grave", desc:"Aumento acentuado ou rigidez.", color:"#7C3AED"});
-  }),
+  "Modified Ashworth Scale (MAS)": {
+    id:"mas", shortName:"MAS", aliases:["MAS","Modified Ashworth Scale","Ashworth"], sections:6, maxPerSection:4, mcid:3, mdc:2,
+    interpret(pct){
+      if(pct<=5) return {level:"Sem espasticidade", desc:"Tônus normal.", color:"#16A34A"};
+      if(pct<=25) return {level:"Espasticidade leve", desc:"Leve aumento do tônus.", color:"#D97706"};
+      if(pct<=50) return {level:"Espasticidade moderada", desc:"Aumento moderado, ADM possível.", color:"#DC2626"};
+      return {level:"Espasticidade grave", desc:"Aumento acentuado ou rigidez.", color:"#7C3AED"};
+    },
+    questions:[
+      {id:"mas_fcd",label:"Flexores de cotovelo — Direito",o:["0 — Sem aumento de tônus","1 — Leve aumento, sem resistência","2 — Aumento moderado, ADM fácil","3 — Aumento acentuado, ADM difícil","4 — Rigidez em flexão/extensão"]},
+      {id:"mas_fce",label:"Flexores de cotovelo — Esquerdo",o:["0 — Sem aumento de tônus","1 — Leve aumento, sem resistência","2 — Aumento moderado, ADM fácil","3 — Aumento acentuado, ADM difícil","4 — Rigidez em flexão/extensão"]},
+      {id:"mas_ejd",label:"Extensores de joelho — Direito",o:["0 — Sem aumento de tônus","1 — Leve aumento, sem resistência","2 — Aumento moderado, ADM fácil","3 — Aumento acentuado, ADM difícil","4 — Rigidez em flexão/extensão"]},
+      {id:"mas_eje",label:"Extensores de joelho — Esquerdo",o:["0 — Sem aumento de tônus","1 — Leve aumento, sem resistência","2 — Aumento moderado, ADM fácil","3 — Aumento acentuado, ADM difícil","4 — Rigidez em flexão/extensão"]},
+      {id:"mas_fpd",label:"Flexores plantares — Direito",o:["0 — Sem aumento de tônus","1 — Leve aumento, sem resistência","2 — Aumento moderado, ADM fácil","3 — Aumento acentuado, ADM difícil","4 — Rigidez em flexão/extensão"]},
+      {id:"mas_fpe",label:"Flexores plantares — Esquerdo",o:["0 — Sem aumento de tônus","1 — Leve aumento, sem resistência","2 — Aumento moderado, ADM fácil","3 — Aumento acentuado, ADM difícil","4 — Rigidez em flexão/extensão"]},
+    ],
+  },
 
   "Berg Balance Scale (BBS)": simpleScale("bbs","BBS",["Berg Balance Scale","BBS","Berg"], [0,56], "highIsGood", s=>{
     if(s>=45) return pct({level:"Baixo risco de queda", desc:"Equilíbrio funcional preservado.", color:"#16A34A"});
@@ -1080,19 +1091,67 @@ const SCALES = {
     return pct({level:"Dependência total", desc:"Assistência total nas AVDs.", color:"#BE185D"});
   }),
 
-  "Fugl-Meyer Assessment": simpleScale("fugl","Fugl-Meyer",["Fugl-Meyer","FMA","Fugl-Meyer Assessment"], [0,226], "highIsGood", s=>{
-    if(s>=200) return pct({level:"Função motora preservada", desc:"Boa recuperação motora.", color:"#16A34A"});
-    if(s>=150) return pct({level:"Déficit motor moderado", desc:"Limitação motora parcial.", color:"#D97706"});
-    if(s>=100) return pct({level:"Déficit motor grave", desc:"Comprometimento motor importante.", color:"#DC2626"});
-    return pct({level:"Déficit motor muito grave", desc:"Função motora severamente comprometida.", color:"#BE185D"});
-  }),
+  "Fugl-Meyer Assessment": {
+    id:"fugl", shortName:"Fugl-Meyer", aliases:["Fugl-Meyer","FMA","Fugl-Meyer Assessment"],
+    sections:15, maxPerSection:2, mcid:10, mdc:6,
+    interpret(pct){
+      if(pct>=80) return {level:"Função motora preservada", desc:"Boa recuperação motora.", color:"#16A34A"};
+      if(pct>=60) return {level:"Déficit motor moderado", desc:"Limitação motora parcial.", color:"#D97706"};
+      if(pct>=40) return {level:"Déficit motor grave", desc:"Comprometimento motor importante.", color:"#DC2626"};
+      return {level:"Déficit motor muito grave", desc:"Função motora severamente comprometida.", color:"#BE185D"};
+    },
+    questions:[
+      {id:"fma_a",label:"Reflexos — Bíceps e tríceps (MS)",o:["0 — Ausentes","1 — Presente em um","2 — Presentes"]},
+      {id:"fma_b",label:"Flexão de ombro — padrão sinérgico",o:["0 — Não inicia","1 — Parcial (<90°)","2 — Completa (180°)"]},
+      {id:"fma_c",label:"Abdução de ombro a 90°",o:["0 — Não realiza","1 — Parcial","2 — Completa (≥90°)"]},
+      {id:"fma_d",label:"Rotação externa de ombro",o:["0 — Não inicia","1 — Parcial","2 — Completa"]},
+      {id:"fma_e",label:"Extensão de cotovelo",o:["0 — Não realiza","1 — Parcial","2 — Completa"]},
+      {id:"fma_f",label:"Extensão de punho — estabilidade",o:["0 — Não realiza","1 — Com flexão","2 — Punho neutro"]},
+      {id:"fma_g",label:"Preensão — flexão em massa",o:["0 — Ausente","1 — Fraca","2 — Completa"]},
+      {id:"fma_h",label:"Pinça lateral (polegar-dedo)",o:["0 — Ausente","1 — Parcial","2 — Funcional"]},
+      {id:"fma_i",label:"Pinça cilíndrica",o:["0 — Ausente","1 — Parcial","2 — Funcional"]},
+      {id:"fma_j",label:"Coordenação — Tremor",o:["0 — Tremor marcado","1 — Tremor leve","2 — Sem tremor"]},
+      {id:"fma_k",label:"Coordenação — Dismetria (índex-nariz)",o:["0 — Dismetria grave","1 — Dismetria leve","2 — Sem dismetria"]},
+      {id:"fma_l",label:"Velocidade — Índex-nariz",o:["0 — >6s / muito lento","1 — 2-5s","2 — <2s"]},
+      {id:"fma_m",label:"Sensibilidade — Toque leve / propriocepção",o:["0 — Anestesia","1 — Hipo/Disestesia","2 — Normal"]},
+      {id:"fma_n",label:"ADM passiva — Ombro e cotovelo",o:["0 — <50%","1 — 50-80%","2 — >80%"]},
+      {id:"fma_o",label:"Dor articular — Ombro/punho/mão",o:["0 — Dor intensa ao movimento","1 — Dor leve","2 — Sem dor"]},
+    ],
+  },
 
-  "NIH Stroke Scale (NIHSS)": simpleScale("nihss","NIHSS",["NIHSS","NIH Stroke Scale"], [0,42], "highIsBad", s=>{
-    if(s<=4) return pct({level:"AVC leve", desc:"Déficit neurológico leve.", color:"#16A34A"});
-    if(s<=15) return pct({level:"AVC moderado", desc:"Déficit neurológico moderado.", color:"#D97706"});
-    if(s<=24) return pct({level:"AVC moderado-grave", desc:"Déficit neurológico importante.", color:"#DC2626"});
-    return pct({level:"AVC grave", desc:"Déficit neurológico severo.", color:"#BE185D"});
-  }),
+  "NIH Stroke Scale (NIHSS)": {
+    id:"nihss", shortName:"NIHSS", aliases:["NIHSS","NIH Stroke Scale"],
+    sections:15, maxPerSection:null, mcid:3, mdc:2,
+    calculate(answers){
+      const weights = {n1a:3,n1b:2,n1c:2,n2:2,n3:3,n4:3,n5a:4,n5b:4,n6a:4,n6b:4,n7:2,n8:2,n9:3,n10:2,n11:2};
+      let sum=0, max=0;
+      for(const [k,w] of Object.entries(weights)){ sum+= (Number(answers[k])||0); max+=w; }
+      return {raw:sum, max, pct:max>0?Math.round((sum/max)*100):0};
+    },
+    interpret(pct){
+      if(pct<=10) return {level:"AVC leve", desc:"Déficit neurológico leve.", color:"#16A34A"};
+      if(pct<=35) return {level:"AVC moderado", desc:"Déficit neurológico moderado.", color:"#D97706"};
+      if(pct<=60) return {level:"AVC moderado-grave", desc:"Déficit neurológico importante.", color:"#DC2626"};
+      return {level:"AVC grave", desc:"Déficit neurológico severo.", color:"#BE185D"};
+    },
+    questions:[
+      {id:"n1a",label:"1a — Nível de Consciência",o:["0 — Alerta","1 — Sonolento","2 — Torporoso","3 — Coma"]},
+      {id:"n1b",label:"1b — Orientação (mês + idade)",o:["0 — Ambas corretas","1 — Uma correta","2 — Nenhuma/Não testável"]},
+      {id:"n1c",label:"1c — Comandos (abrir/fechar olhos + mão)",o:["0 — Ambos corretos","1 — Um correto","2 — Nenhum"]},
+      {id:"n2",label:"2 — Olhar conjugado horizontal",o:["0 — Normal","1 — Paresia parcial","2 — Desvio forçado"]},
+      {id:"n3",label:"3 — Campo visual (quadrantes)",o:["0 — Sem perda","1 — Hemianopsia parcial","2 — Hemianopsia completa","3 — Hemianopsia bilateral"]},
+      {id:"n4",label:"4 — Paralisia facial",o:["0 — Normal","1 — Paresia leve","2 — Paresia parcial inferior","3 — Completa (uni ou bi)"]},
+      {id:"n5a",label:"5a — Motor braço E (10s)",o:["0 — Mantém","1 — Queda <10s","2 — Queda <5s","3 — Esforço sem gravidade","4 — Sem movimento"]},
+      {id:"n5b",label:"5b — Motor braço D (10s)",o:["0 — Mantém","1 — Queda <10s","2 — Queda <5s","3 — Esforço sem gravidade","4 — Sem movimento"]},
+      {id:"n6a",label:"6a — Motor perna E (5s)",o:["0 — Mantém","1 — Queda <5s","2 — Queda <2s","3 — Esforço sem gravidade","4 — Sem movimento"]},
+      {id:"n6b",label:"6b — Motor perna D (5s)",o:["0 — Mantém","1 — Queda <5s","2 — Queda <2s","3 — Esforço sem gravidade","4 — Sem movimento"]},
+      {id:"n7",label:"7 — Ataxia apendicular",o:["0 — Ausente","1 — Presente em um membro","2 — Presente em dois membros"]},
+      {id:"n8",label:"8 — Sensibilidade dolorosa",o:["0 — Normal","1 — Perda leve-moderada","2 — Perda grave ou total"]},
+      {id:"n9",label:"9 — Linguagem (compreensão/expressão)",o:["0 — Normal","1 — Afasia leve-moderada","2 — Afasia grave","3 — Mudo/global"]},
+      {id:"n10",label:"10 — Disartria",o:["0 — Normal","1 — Disartria leve-moderada","2 — Disartria grave ou mudo"]},
+      {id:"n11",label:"11 — Extinção / Inatenção",o:["0 — Ausente","1 — Parcial (1 modalidade)","2 — Grave (>1 modalidade)"]},
+    ],
+  },
 
   "Timed Up and Go (TUG)": simpleScale("tug","TUG",["Timed Up and Go (TUG)","TUG","Timed Up and Go"], [0,120], "highIsBad", s=>{
     if(s<=10) return pct({level:"Normal", desc:"Mobilidade funcional preservada.", color:"#16A34A"});
@@ -1101,26 +1160,131 @@ const SCALES = {
     return pct({level:"Muito alto risco", desc:"Mobilidade severamente comprometida.", color:"#BE185D"});
   }),
 
-  "Barthel Index": simpleScale("barthel","Barthel",["Barthel Index","Barthel"], [0,100], "highIsGood", s=>{
-    if(s>=90) return pct({level:"Independência", desc:"Funcionalidade preservada nas AVDs.", color:"#16A34A"});
-    if(s>=60) return pct({level:"Dependência leve", desc:"Necessita de ajuda em algumas atividades.", color:"#D97706"});
-    if(s>=40) return pct({level:"Dependência moderada", desc:"Necessita de ajuda significativa.", color:"#DC2626"});
-    return pct({level:"Dependência grave", desc:"Dependente para a maioria das AVDs.", color:"#BE185D"});
-  }),
+  "Barthel Index": {
+    id:"barthel", shortName:"Barthel", aliases:["Barthel Index","Barthel"], sections:10, maxPerSection:null, mcid:10, mdc:6,
+    calculate(answers){
+      const map = {
+        b_alim: [0,5,10], b_banho: [0,5], b_higiene: [0,5], b_vestir: [0,5,10], b_intest: [0,5,10], b_bexiga: [0,5,10],
+        b_vaso: [0,5,10], b_transf: [0,5,10,15], b_mobil: [0,5,10,15], b_escada: [0,5,10],
+      };
+      let sum = 0;
+      for (const [k, w] of Object.entries(map)) {
+        const idx = Number(answers[k]);
+        if (!isNaN(idx) && w[idx] !== undefined) sum += w[idx];
+      }
+      return {raw:sum, max:100, pct:sum};
+    },
+    interpret(pct){
+      if(pct>=90) return {level:"Independência", desc:"Funcionalidade preservada nas AVDs.", color:"#16A34A"};
+      if(pct>=60) return {level:"Dependência leve", desc:"Necessita de ajuda em algumas atividades.", color:"#D97706"};
+      if(pct>=40) return {level:"Dependência moderada", desc:"Necessita de ajuda significativa.", color:"#DC2626"};
+      return {level:"Dependência grave", desc:"Dependente para a maioria das AVDs.", color:"#BE185D"};
+    },
+    questions:[
+      {id:"b_alim",label:"Alimentação",o:["0 — Dependente","5 — Precisa de ajuda (cortar, passar manteiga)","10 — Independente"]},
+      {id:"b_banho",label:"Banho",o:["0 — Dependente","5 — Independente"]},
+      {id:"b_higiene",label:"Higiene pessoal (rosto/dentes/barba)",o:["0 — Dependente","5 — Independente"]},
+      {id:"b_vestir",label:"Vestir-se",o:["0 — Dependente","5 — Precisa de ajuda","10 — Independente"]},
+      {id:"b_intest",label:"Controle intestinal",o:["0 — Incontinente","5 — Acidente ocasional","10 — Continente"]},
+      {id:"b_bexiga",label:"Controle vesical",o:["0 — Incontinente ou cateter","5 — Acidente ocasional","10 — Continente"]},
+      {id:"b_vaso",label:"Uso do vaso sanitário",o:["0 — Dependente","5 — Ajuda parcial","10 — Independente"]},
+      {id:"b_transf",label:"Transferência (cadeira↔cama)",o:["0 — Dependente","5 — Grande ajuda","10 — Pequena ajuda","15 — Independente"]},
+      {id:"b_mobil",label:"Mobilidade (caminhar/cadeira)",o:["0 — Imóvel","5 — Independente em cadeira","10 — Anda com ajuda","15 — Anda independente (≥50m)"]},
+      {id:"b_escada",label:"Subir e descer escadas",o:["0 — Dependente","5 — Precisa de ajuda","10 — Independente"]},
+    ],
+  },
 
-  "SCIM (Spinal Cord Independence Measure)": simpleScale("scim","SCIM",["SCIM","Spinal Cord Independence Measure"], [0,100], "highIsGood", s=>{
-    if(s>=80) return pct({level:"Independência funcional", desc:"Boa funcionalidade na lesão medular.", color:"#16A34A"});
-    if(s>=50) return pct({level:"Dependência moderada", desc:"Assistência parcial nas AVDs.", color:"#D97706"});
-    if(s>=20) return pct({level:"Dependência grave", desc:"Assistência significativa.", color:"#DC2626"});
-    return pct({level:"Dependência total", desc:"Assistência completa.", color:"#BE185D"});
-  }),
+  "SCIM (Spinal Cord Independence Measure)": {
+    id:"scim", shortName:"SCIM", aliases:["SCIM","Spinal Cord Independence Measure"], sections:15, maxPerSection:null, mcid:8, mdc:5,
+    calculate(answers){
+      const map = {
+        s_alim: [0,1,2,3], s_banho_s: [0,1,2,3], s_banho_i: [0,1,2,3], s_vestir_s: [0,1,2,3], s_vestir_i: [0,1,2,3],
+        s_higiene: [0,1,2,3], s_resp: [0,2,4,6,8,10], s_esfinct: [0,3,6,9,12,15],
+        s_mobil_cama: [0,2,4,6], s_transf_banho: [0,1,2], s_transf_chao: [0,1,2],
+        s_mobil_int: [0,2,4,6,8], s_mobil_mod: [0,2,4,6,8], s_mobil_ext: [0,2,4,6,8,10],
+        s_escada: [0,1,2,3],
+      };
+      let sum = 0, max = 0;
+      for (const [k, w] of Object.entries(map)) {
+        const idx = Number(answers[k]);
+        if (!isNaN(idx) && w[idx] !== undefined) sum += w[idx];
+        max += w[w.length-1];
+      }
+      return {raw:sum, max, pct:max>0?Math.round((sum/max)*100):0};
+    },
+    interpret(pct){
+      if(pct>=80) return {level:"Independência funcional", desc:"Boa funcionalidade na lesão medular.", color:"#16A34A"};
+      if(pct>=50) return {level:"Dependência moderada", desc:"Assistência parcial nas AVDs.", color:"#D97706"};
+      if(pct>=20) return {level:"Dependência grave", desc:"Assistência significativa.", color:"#DC2626"};
+      return {level:"Dependência total", desc:"Assistência completa.", color:"#BE185D"};
+    },
+    questions:[
+      {id:"s_alim",label:"Alimentação",o:["0 — Sonda/dependente","1 — Ajuda parcial","2 — Independente com adaptação","3 — Independente"]},
+      {id:"s_banho_s",label:"Banho — Tronco superior",o:["0 — Dependente","1 — Ajuda parcial","2 — Independente com adaptação","3 — Independente"]},
+      {id:"s_banho_i",label:"Banho — Tronco inferior",o:["0 — Dependente","1 — Ajuda parcial","2 — Independente com adaptação","3 — Independente"]},
+      {id:"s_vestir_s",label:"Vestir — Tronco superior",o:["0 — Dependente","1 — Ajuda parcial","2 — Independente com adaptação","3 — Independente"]},
+      {id:"s_vestir_i",label:"Vestir — Tronco inferior",o:["0 — Dependente","1 — Ajuda parcial","2 — Independente com adaptação","3 — Independente"]},
+      {id:"s_higiene",label:"Higiene (face/barba/dentes)",o:["0 — Dependente","1 — Ajuda parcial","2 — Independente com adaptação","3 — Independente"]},
+      {id:"s_resp",label:"Respiração (capacidade vital)",o:["0 — Ventilação dependente","2 — CV <30%","4 — CV 30-50%","6 — CV 50-80%","8 — CV >80% (necessita auxílio)","10 — CV >80% (independente)"]},
+      {id:"s_esfinct",label:"Controle esfincteriano (urinário+intestinal)",o:["0 — Cateter ou incontinência total","3 — Esvaziamento assistido (cateterismo)","6 — Incontinência parcial","9 — Continente (horário programado)","12 — Continente (micção voluntária)","15 — Continência completa"]},
+      {id:"s_mobil_cama",label:"Mobilidade e transferências no leito",o:["0 — Dependente","2 — Ajuda parcial","4 — Independente com dispositivos","6 — Independente"]},
+      {id:"s_transf_banho",label:"Transferência: cama↔cadeira de banho",o:["0 — Dependente","1 — Ajuda parcial ou supervisão","2 — Independente"]},
+      {id:"s_transf_chao",label:"Transferência: cadeira↔chão",o:["0 — Dependente","1 — Ajuda parcial ou supervisão","2 — Independente"]},
+      {id:"s_mobil_int",label:"Mobilidade: curta distância (10-100m)",o:["0 — Dependente","2 — Cadeira elétrica ou ajuda","4 — Cadeira manual independente","6 — Anda com andador/muletas","8 — Anda com órteses (sem supervisão)"]},
+      {id:"s_mobil_mod",label:"Mobilidade: distância moderada (100-500m)",o:["0 — Dependente","2 — Cadeira elétrica","4 — Cadeira manual independente","6 — Anda com andador/muletas","8 — Anda com órteses"]},
+      {id:"s_mobil_ext",label:"Mobilidade: longa distância (>500m / exteriores)",o:["0 — Dependente","2 — Cadeira elétrica","4 — Cadeira manual independente","6 — Anda com andador","8 — Anda com órteses","10 — Anda sem auxílio"]},
+      {id:"s_escada",label:"Subir e descer escadas",o:["0 — Incapaz","1 — Com ajuda (1+ pessoas)","2 — Com supervisão ou corrimão","3 — Independente (sem ajuda)"]},
+    ],
+  },
 
-  "Expanded Disability Status Scale (EDSS)": simpleScale("edss","EDSS",["EDSS","Expanded Disability Status Scale"], [0,10], "highIsBad", s=>{
-    if(s<=2.5) return pct({level:"Incapacidade mínima", desc:"Pouca limitação funcional.", color:"#16A34A"});
-    if(s<=4.5) return pct({level:"Incapacidade moderada", desc:"Limitação funcional parcial.", color:"#D97706"});
-    if(s<=6.5) return pct({level:"Incapacidade grave", desc:"Comprometimento importante da marcha.", color:"#DC2626"});
-    return pct({level:"Incapacidade muito grave", desc:"Restrito à cadeira de rodas/leito.", color:"#BE185D"});
-  }),
+  "Expanded Disability Status Scale (EDSS)": {
+    id:"edss", shortName:"EDSS", aliases:["EDSS","Expanded Disability Status Scale"], sections:8, maxPerSection:null, mcid:1, mdc:0.5,
+    calculate(answers){
+      const w = {e_pyra:[0,1,2,3,4,5],e_cereb:[0,1,2,3,4,5],e_brain:[0,1,2,3,4,5],
+                 e_sens:[0,1,2,3,4,5],e_bb:[0,1,2,3,4,5],e_vis:[0,1,2,3,4,5],
+                 e_mental:[0,1,2,3,4,5],e_amb:[]};
+      let fsSum=0, fsMax=0;
+      for(const [k,arr] of Object.entries(w)){
+        if(k==="e_amb") continue;
+        const idx=Number(answers[k]); fsSum+=(!isNaN(idx)&&arr[idx]!==undefined?arr[idx]:0); fsMax+=5;
+      }
+      const amb = Number(answers.e_amb)||0;
+      // Aproximação EDSS baseada em Functional Systems + deambulação
+      let edss;
+      if(amb===0) edss=0; // Normal
+      else if(amb===1) edss=fsSum<=10?1.5:2.5; // Leve, sem limitação marcha
+      else if(amb===2) edss=fsSum<=8?3.0:3.5; // Moderada, marcha preservada
+      else if(amb===3) edss=4.0; // Anda 500m
+      else if(amb===4) edss=4.5; // Anda 300m
+      else if(amb===5) edss=5.0; // Anda 200m
+      else if(amb===6) edss=5.5; // Anda 100m
+      else if(amb===7) edss=6.0; // Apoio unilateral
+      else if(amb===8) edss=6.5; // Apoio bilateral
+      else if(amb===9) edss=7.0; // Cadeira de rodas, transfere
+      else if(amb===10) edss=7.5; // Cadeira, transfere com ajuda
+      else if(amb===11) edss=8.0; // Restrito ao leito/cadeira
+      else if(amb===12) edss=8.5; // Restrito ao leito, usa braços
+      else edss=9.0; // Restrito ao leito, dependente
+      const pct=Math.round(Math.min(100,(edss/9.5)*100));
+      return {raw:edss, max:10, pct};
+    },
+    interpret(pct){
+      if(pct<=25) return {level:"Incapacidade mínima", desc:"Pouca limitação funcional.", color:"#16A34A"};
+      if(pct<=45) return {level:"Incapacidade moderada", desc:"Limitação funcional parcial.", color:"#D97706"};
+      if(pct<=65) return {level:"Incapacidade grave", desc:"Comprometimento importante da marcha.", color:"#DC2626"};
+      return {level:"Incapacidade muito grave", desc:"Restrito à cadeira de rodas/leito.", color:"#BE185D"};
+    },
+    questions:[
+      {id:"e_pyra",label:"Função piramidal (força MMII)",o:["0 — Normal","1 — Déficit leve (Grau 4)","2 — Déficit moderado (Grau 3)","3 — Déficit grave (Grau 2)","4 — Movimento mínimo (Grau 1)","5 — Plegia (Grau 0)"]},
+      {id:"e_cereb",label:"Função cerebelar (ataxia/tremor)",o:["0 — Normal","1 — Sinais leves, sem disfunção","2 — Ataxia leve (marcha, membro)","3 — Ataxia moderada","4 — Ataxia grave (incapaz de coord.)","5 — Ataxia severa (não realiza)"]},
+      {id:"e_brain",label:"Tronco cerebral (fala/deglutição/ocular)",o:["0 — Normal","1 — Sinais leves (nistagmo)","2 — Disartria/nistagmo moderado","3 — Disartria/disgafia importante","4 — Necessidade de CAA","5 — Incapaz deglutir/falar"]},
+      {id:"e_sens",label:"Função sensitiva (toque/dor/mmii)",o:["0 — Normal","1 — Hipoestesia leve em 1-2 membros","2 — Hipoestesia leve em 3-4 membros ou moderada em 1-2","3 — Hipoestesia moderada em 3-4 membros","4 — Hipoestesia grave (estereognosia)","5 — Anestesia completa"]},
+      {id:"e_bb",label:"Bexiga e intestino",o:["0 — Normal","1 — Urgência/hesitação leve","2 — Urgência/hesitação moderada","3 — Incontinência ocasional","4 — Sondagem intermitente","5 — Cateter permanente/incontinência total"]},
+      {id:"e_vis",label:"Função visual (acuidade/escotoma)",o:["0 — Normal","1 — Escotoma, acuidade ≥20/30","2 — Pior olho com escotoma ou 20/30-20/50","3 — Pior olho com grande escotoma ou 20/60","4 — Pior olho <20/60, melhor olho <20/60","5 — Pior olho <20/60, melhor olho ≤20/60"]},
+      {id:"e_mental",label:"Função cerebral (cognição/humor)",o:["0 — Normal","1 — Alteração de humor (sem déficit cognitivo)","2 — Déficit cognitivo leve","3 — Déficit cognitivo moderado","4 — Síndrome cerebral crônica","5 — Demência grave"]},
+      {id:"e_amb",label:"Deambulação — distância máxima sem descanso",o:["0 — Sem restrições","1 — >500m, sem limitação","2 — >500m, sinais leves","3 — 500m sem descanso","4 — 300m sem descanso","5 — 200m sem descanso","6 — 100m sem descanso","7 — Apoio unilateral (bengala)","8 — Apoio bilateral (muletas/andador)","9 — Cadeira de rodas — transfere sozinho","10 — Cadeira de rodas — transferência com ajuda","11 — Restrito ao leito/cadeira","12 — Restrito ao leito (usa braços)","13 — Restrito, dependente total"]},
+    ],
+  },
 
   // ════════════════════ PEDIATRIA ════════════════════
 

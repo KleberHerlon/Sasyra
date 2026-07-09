@@ -7,8 +7,15 @@ import { AudioField, CollapsibleSection, CollapsibleSub, SessionCounter, Honorar
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import GeneralAssessment from "../components/GeneralAssessment";
+import { detectLocalDor } from "../utils/clinicalDetection.js";
+import { useClinicalScan } from "../hooks/useClinicalScan.js";
+import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
+import { extractClinicalEntities } from "../utils/clinicalDetection.js";
 import LogoSVG from "../components/LogoSVG";
 import { calcOxford, calcPERFECT } from "../data/uroScales";
+import BristolStoolScale from "../components/BristolStoolScale";
+import ErectionRigidityScale from "../components/ErectionRigidityScale";
+import PelvicFloorMap from "../components/PelvicFloorMap";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -145,7 +152,7 @@ function generateCIFUro({ evaMov, sintomas, limitacoes }) {
   return result;
 }
 
-export default function UroGynecology({ student, students, allPatients, currentModuleId, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById, onAgenda, onFinanceiro, onSubscription, planLabel }) {
+export default function UroGynecology({ student, students, allPatients, currentModuleId, onSelectStudent, onAddStudent, onUpdateStudent, onDeleteStudent, onUpdateStudentById, plan, onAgenda, onFinanceiro, onSubscription, planLabel }) {
   const [studentListView, setStudentListView] = useState(!(student?.id || student?.nome));
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteStep, setDeleteStep] = useState(1);
@@ -159,6 +166,7 @@ export default function UroGynecology({ student, students, allPatients, currentM
   const [queixaUro, setQueixaUro] = useState("");
   const [hdaUro, setHdaUro] = useState("");
   const [diagnosticoCinesioUro, setDiagnosticoCinesioUro] = useState("");
+  const [localDor, setLocalDor] = useState([]);
   const [gesta, setGesta] = useState("");
   const [para, setPara] = useState("");
   const [partosNormais, setPartosNormais] = useState("");
@@ -187,6 +195,9 @@ export default function UroGynecology({ student, students, allPatients, currentM
 
   const [oxford, setOxford] = useState("");
   const [perfect, setPerfect] = useState({ power:"", endurance:"", repetitions:"", fast:"" });
+  const [pelvicFloorMap, setPelvicFloorMap] = useState([]);
+  const [bristolStool, setBristolStool] = useState(null);
+  const [erectionRigidity, setErectionRigidity] = useState(null);
   const [popQ, setPopQ] = useState({ ba:"", bp:"", c:"", d:"", gh:"", pb:"", tvl:"" });
   const [perineometria, setPerineometria] = useState("");
 
@@ -252,6 +263,10 @@ export default function UroGynecology({ student, students, allPatients, currentM
         setPfdi20(saved.pfdi20 || "");
         setFsfi(saved.fsfi || "");
         setEvolucaoUro(saved.evolucaoUro || "");
+        setLocalDor(saved.localDor || []);
+        setPelvicFloorMap(saved.pelvicFloorMap || []);
+        setBristolStool(saved.bristolStool ?? null);
+        setErectionRigidity(saved.erectionRigidity ?? null);
         if (saved.pain) enhancer.setPain(saved.pain);
         if (saved.logs) enhancer.setLogs(saved.logs);
         if (saved.redFlags) enhancer.setRedFlags(saved.redFlags);
@@ -259,6 +274,14 @@ export default function UroGynecology({ student, students, allPatients, currentM
       }
     }
   }, [student?.id, student?.nome]);
+
+  const { entities } = useClinicalScan(queixaUro);
+  const { detected } = useSemanticScanner(queixaUro, {});
+
+  useEffect(() => {
+    const regions = detectLocalDor(queixaUro);
+    if (regions.length > 0) setLocalDor(prev => [...new Set([...prev, ...regions])]);
+  }, [queixaUro]);
 
   const handleSave = () => {
     if (!student?.id && !student?.nome) return;
@@ -271,7 +294,8 @@ export default function UroGynecology({ student, students, allPatients, currentM
       diureseDia, diureseNoite, perdasDia, perdasNoite, ingestaoHidrica,
       oxford, perfect, popQ, perineometria,
       iciqSF, pfdi20, fsfi,
-      evolucaoUro,
+      evolucaoUro, localDor,
+      pelvicFloorMap, bristolStool, erectionRigidity,
       pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
     });
@@ -476,11 +500,26 @@ export default function UroGynecology({ student, students, allPatients, currentM
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
                 Preencha os dados da avaliação uro-ginecológica, história obstétrica, cirurgias e condições associadas.
               </div>
-              <div style={{ marginBottom:14 }}>
-                <span style={lbl()}>Queixa principal</span>
-                <AudioField value={queixaUro} onChange={v=>{const t=typeof v==="function"?v(queixaUro):v;setQueixaUro(t)}}
-                  placeholder="Digite ou use o microfone para ditar a queixa da paciente..." rows={2} />
+              <div style={{ background:C.redBg, border:`1.5px solid ${C.red}`, borderRadius:12, padding:"14px 16px", marginBottom:12 }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:8 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.1em", color:C.red }}>Queixa principal</span>
+                    <span style={{ fontSize:9, fontWeight:800, color:"#fff", background:C.red, borderRadius:6, padding:"2px 8px", letterSpacing:"0.05em", textTransform:"uppercase" }}>OBRIGATÓRIO</span>
+                  </div>
+                  <span style={{ fontSize:10, color:C.red, opacity:0.7 }}>— digite ou use o microfone</span>
+                </div>
+                <AudioField value={queixaUro} onChange={v=>setQueixaUro(typeof v==="function"?v(queixaUro):v)} placeholder="Ex: Incontinência urinária de esforço há 2 anos, 3 partos normais..." rows={2} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,padding:"9px 12px",fontFamily:F,lineHeight:1.5}} />
               </div>
+              {queixaUro && entities && (entities.muscles?.length>0||entities.laterality||entities.painChars?.length>0) && (
+                <div style={{ background:C.blueBg, border:`1px solid ${C.blue}40`, borderRadius:10, padding:"10px 14px", margin:"12px 0" }}>
+                  <div style={{ fontSize:10, fontWeight:800, color:C.blue, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:8 }}>🔍 Varredura Semântica</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6, fontSize:12 }}>
+                    {entities.muscles?.length>0 && <span style={{color:C.textSub}}>Músculos: <strong style={{color:C.text}}>{entities.muscles.join(", ")}</strong></span>}
+                    {entities.laterality && <span style={{color:C.textSub}}>Lateralidade: <strong style={{color:C.text}}>{entities.laterality}</strong></span>}
+                    {entities.painChars?.length>0 && <span style={{color:C.textSub}}>Caráter: <strong style={{color:C.text}}>{entities.painChars.join(", ")}</strong></span>}
+                  </div>
+                </div>
+              )}
               <div style={{ marginBottom:14 }}>
                 <span style={lbl()}>História da Doença Atual (HDA)</span>
                 <AudioField value={hdaUro} onChange={v=>setHdaUro(typeof v==="function"?v(hdaUro):v)}
@@ -520,7 +559,9 @@ export default function UroGynecology({ student, students, allPatients, currentM
               </div>
             </Section>
 
-            <GeneralAssessment storageKey="uro" studentId={sid} colors={{ ...C, accent: C.amber }} />
+            <GeneralAssessment storageKey="uro" studentId={sid} colors={{ ...C, accent: C.amber }} initialBodyPain={localDor} />
+
+            <PelvicFloorMap value={pelvicFloorMap} onChange={setPelvicFloorMap} sexo={student?.sexo} colors={{ ...C, accent: C.amber, font: F }} />
 
             <CifSection cifSuggestions={cifSuggestionsUro} autoCif={autoCifUro} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
@@ -574,6 +615,11 @@ export default function UroGynecology({ student, students, allPatients, currentM
                   value={dispareunia} onChange={setDispareunia} activeColor={C.amber} />
               </div>
             </Section>
+
+            <BristolStoolScale value={bristolStool} onChange={setBristolStool} colors={{ ...C, accent: C.amber, font: F }} />
+            {student?.sexo === "Masculino" && (
+              <ErectionRigidityScale value={erectionRigidity} onChange={setErectionRigidity} colors={{ ...C, accent: C.amber, font: F }} />
+            )}
 
             <Section title="Diário Miccional" icon="📝">
               <div style={{ fontSize:12, color:C.textMuted, marginBottom:10, lineHeight:1.5 }}>
@@ -754,9 +800,22 @@ export default function UroGynecology({ student, students, allPatients, currentM
         {tab === "sessoes" && (
           <>
             <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={uroColors} />
-            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
-              flags={["Perda súbita de grande volume","Sangramento vaginal","Febre pós-parto","Dor pélvica intensa","Prolapso grau III/IV","Retenção urinária aguda","Fístula"]}
-              colors={uroColors} />
+            {enhancer.redFlags.length > 0 && (
+              <div style={{ background:"var(--redBg)", border:"1px solid rgba(239,68,68,0.25)", borderRadius:8, padding:"8px 12px", marginTop:12, marginBottom:10 }}>
+                <div style={{ fontSize:10, fontWeight:800, color:"var(--red)", letterSpacing:"0.1em", marginBottom:6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                  {["Perda súbita de grande volume","Sangramento vaginal","Febre pós-parto","Dor pélvica intensa","Prolapso grau III/IV","Retenção urinária aguda","Fístula"].map(f => {
+                    const active = enhancer.redFlags.includes(f);
+                    return (
+                      <button key={f} onClick={() => enhancer.setRedFlags(active ? enhancer.redFlags.filter(x=>x!==f) : [...enhancer.redFlags, f])}
+                        style={{ fontSize:11, color:active?"#fff":"var(--red)", background:active?"var(--red)":"var(--redBg)", border:"1px solid rgba(239,68,68,0.3)", borderRadius:6, padding:"3px 10px", cursor:"pointer", fontFamily:"'Inter',sans-serif", fontWeight:active?700:400, transition:"all 0.12s" }}>
+                        {active && "✓ "}{f}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={uroColors} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Paciente: ${student?.nome || "—"}\nQueixa: ${queixaUro}\nG/P: ${gesta}/${para}\nCirurgias: ${cirurgiasPelvicas.join(", ")}\nPerda urina: ${perdaUrina.join(", ")}\nUrgência: ${urgenciaMiccional.join(", ")}\nOxford: ${oxfordResult.grade}\nPERFECT: ${perfectResult.total}\nICIQ-SF: ${iciqSF || "—"}/21\nPFDI-20: ${pfdi20 || "—"}/100\nFSFI: ${fsfi || "—"}/36\nEVA Dor: ${enhancer.pain.evaRep}/10\nEvolução: ${evolucaoUro}`}

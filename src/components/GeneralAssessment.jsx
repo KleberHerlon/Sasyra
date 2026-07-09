@@ -8,7 +8,7 @@ const YELLOW_FLAGS = [
   "Isolamento social", "Fadiga crônica", "Sobrecarga do cuidador",
 ];
 
-export default function GeneralAssessment({ storageKey, studentId, colors, onSave, initialBodyPain }) {
+export default function GeneralAssessment({ storageKey, studentId, colors, onSave, initialBodyPain, pediatric }) {
   const [bodyPain, setBodyPain] = useState([]);
   const [caraterDor, setCaraterDor] = useState([]);
   const [tempoDor, setTempoDor] = useState("");
@@ -65,7 +65,7 @@ export default function GeneralAssessment({ storageKey, studentId, colors, onSav
 
       <div style={{ marginBottom:14 }}>
         {renderLabel("Localização da dor")}
-        <BodyMap value={bodyPain} onChange={setBodyPain} colors={{ mark:accent, ...colors }} />
+        <BodyMap value={bodyPain} onChange={setBodyPain} colors={{ mark:accent, ...colors }} pediatric={pediatric} />
       </div>
 
       <div style={{ marginBottom:12 }}>

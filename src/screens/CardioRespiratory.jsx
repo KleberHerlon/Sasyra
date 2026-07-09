@@ -8,6 +8,10 @@ import { CollapsibleSection, CollapsibleSub, useMediaQuery, AudioField } from ".
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import GeneralAssessment from "../components/GeneralAssessment";
+import { detectLocalDor } from "../utils/clinicalDetection.js";
+import { useClinicalScan } from "../hooks/useClinicalScan.js";
+import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
+import { extractClinicalEntities } from "../utils/clinicalDetection.js";
 import LogoSVG from "../components/LogoSVG";
 
 const C = {
@@ -186,6 +190,7 @@ export default function CardioRespiratory({ student, students, allPatients, curr
   const [queixaCardio, setQueixaCardio] = useState("");
   const [hdaCardio, setHdaCardio] = useState("");
   const [diagnosticoCinesioCardio, setDiagnosticoCinesioCardio] = useState("");
+  const [localDor, setLocalDor] = useState([]);
   const [historicoTabagismo, setHistoricoTabagismo] = useState("");
   const [comorbidadesCardio, setComorbidadesCardio] = useState([]);
   const [medicamentosCardio, setMedicamentosCardio] = useState("");
@@ -280,6 +285,7 @@ export default function CardioRespiratory({ student, students, allPatients, curr
         setEvolucaoCardio(saved.evolucaoCardio || "");
         setHdaCardio(saved.hdaCardio || "");
         setDiagnosticoCinesioCardio(saved.diagnosticoCinesioCardio || "");
+        setLocalDor(saved.localDor || []);
         if (saved.pain) enhancer.setPain(saved.pain);
         if (saved.logs) enhancer.setLogs(saved.logs);
         if (saved.redFlags) enhancer.setRedFlags(saved.redFlags);
@@ -287,6 +293,14 @@ export default function CardioRespiratory({ student, students, allPatients, curr
       }
     }
   }, [student?.id, student?.nome]);
+
+  const { entities } = useClinicalScan(queixaCardio);
+  const { detected } = useSemanticScanner(queixaCardio, {});
+
+  useEffect(() => {
+    const regions = detectLocalDor(queixaCardio);
+    if (regions.length > 0) setLocalDor(prev => [...new Set([...prev, ...regions])]);
+  }, [queixaCardio]);
 
   const handleSave = () => {
     if (!student?.id && !student?.nome) return;
@@ -298,7 +312,7 @@ export default function CardioRespiratory({ student, students, allPatients, curr
       padraoRespiratorio, tosse, secrecao, edema, jugular,
       nyha, borg, mrcDispneia, tc6mDistancia, tc6mSpO2, cvf, vef1, relacaoVEF1CVF,
       minnesotaScores, minnesotaResult,
-      evolucaoCardio,
+      evolucaoCardio, localDor,
       pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
     });
@@ -501,11 +515,27 @@ export default function CardioRespiratory({ student, students, allPatients, curr
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
                 Preencha os dados da avaliação cardiorrespiratória, queixa principal, histórico e fatores de risco do paciente.
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
-                <div>
-                  <span style={lbl()}>Queixa principal / Diagnóstico cardiorrespiratório</span>
-                  <AudioField value={queixaCardio} onChange={v => setQueixaCardio(typeof v === "function" ? v(queixaCardio) : v)} placeholder="Ex: ICC descompensada, DPOC exacerbação, Pós-IAM..." rows={2} />
+              <div style={{ background:C.redBg, border:`1.5px solid ${C.red}`, borderRadius:12, padding:"14px 16px", marginBottom:12 }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:8 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.1em", color:C.red }}>Queixa principal</span>
+                    <span style={{ fontSize:9, fontWeight:800, color:"#fff", background:C.red, borderRadius:6, padding:"2px 8px", letterSpacing:"0.05em", textTransform:"uppercase" }}>OBRIGATÓRIO</span>
+                  </div>
+                  <span style={{ fontSize:10, color:C.red, opacity:0.7 }}>— digite ou use o microfone</span>
                 </div>
+                <AudioField value={queixaCardio} onChange={v => setQueixaCardio(typeof v === "function" ? v(queixaCardio) : v)} placeholder="Ex: ICC descompensada, DPOC exacerbação, Pós-IAM..." rows={2} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,padding:"9px 12px",fontFamily:F,lineHeight:1.5}} />
+              </div>
+              {queixaCardio && entities && (entities.muscles?.length>0||entities.laterality||entities.painChars?.length>0) && (
+                <div style={{ background:C.blueBg, border:`1px solid ${C.blue}40`, borderRadius:10, padding:"10px 14px", margin:"0 0 12px 0" }}>
+                  <div style={{ fontSize:10, fontWeight:800, color:C.blue, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:8 }}>🔍 Varredura Semântica</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6, fontSize:12 }}>
+                    {entities.muscles?.length>0 && <span style={{color:C.textSub}}>Músculos: <strong style={{color:C.text}}>{entities.muscles.join(", ")}</strong></span>}
+                    {entities.laterality && <span style={{color:C.textSub}}>Lateralidade: <strong style={{color:C.text}}>{entities.laterality}</strong></span>}
+                    {entities.painChars?.length>0 && <span style={{color:C.textSub}}>Caráter: <strong style={{color:C.text}}>{entities.painChars.join(", ")}</strong></span>}
+                  </div>
+                </div>
+              )}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px", marginBottom:12 }}>
                 <div>
                   <span style={lbl()}>Histórico de tabagismo</span>
                   <input type="text" value={historicoTabagismo} onChange={e => setHistoricoTabagismo(e.target.value)} style={inp()} placeholder="Ex: 30 anos-maço, ex-tabagista há 5 anos" />
@@ -556,7 +586,7 @@ export default function CardioRespiratory({ student, students, allPatients, curr
               </div>
             </Section>
 
-            <GeneralAssessment storageKey="cardio" studentId={sid} colors={{ ...C, accent: C.red }} />
+            <GeneralAssessment storageKey="cardio" studentId={sid} colors={{ ...C, accent: C.red }} initialBodyPain={localDor} />
 
             <CifSection cifSuggestions={cifSuggestionsCardio} autoCif={autoCifCardio} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
@@ -744,9 +774,22 @@ export default function CardioRespiratory({ student, students, allPatients, curr
         {tab === "sessoes" && (
           <>
             <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={cardioColors} />
-            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
-              flags={["Dor torácica súbita (IAM)","Dispneia súbita (TEP)","Cianose","Hemoptise","Palpitações com síncope","Tontura/ Síncope","Febre + secreção purulenta","SpO2 < 88% em repouso","Edema agudo de pulmão","Choque cardiogênico","FC > 120 bpm em repouso","PA > 220/120 mmHg","Ganho de peso > 2kg/3dias","Crises de asma graves"]}
-              colors={cardioColors} />
+            {enhancer.redFlags.length > 0 && (
+              <div style={{ background:C.redBg, border:`1px solid ${C.red}40`, borderRadius:8, padding:"8px 12px", marginTop:12, marginBottom:10 }}>
+                <div style={{ fontSize:10, fontWeight:800, color:C.red, letterSpacing:"0.1em", marginBottom:6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                  {["Dor torácica súbita (IAM)","Dispneia súbita (TEP)","Cianose","Hemoptise","Palpitações com síncope","Tontura/ Síncope","Febre + secreção purulenta","SpO2 < 88% em repouso","Edema agudo de pulmão","Choque cardiogênico","FC > 120 bpm em repouso","PA > 220/120 mmHg","Ganho de peso > 2kg/3dias","Crises de asma graves"].map(f => {
+                  const active = enhancer.redFlags.includes(f);
+                  return (
+                    <button key={f} onClick={() => enhancer.setRedFlags(active ? enhancer.redFlags.filter(x=>x!==f) : [...enhancer.redFlags, f])}
+                      style={{ fontSize:11, color:active?"#fff":C.red, background:active?C.red:C.redBg, border:`1px solid ${C.red}50`, borderRadius:6, padding:"3px 10px", cursor:"pointer", fontFamily:F, fontWeight:active?700:400, transition:"all 0.12s" }}>
+                      {active && "✓ "}{f}
+                    </button>
+                  );
+                })}
+                </div>
+              </div>
+            )}
             <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={cardioColors} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Paciente: ${student?.nome || "—"}\nQueixa: ${queixaCardio}\nComorbidades: ${comorbidadesCardio.join(", ")}\nSintomas: ${sintomasCardio.join(", ")}\nFC: ${fc} bpm | SpO2: ${spo2}% | PA: ${paSist}/${paDiast} mmHg\nNYHA: ${nyha}\nBorg: ${borg}\nmMRC: ${mrcDispneia}\nTC6M: ${tc6mDistancia}m\nEspirometria: CVF ${cvf}L, VEF1 ${vef1}L, Rel ${relacaoVEF1CVF}%\nMLHFQ: ${minnesotaResult?.total || "—"}/105\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nAusculta pulmonar: ${auscultaPulmonar}\nAusculta cardíaca: ${auscultaCardiaca}\nEdema: ${edema}\nJugular: ${jugular}\nEvolução: ${evolucaoCardio}`}

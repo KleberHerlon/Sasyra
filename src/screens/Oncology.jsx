@@ -7,6 +7,10 @@ import { CollapsibleSection, CollapsibleSub, AudioField } from "../components";
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import GeneralAssessment from "../components/GeneralAssessment";
+import { detectLocalDor } from "../utils/clinicalDetection.js";
+import { useClinicalScan } from "../hooks/useClinicalScan.js";
+import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
+import { extractClinicalEntities } from "../utils/clinicalDetection.js";
 import LogoSVG from "../components/LogoSVG";
 import { calcECOG, calcKPS, calcEORTC, calcESAS } from "../data/oncologyScales";
 
@@ -163,6 +167,7 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
   const [queixaOnco, setQueixaOnco] = useState("");
   const [hdaOnco, setHdaOnco] = useState("");
   const [diagnosticoCinesioOnco, setDiagnosticoCinesioOnco] = useState("");
+  const [localDor, setLocalDor] = useState([]);
   const [diagnosticoOnco, setDiagnosticoOnco] = useState("");
   const [tipoCancer, setTipoCancer] = useState("");
   const [estadiamento, setEstadiamento] = useState("");
@@ -234,6 +239,7 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
         setEortc(saved.eortc||{}); setEortcResult(saved.eortcResult||null);
         setEsas(saved.esas||{}); setEsasResult(saved.esasResult||null); setPallia10(saved.pallia10||"");
         setEvolucaoOnco(saved.evolucaoOnco||"");
+        setLocalDor(saved.localDor||[]);
         if (saved.pain) enhancer.setPain(saved.pain);
         if (saved.logs) enhancer.setLogs(saved.logs);
         if (saved.redFlags) enhancer.setRedFlags(saved.redFlags);
@@ -241,6 +247,14 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
       }
     }
   }, [student?.id, student?.nome]);
+
+  const { entities } = useClinicalScan(queixaOnco);
+  const { detected } = useSemanticScanner(queixaOnco, {});
+
+  useEffect(() => {
+    const regions = detectLocalDor(queixaOnco);
+    if (regions.length > 0) setLocalDor(prev => [...new Set([...prev, ...regions])]);
+  }, [queixaOnco]);
 
   const handleSave = () => {
     if (!student?.id && !student?.nome) return;
@@ -251,7 +265,7 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
       perimetriaMembros,bioimpedancia,sensacaoPeso,sinalGodet,classificacaoLinfedema,
       factFScore,escalaFadigaNumeric,impactoFadiga,ecog,kps,
       dorEVA,tipoDor,escalaDorNeuropatica,adms,forcaMuscular,
-      eortc,eortcResult,esas,esasResult,pallia10,evolucaoOnco,
+      eortc,eortcResult,esas,esasResult,pallia10,evolucaoOnco,localDor,
       pain:enhancer.pain,logs:enhancer.logs,redFlags:enhancer.redFlags,aiRes:enhancer.aiRes,
       data:new Date().toISOString().slice(0,10),
     });
@@ -450,11 +464,27 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
                 Preencha os dados da avaliação oncológica, tipo de câncer, estadiamento e tratamentos realizados.
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
-                <div>
-                  <span style={lbl()}>Queixa principal</span>
-                  <AudioField value={queixaOnco} onChange={v => setQueixaOnco(typeof v === "function" ? v(queixaOnco) : v)} placeholder="Dor pós-cirurgia, fraqueza..." rows={2} />
+              <div style={{ background:"C.redBg", border:"1.5px solid C.red", borderRadius:12, padding:"14px 16px", marginBottom:12 }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:8 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.1em", color:"C.red" }}>Queixa principal</span>
+                    <span style={{ fontSize:9, fontWeight:800, color:"#fff", background:"C.red", borderRadius:6, padding:"2px 8px", letterSpacing:"0.05em", textTransform:"uppercase" }}>OBRIGATÓRIO</span>
+                  </div>
+                  <span style={{ fontSize:10, color:"C.red", opacity:0.7 }}>— digite ou use o microfone</span>
                 </div>
+                <AudioField value={queixaOnco} onChange={v=>setQueixaOnco(typeof v==="function"?v(queixaOnco):v)} placeholder="Ex: Câncer de mama E, mastectomia há 3 meses, linfedema em MSE..." rows={2} style={{background:"C.surface",border:"1px solid C.border",borderRadius:8,color:"C.text",fontSize:13,padding:"9px 12px",fontFamily:F,lineHeight:1.5}} />
+              </div>
+              {queixaOnco && entities && (entities.muscles?.length>0||entities.laterality||entities.painChars?.length>0) && (
+                <div style={{ background:"C.blueBg", border:"1px solid rgba(96,165,250,0.25)", borderRadius:10, padding:"10px 14px", margin:"12px 0" }}>
+                  <div style={{ fontSize:10, fontWeight:800, color:"C.blue", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:8 }}>🔍 Varredura Semântica</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6, fontSize:12 }}>
+                    {entities.muscles?.length>0 && <span style={{color:"C.textSub"}}>Músculos: <strong style={{color:"C.text"}}>{entities.muscles.join(", ")}</strong></span>}
+                    {entities.laterality && <span style={{color:"C.textSub"}}>Lateralidade: <strong style={{color:"C.text"}}>{entities.laterality}</strong></span>}
+                    {entities.painChars?.length>0 && <span style={{color:"C.textSub"}}>Caráter: <strong style={{color:"C.text"}}>{entities.painChars.join(", ")}</strong></span>}
+                  </div>
+                </div>
+              )}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
                 <div><span style={lbl()}>Diagnóstico oncológico</span><input type="text" value={diagnosticoOnco} onChange={e=>setDiagnosticoOnco(e.target.value)} style={inp()} placeholder="Carcinoma ductal invasivo..." /></div>
                 <div><span style={lbl()}>Tipo de câncer</span><input type="text" value={tipoCancer} onChange={e=>setTipoCancer(e.target.value)} style={inp()} placeholder="Mama, Próstata, Pulmão..." /></div>
                 <div><span style={lbl()}>Estadiamento (TNM/Grupo)</span><input type="text" value={estadiamento} onChange={e=>setEstadiamento(e.target.value)} style={inp()} placeholder="T2N1M0, Estádio IIB" /></div>
@@ -479,7 +509,7 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
               </div>
             </Section>
 
-            <GeneralAssessment storageKey="oncology" studentId={sid} colors={{ ...C, accent: C.amber }} />
+            <GeneralAssessment storageKey="oncology" studentId={sid} colors={{ ...C, accent: C.amber }} initialBodyPain={localDor} />
 
             <CifSection cifSuggestions={cifSuggestionsOnco} autoCif={autoCifOnco} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
@@ -713,9 +743,22 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
         {tab === "sessoes" && (
           <>
             <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={oncoColors} />
-            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
-              flags={["Febre neutropênica","TEP suspeito","Sangramento ativo","Fratura patológica","Compressão medular","Síndrome da veia cava superior","Hipercalcemia sintomática","Linfangite/ erisipela"]}
-              colors={oncoColors} />
+            {enhancer.redFlags.length > 0 && (
+              <div style={{ background:"C.redBg", border:"1px solid rgba(239,68,68,0.25)", borderRadius:8, padding:"8px 12px", marginTop:12, marginBottom:10 }}>
+                <div style={{ fontSize:10, fontWeight:800, color:"C.red", letterSpacing:"0.1em", marginBottom:6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                  {["Febre neutropênica","TEP suspeito","Sangramento ativo","Fratura patológica","Compressão medular","Síndrome da veia cava superior","Hipercalcemia sintomática","Linfangite/ erisipela"].map(f => {
+                    const active = enhancer.redFlags.includes(f);
+                    return (
+                      <button key={f} onClick={() => enhancer.setRedFlags(active ? enhancer.redFlags.filter(x=>x!==f) : [...enhancer.redFlags, f])}
+                        style={{ fontSize:11, color:active?"#fff":"C.red", background:active?"C.red":"C.redBg", border:"1px solid rgba(239,68,68,0.3)", borderRadius:6, padding:"3px 10px", cursor:"pointer", fontFamily:"'Inter',sans-serif", fontWeight:active?700:400, transition:"all 0.12s" }}>
+                        {active && "✓ "}{f}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={oncoColors} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Paciente: ${student?.nome || "—"}\nDiagnóstico: ${diagnosticoOnco}\nTipo câncer: ${tipoCancer}\nEstadiamento: ${estadiamento}\nTratamentos: ${tratamentosRealizados.join(", ")}\nECOG: ${ecog || "—"}\nKPS: ${kps || "—"}\nFACT-F: ${factFScore || "—"}/52\nEVA Dor: ${dorEVA || "—"}/10\nESAS: ${esasResult?.total || "—"}/90\nEvolução: ${evolucaoOnco}`}
@@ -792,3 +835,4 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
     </div>
   );
 }
+

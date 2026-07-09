@@ -8,6 +8,10 @@ import { CollapsibleSection, CollapsibleSub, AudioField } from "../components";
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import GeneralAssessment from "../components/GeneralAssessment";
+import { detectLocalDor } from "../utils/clinicalDetection.js";
+import { useClinicalScan } from "../hooks/useClinicalScan.js";
+import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
+import { extractClinicalEntities } from "../utils/clinicalDetection.js";
 import { calcYBalance, calcLSI, calcLSIBidirectional, calcRTS } from "../data/sportsScales";
 
 const C = {
@@ -174,6 +178,7 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
   const [queixaEsportiva, setQueixaEsportiva] = useState("");
   const [hdaSports, setHdaSports] = useState("");
   const [diagnosticoCinesioSports, setDiagnosticoCinesioSports] = useState("");
+  const [localDor, setLocalDor] = useState([]);
   const [mecanismoLesao, setMecanismoLesao] = useState("");
   const [dataLesao, setDataLesao] = useState("");
   const [tratamentoRealizado, setTratamentoRealizado] = useState("");
@@ -282,6 +287,7 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
         setExerciciosPrescritos(saved.exerciciosPrescritos || "");
         setProgressaoCarga(saved.progressaoCarga || "");
         setEvolucaoEsportiva(saved.evolucaoEsportiva || "");
+        setLocalDor(saved.localDor || []);
         if (saved.pain) enhancer.setPain(saved.pain);
         if (saved.logs) enhancer.setLogs(saved.logs);
         if (saved.redFlags) enhancer.setRedFlags(saved.redFlags);
@@ -289,6 +295,14 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
       }
     }
   }, [student?.id, student?.nome]);
+
+  const { entities } = useClinicalScan(queixaEsportiva);
+  const { detected } = useSemanticScanner(queixaEsportiva, {});
+
+  useEffect(() => {
+    const regions = detectLocalDor(queixaEsportiva);
+    if (regions.length > 0) setLocalDor(prev => [...new Set([...prev, ...regions])]);
+  }, [queixaEsportiva]);
 
   const handleSave = () => {
     if (!student?.id && !student?.nome) return;
@@ -299,7 +313,7 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
       comprimentoPerna, ladoAfetado, yBalance, yBalanceResult, hopTest, plank, sidePlank, admEsportiva, forcaEsportiva,
       rtsCriteria, rtsResult, testesEspeciais,
       faseReabilitacao, objetivosFase, exerciciosPrescritos, progressaoCarga,
-      evolucaoEsportiva,
+      evolucaoEsportiva, localDor,
       pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
     });
@@ -553,10 +567,26 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
             </Section>
 
             <Section title="História da Lesão" icon="📝">
-              <div style={{ marginBottom:12 }}>
-                <span style={lbl()}>Queixa esportiva / Motivo da consulta</span>
-                <AudioField value={queixaEsportiva} onChange={v => setQueixaEsportiva(typeof v === "function" ? v(queixaEsportiva) : v)} placeholder="Ex: Dor no joelho direito ao agachar e correr, com sensação de falseio..." rows={2} />
+              <div style={{ background:"C.redBg", border:"1.5px solid C.red", borderRadius:12, padding:"14px 16px", marginBottom:12 }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:8 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.1em", color:"C.red" }}>Queixa principal</span>
+                    <span style={{ fontSize:9, fontWeight:800, color:"#fff", background:"C.red", borderRadius:6, padding:"2px 8px", letterSpacing:"0.05em", textTransform:"uppercase" }}>OBRIGATÓRIO</span>
+                  </div>
+                  <span style={{ fontSize:10, color:"C.red", opacity:0.7 }}>— digite ou use o microfone</span>
+                </div>
+                <AudioField value={queixaEsportiva} onChange={v=>setQueixaEsportiva(typeof v==="function"?v(queixaEsportiva):v)} placeholder="Ex: Dor no joelho D após corrida de 10km, edema pós-treino..." rows={2} style={{background:"C.surface",border:"1px solid C.border",borderRadius:8,color:"C.text",fontSize:13,padding:"9px 12px",fontFamily:F,lineHeight:1.5}} />
               </div>
+              {queixaEsportiva && entities && (entities.muscles?.length>0||entities.laterality||entities.painChars?.length>0) && (
+                <div style={{ background:"C.blueBg", border:"1px solid rgba(96,165,250,0.25)", borderRadius:10, padding:"10px 14px", margin:"12px 0" }}>
+                  <div style={{ fontSize:10, fontWeight:800, color:"C.blue", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:8 }}>🔍 Varredura Semântica</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6, fontSize:12 }}>
+                    {entities.muscles?.length>0 && <span style={{color:"C.textSub"}}>Músculos: <strong style={{color:"C.text"}}>{entities.muscles.join(", ")}</strong></span>}
+                    {entities.laterality && <span style={{color:"C.textSub"}}>Lateralidade: <strong style={{color:"C.text"}}>{entities.laterality}</strong></span>}
+                    {entities.painChars?.length>0 && <span style={{color:"C.textSub"}}>Caráter: <strong style={{color:"C.text"}}>{entities.painChars.join(", ")}</strong></span>}
+                  </div>
+                </div>
+              )}
               <div style={{ marginBottom:12 }}>
                 <span style={lbl()}>HDA — História da Doença Atual</span>
                 <AudioField value={hdaSports} onChange={v => setHdaSports(typeof v === "function" ? v(hdaSports) : v)} placeholder="Início, evolução, tratamentos prévios, exames realizados…" rows={3} />
@@ -587,7 +617,7 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
               </div>
             </Section>
 
-            <GeneralAssessment storageKey="sports" studentId={sid} colors={{ ...C, accent: C.blue }} />
+            <GeneralAssessment storageKey="sports" studentId={sid} colors={{ ...C, accent: C.blue }} initialBodyPain={localDor} />
 
             <CifSection cifSuggestions={cifSuggestionsSports} autoCif={autoCifSports} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
@@ -833,9 +863,22 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
         {tab === "sessoes" && (
           <>
             <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={sportColors} />
-            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
-              flags={["Dor súbita intensa durante atividade","Edema significativo pós-exercício","Instabilidade articular","Falseio/ giving way","Sintomas neurológicos (formigamento, fraqueza)","Sinais de fratura por estresse","Recidiva de lesão"]}
-              colors={sportColors} />
+            {enhancer.redFlags.length > 0 && (
+              <div style={{ background:"C.redBg", border:"1px solid rgba(239,68,68,0.25)", borderRadius:8, padding:"8px 12px", marginTop:12, marginBottom:10 }}>
+                <div style={{ fontSize:10, fontWeight:800, color:"C.red", letterSpacing:"0.1em", marginBottom:6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                  {["Dor súbita intensa durante atividade","Edema significativo pós-exercício","Instabilidade articular","Falseio/ giving way","Sintomas neurológicos (formigamento, fraqueza)","Sinais de fratura por estresse","Recidiva de lesão"].map(f => {
+                    const active = enhancer.redFlags.includes(f);
+                    return (
+                      <button key={f} onClick={() => enhancer.setRedFlags(active ? enhancer.redFlags.filter(x=>x!==f) : [...enhancer.redFlags, f])}
+                        style={{ fontSize:11, color:active?"#fff":"C.red", background:active?"C.red":"C.redBg", border:"1px solid rgba(239,68,68,0.3)", borderRadius:6, padding:"3px 10px", cursor:"pointer", fontFamily:"'Inter',sans-serif", fontWeight:active?700:400, transition:"all 0.12s" }}>
+                        {active && "✓ "}{f}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={sportColors} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Atleta: ${student?.nome || "—"}\nModalidade: ${modalidadeEsporte}\nNível: ${nivelCompetitivo}\nFase temporada: ${faseTemporada}\nQueixa: ${queixaEsportiva}\nHDA: ${hdaSports}\nDCT: ${diagnosticoCinesioSports}\nMecanismo: ${mecanismoLesao}\nLesões prévias: ${lesoesPrevias.join(", ")}\nY-Balance LSI: ${yBalanceResult?.lsi || "—"}%\nHop LSI: ${calcLSIBidirectional(hopTest.singleD,hopTest.singleE,ladoAfetado)}%\nRTS: ${rtsResult?.pct || "—"}%\nPlank: ${plank || "—"}s\nFase reabilitação: ${faseReabilitacao}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nTestes especiais (+): ${testesEspeciais.join(", ")}\nEvolução: ${evolucaoEsportiva}`}
@@ -912,3 +955,4 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
     </div>
   );
 }
+

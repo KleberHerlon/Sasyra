@@ -1,78 +1,57 @@
-# Contexto de Sessão — SASYRA
+# AGENTS.md — SASYRA
 
-## Regra: Continuidade da Análise de Personas
+React 19 + Vite 8 SPA for clinical physiotherapy/physical-education assessment.
+pt-BR product (default locale), i18n ready. PWA installable.
 
-Ao iniciar uma nova sessão, SEMPRE ler o arquivo `SIMULACAO_PERSONAS.md` antes de qualquer modificação no código. Use como ponto de partida para:
+## Commands
 
-1. **Validar** se uma funcionalidade atende às dores apontadas pelas personas
-2. **Priorizar** correções baseado nos contras mais citados (top 5)
-3. **Guiar** novas implementações pelos prós mais valorizados (top 5)
-4. **Manter** a nota média geral (~7.16) como referência de satisfação atual
+- `npm run dev` — Vite dev server on :5173. Proxies `/api` → `http://localhost:3001` (see `vite.config.js`).
+- `npm run server` — Express AI proxy on :3001 (`server/proxy.js`). Run separately from `dev` for full functionality.
+- `npm run dev:all` — starts both, but uses `&` (shell-dependent). On Windows run `npm run server` and `npm run dev` in two terminals for reliability.
+- `npm run build` — `vite build` → `dist/`. The express server also serves `dist/` if present (SPA fallback).
+- `npm test` — `vitest run`. **This is the verification gate** (618 tests, 19 files, all green).
+- `npm run test:watch` — watch mode.
+- Single test: `npx vitest run src/data/__tests__/cardioScales.test.js`
+- By name: `npx vitest run -t "calcLawton"`
+- `npm run lint` — `eslint .`. **Fails with ~336 pre-existing errors** (mostly `no-unused-vars`/`no-undef` across `src/screens/*`). Do NOT assume your change broke lint; check the diff, not the total. Lint is not currently gating.
+- No TypeScript, no typecheck step.
 
-### Top 5 Contras (prioridade de resolução)
+## Architecture
 
-1. Dados só no localStorage sem backend
-2. Falta app mobile para alunos
-3. Sem integração Google Calendar/WhatsApp
-4. ~~Falta suporte para áreas específicas (pediatria, neuro, crossfit)~~ ✅ Implementado
-5. IA com custo alto nos planos básicos
+- `src/App.jsx` (~2900 lines) is the app shell + router. Imports specialty screens from `src/screens/`.
+- **Ortopedic fisio** (the original module) has no dedicated screen — it renders `src/Assessment.jsx` directly. This is the gold-standard assessment; other specialties compare against it.
+- Each specialty has its own `src/screens/<Area>.jsx` and reuses the shared anamnesis component `src/components/GeneralAssessment.jsx` (BodyMap + pain characterization + Yellow Flags, persists to `{module}_general_{sid}` in localStorage). Neuro was the last to adopt it.
+- Shared UI primitives (`Section`, `Row`, `Field`, `EvaSlider`, `TagSelect`, `SingleSelect`, `MRCRow`, `GonioRow`, `PaywallModal`, `useMediaQuery`, `MUSCLES`, `JOINTS`, `MVMT`, design-token `C` object mapping CSS vars) live in `src/components.jsx`. Prefer these over reinventing.
+- Specialty scales are extracted to `src/data/<area>Scales.js` (e.g. `geriatriaScales.js`, `cardioScales.js`, `pediatriaScales.js`, `dentoScales.js`, `neuroScales.js`, `oncologyScales.js`, `dermatoScales.js`, `uroScales.js`, `sportsScales.js`, `rheumatologyScales.js`, `peScales.js`) with a co-located test in `src/data/__tests__/`. Central scale registry is `src/scales.js` (uses a `simpleScale` helper). When adding a scale, follow this split — do not inline scale math in screen components.
+- Module registry: `src/data/modules.js` (`FISIO_SUB_MODULES` + `FISIO_MODULE_MAP`). Screen wiring lives in `App.jsx` `FISIO_SCREEN_MAP`.
+- Cross-module data handoff ("Ponte de Transição"): `src/data/transitionBridge.js` (`encaminharParaPE`, `receberDeFisio`).
+- `src/lib/supabase.js` is the only Supabase client.
 
----
+## Environment & data modes (critical)
 
-## Sessão Atual — 07/07/2026
+Two independent env-driven modes; both have graceful fallbacks:
 
-### O que foi implementado
+1. **Supabase (optional, frontend).** Set `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` in root `.env` (gitignored). Without them, `src/lib/supabase.js` exports `null` and `src/data/supabaseService.js` falls back to **localStorage** for every read/write (guarded by `IS_CONFIGURED()`). The app runs fully offline/local. Schema + RPCs live in `supabase/migration_001_schema.sql`, `migration_002_scale.sql`; code calls RPCs `sasyra_batch_insert_assessment` and `sasyra_migrate_from_localstorage`.
+2. **Anthropic AI proxy (optional, backend).** Set `ANTHROPIC_API_KEY` in `server/.env` (gitignored). Without it `/api/anthropic` returns 500 and `/api/health` reports `keyConfigured: false`. The proxy enforces a Portuguese-BR evidence-based physio system prompt with prompt caching, a quota check, and token tracking persisted to `server/data/*.json` via `server/memoryStore.js`.
 
-#### 1. Escalas extraídas para `src/data/` + testes
-| Módulo | Arquivo | Funções | Testes |
-|---|---|---|---|
-| Geriatria | `src/data/geriatriaScales.js` | MEEM, GDS15, SarcF, Katz, Lawton, Tinetti, Fragilidade | 20 |
-| Urológica | `src/data/uroScales.js` | Oxford, PERFECT | 6 |
-| Dermatofuncional | `src/data/dermatoScales.js` | Vancouver, Edema | 10 |
-| Oncológica | `src/data/oncologyScales.js` | ECOG, KPS, EORTC, ESAS | 11 |
+Never commit `.env`, `server/.env`, or `server/data/`.
 
-#### 2. `src/data/__tests__/transitionBridge.test.js` — 12 testes
-Testa `encaminharParaPE` e `receberDeFisio` com mock de localStorage para cada módulo de fisioterapia.
+## Testing quirks
 
-#### 3. Correções de escalas
-- **calcLawton**: max 27→24, cutoffs >=20 independente / >=13 leve / >=7 moderada / <7 severa
-- **calcLSIBidirectional**: empty `ladoAfetado` → else branch (125)
-- **sportsScales**: threshold 75% → "Próximo do retorno" (não "Continua")
+- Vitest config restricts tests to `src/**/*.test.js`. The root `tests/` dir is **empty** — ignore it. Real tests are in `src/data/__tests__/` and `src/integrations/__tests__/`.
+- Test environment is `node` (not jsdom) — no `window`/`document`/`localStorage` globals. Tests that need them mock localStorage (see `transitionBridge.test.js` for the pattern).
+- Integration tests (`src/integrations/__tests__/integrations.test.js`) assert that Google Calendar / WhatsApp no-op gracefully when unconfigured — they log to stdout by design.
 
-#### 4. `src/components/GeneralAssessment.jsx` — Componente compartilhado
-Encapsula BodyMap + caracterização da dor + Yellow Flags com persistência própria em localStorage (`{module}_general_{sid}`). Instanciado em 8 módulos com 1 import + 1 tag JSX cada.
+## Conventions
 
-#### 5. GeneralAssessment integrado em 8 módulos
-CardioRespiratory, UroGynecology, Geriatria, DermatoFunctional, Rheumatology, SportsPhysio, Oncology, Pediatria — adicionado na aba anamnese com cores específicas de cada módulo.
+- **Before any code change, read `SIMULACAO_PERSONAS.md`** — it holds the user-research priorities (top contras/pros) that guide what to fix or build next. This is a team rule, not optional.
+- Commit style: conventional commits (`feat:`, `fix:`, `chore:`, `lint:`), Portuguese descriptions — see `git log`.
+- UI language is Portuguese (pt-BR default); user-facing strings should go through i18n (`src/i18n/locales/{pt-BR,en}.json`, key persisted in localStorage `sasyra_lang`).
+- Design system uses CSS custom properties (`--green`, `--surface`, ...); the `C` token object in `src/components.jsx` and `App.jsx` references them. Match existing module colors per `src/data/modules.js`.
+- `scripts/test-*.mjs` (Playwright) and `gerar-pdf.mjs` (Puppeteer) are ad-hoc smoke/PDF scripts; Playwright/Puppeteer are NOT in `package.json` deps — run via `npx` if needed. Not part of CI.
+- `src/src/` is an empty leftover directory; ignore it.
 
-#### 6. Relatório de comparação gerado
-Mapeamento completo de todos os ~20 campos/funcionalidades do Assessment.jsx gold standard vs cada módulo, identificando lacunas como BodyMap, Yellow Flags, MRC/Gonio dinâmico, AutoCIF, paywall, mobile responsive.
+## Notes worth keeping
 
-### Total de testes: 596 ✓ (18 suites, 0 falhas)
-
----
-
-## O que foi implementado nesta sessão (07/07/2026)
-
-#### 1. GeneralAssessment em Neuro
-Neuro era o único módulo de fisioterapia sem GeneralAssessment. Adicionado com `storageKey="neuro"` e cor roxa. Removidas seções inline duplicadas (BodyMap + Caracterização da Dor + Yellow Flags).
-
-#### 2. `src/data/pediatriaScales.js` + `cardioScales.js` + `dentoScales.js`
-| Módulo | Arquivo | Funções | Testes |
-|---|---|---|---|
-| Pediatria | `src/data/pediatriaScales.js` | calcGMFCS, calcAIMS, calcMCHAT, calcPEDI | 17 |
-| Cardio | `src/data/cardioScales.js` | calcMinnesota (extraído do inline) | 6 |
-| DTM | `src/data/dentoScales.js` | calcFonseca, calcRDCTMD | 10 |
-
-#### 3. Integração nos módulos
-- **CardioRespiratory**: `calcMinnesota` agora importado de `cardioScales` (inline removido)
-- **Pediatria**: calcGMFCS/AIMS/MCHAT/PEDI usam `pediatriaScales` — inline substituído por chamadas às funções
-- **SportsPhysio**: ScaleSelector agora inclui `Fonseca Anamnestic Index` + `RDC/TMD` (DTM)
-- **Pediatria**: ScaleSelector ampliado com GMFM, MACS, MABC-2, FAC, Vignos
-
-#### 4. Novas escalas em `src/scales.js` (5 entradas)
-GMFM, MACS, MABC-2, FAC, Vignos Scale — todas com interpretação completa via `simpleScale`
-
-#### 5. Correções em escalas existentes
-- `calcMinnesota` extraída para `cardioScales.js` (removida definição inline duplicada)
-- `calcGMFCS`/`calcAIMS`/`calcMCHAT`/`calcPEDI` agora em `pediatriaScales.js` com testes
+- Top user-reported contras still open: (1) data only in localStorage without backend, (2) no native mobile app for students, (3) no Google Calendar/WhatsApp integration wired with real credentials, (4) IA cost on basic plans. Area-specific support (pediatria, neuro, crossfit) is already implemented — don't re-add.
+- Reference docs in repo root: `SASYRA_FEATURES.md`, `PARECER_TECNICO_SASYRA.md`, `CUSTOS_INFRAESTRUTURA.md`, `PROMPT_IMPLEMENTACAO.md`, `TODO.md`.

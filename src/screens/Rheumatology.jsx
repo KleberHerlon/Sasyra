@@ -7,6 +7,10 @@ import { CollapsibleSection, CollapsibleSub, AudioField } from "../components";
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import GeneralAssessment from "../components/GeneralAssessment";
+import { detectLocalDor } from "../utils/clinicalDetection.js";
+import { useClinicalScan } from "../hooks/useClinicalScan.js";
+import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
+import { extractClinicalEntities } from "../utils/clinicalDetection.js";
 import LogoSVG from "../components/LogoSVG";
 import { calcDAS28, calcBASDAI, calcHAQ, calcWOMAC, calcWPI } from "../data/rheumatologyScales";
 
@@ -215,6 +219,7 @@ export default function Rheumatology({ student, students, allPatients, currentMo
   const [queixaReumato, setQueixaReumato] = useState("");
   const [hdaReuma, setHdaReuma] = useState("");
   const [diagnosticoCinesioReuma, setDiagnosticoCinesioReuma] = useState("");
+  const [localDor, setLocalDor] = useState([]);
   const [diagnosticoReumato, setDiagnosticoReumato] = useState("");
   const [tempoDiagnostico, setTempoDiagnostico] = useState("");
   const [rigidezMatinal, setRigidezMatinal] = useState("");
@@ -298,6 +303,7 @@ export default function Rheumatology({ student, students, allPatients, currentMo
         setSssValue(saved.sssValue || "");
         setWpiResult(saved.wpiResult || null);
         setEvolucaoReumato(saved.evolucaoReumato || "");
+        setLocalDor(saved.localDor || []);
         if (saved.pain) enhancer.setPain(saved.pain);
         if (saved.logs) enhancer.setLogs(saved.logs);
         if (saved.redFlags) enhancer.setRedFlags(saved.redFlags);
@@ -305,6 +311,14 @@ export default function Rheumatology({ student, students, allPatients, currentMo
       }
     }
   }, [student?.id, student?.nome]);
+
+  const { entities } = useClinicalScan(queixaReumato);
+  const { detected } = useSemanticScanner(queixaReumato, {});
+
+  useEffect(() => {
+    const regions = detectLocalDor(queixaReumato);
+    if (regions.length > 0) setLocalDor(prev => [...new Set([...prev, ...regions])]);
+  }, [queixaReumato]);
 
   const handleSave = () => {
     if (!student?.id && !student?.nome) return;
@@ -316,7 +330,7 @@ export default function Rheumatology({ student, students, allPatients, currentMo
       das28Tender, das28Swollen, das28ESR, das28Global, das28Result,
       basdaiScores, basdaiResult, haqScores, haqResult,
       womacPain, womacStiffness, womacFunction, womacResult,
-      wpiValue, sssValue, wpiResult, evolucaoReumato,
+      wpiValue, sssValue, wpiResult, evolucaoReumato, localDor,
       pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
     });
@@ -525,15 +539,29 @@ export default function Rheumatology({ student, students, allPatients, currentMo
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
                 Preencha os dados da avaliação reumatológica, diagnóstico, tempo de doença, rigidez matinal e articulações envolvidas.
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
-                <div>
-                  <span style={lbl()}>Queixa principal / História da doença atual</span>
-                  <AudioField value={queixaReumato} onChange={v => setQueixaReumato(typeof v === "function" ? v(queixaReumato) : v)} placeholder="Descreva a queixa principal, início dos sintomas e evolução..." rows={2} />
+              <div style={{ background:"C.redBg", border:"1.5px solid C.red", borderRadius:12, padding:"14px 16px", marginBottom:12 }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:8 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.1em", color:"C.red" }}>Queixa principal</span>
+                    <span style={{ fontSize:9, fontWeight:800, color:"#fff", background:"C.red", borderRadius:6, padding:"2px 8px", letterSpacing:"0.05em", textTransform:"uppercase" }}>OBRIGATÓRIO</span>
+                  </div>
+                  <span style={{ fontSize:10, color:"C.red", opacity:0.7 }}>— digite ou use o microfone</span>
                 </div>
-                <div>
-                  <span style={lbl()}>Diagnóstico médico / Condição reumática</span>
-                  <input type="text" value={diagnosticoReumato} onChange={e => setDiagnosticoReumato(e.target.value)} style={inp()} placeholder="Ex: Artrite Reumatoide soropositiva, Espondilite Anquilosante..." />
+                <AudioField value={queixaReumato} onChange={v=>setQueixaReumato(typeof v==="function"?v(queixaReumato):v)} placeholder="Ex: Dor poliarticular simétrica há 6 meses, rigidez matinal >1h..." rows={2} style={{background:"C.surface",border:"1px solid C.border",borderRadius:8,color:"C.text",fontSize:13,padding:"9px 12px",fontFamily:F,lineHeight:1.5}} />
+              </div>
+              {queixaReumato && entities && (entities.muscles?.length>0||entities.laterality||entities.painChars?.length>0) && (
+                <div style={{ background:"C.blueBg", border:"1px solid rgba(96,165,250,0.25)", borderRadius:10, padding:"10px 14px", margin:"12px 0" }}>
+                  <div style={{ fontSize:10, fontWeight:800, color:"C.blue", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:8 }}>🔍 Varredura Semântica</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6, fontSize:12 }}>
+                    {entities.muscles?.length>0 && <span style={{color:"C.textSub"}}>Músculos: <strong style={{color:"C.text"}}>{entities.muscles.join(", ")}</strong></span>}
+                    {entities.laterality && <span style={{color:"C.textSub"}}>Lateralidade: <strong style={{color:"C.text"}}>{entities.laterality}</strong></span>}
+                    {entities.painChars?.length>0 && <span style={{color:"C.textSub"}}>Caráter: <strong style={{color:"C.text"}}>{entities.painChars.join(", ")}</strong></span>}
+                  </div>
                 </div>
+              )}
+              <div style={{ marginBottom:14 }}>
+                <span style={lbl()}>Diagnóstico médico / Condição reumática</span>
+                <input type="text" value={diagnosticoReumato} onChange={e => setDiagnosticoReumato(e.target.value)} style={inp()} placeholder="Ex: Artrite Reumatoide soropositiva, Espondilite Anquilosante..." />
               </div>
               <div style={{ marginTop:12 }}>
                 <span style={lbl()}>HDA — História da Doença Atual</span>
@@ -587,7 +615,7 @@ export default function Rheumatology({ student, students, allPatients, currentMo
               </div>
             </Section>
 
-            <GeneralAssessment storageKey="reumato" studentId={sid} colors={{ ...C, accent: C.purple }} />
+            <GeneralAssessment storageKey="reumato" studentId={sid} colors={{ ...C, accent: C.purple }} initialBodyPain={localDor} />
 
             <CifSection cifSuggestions={cifSuggestionsReuma} autoCif={autoCifReuma} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
@@ -802,9 +830,22 @@ export default function Rheumatology({ student, students, allPatients, currentMo
         {tab === "sessoes" && (
           <>
             <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={reumatoColors} />
-            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
-              flags={["Artrite de início súbito monoarticular","Febre + rash articular","Rigidez matinal >2h","Deformidade articular progressiva","Derrame articular significativo","Síndrome de cauda equina suspeita","Uveíte/irite"]}
-              colors={reumatoColors} />
+            {enhancer.redFlags.length > 0 && (
+              <div style={{ background:"C.redBg", border:"1px solid rgba(239,68,68,0.25)", borderRadius:8, padding:"8px 12px", marginTop:12, marginBottom:10 }}>
+                <div style={{ fontSize:10, fontWeight:800, color:"C.red", letterSpacing:"0.1em", marginBottom:6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                  {["Artrite de início súbito monoarticular","Febre + rash articular","Rigidez matinal >2h","Deformidade articular progressiva","Derrame articular significativo","Síndrome de cauda equina suspeita","Uveíte/irite"].map(f => {
+                    const active = enhancer.redFlags.includes(f);
+                    return (
+                      <button key={f} onClick={() => enhancer.setRedFlags(active ? enhancer.redFlags.filter(x=>x!==f) : [...enhancer.redFlags, f])}
+                        style={{ fontSize:11, color:active?"#fff":"C.red", background:active?"C.red":"C.redBg", border:"1px solid rgba(239,68,68,0.3)", borderRadius:6, padding:"3px 10px", cursor:"pointer", fontFamily:"'Inter',sans-serif", fontWeight:active?700:400, transition:"all 0.12s" }}>
+                        {active && "✓ "}{f}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={reumatoColors} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Paciente: ${student?.nome || "—"}\nDiagnóstico: ${diagnosticoReumato}\nQueixa: ${queixaReumato}\nTempo diagnóstico: ${tempoDiagnostico}\nRigidez matinal: ${rigidezMatinal} min\nArtic. dolorosas (28): ${articulacoesDolorosas.length}\nArtic. edemaciadas (28): ${articulacoesEdemaciadas.length}\nDAS28: ${das28Result?.total || "—"} (${das28Result?.level || "—"})\nBASDAI: ${basdaiResult?.total || "—"}\nHAQ: ${haqResult?.total || "—"}\nWOMAC: ${womacResult?.grandTotal || "—"}\nWPI: ${wpiResult?.total || "—"}\nFadiga (FACT-F): ${fadigaFACT || "—"}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nEvolução: ${evolucaoReumato}`}
@@ -881,3 +922,4 @@ export default function Rheumatology({ student, students, allPatients, currentMo
     </div>
   );
 }
+

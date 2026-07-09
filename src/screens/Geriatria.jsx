@@ -7,7 +7,11 @@ import { CollapsibleSection, CollapsibleSub, AudioField } from "../components";
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import GeneralAssessment from "../components/GeneralAssessment";
+import { detectLocalDor } from "../utils/clinicalDetection.js";
 import { calcMEEM, calcGDS15, calcSarcF, calcKatz, calcLawton, calcTinetti, calcFragilidade } from "../data/geriatriaScales";
+import { useClinicalScan } from "../hooks/useClinicalScan.js";
+import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
+import { extractClinicalEntities } from "../utils/clinicalDetection.js";
 import LogoSVG from "../components/LogoSVG";
 
 const C = {
@@ -209,6 +213,7 @@ export default function Geriatria({ student, students, allPatients, currentModul
   const [queixaGeriatria, setQueixaGeriatria] = useState("");
   const [hdaGeriatria, setHdaGeriatria] = useState("");
   const [diagnosticoCinesioGeriatria, setDiagnosticoCinesioGeriatria] = useState("");
+  const [localDor, setLocalDor] = useState([]);
   const [comorbidadesGeriatria, setComorbidadesGeriatria] = useState([]);
   const [medicamentosGeriatria, setMedicamentosGeriatria] = useState("");
   const [historicoQuedas, setHistoricoQuedas] = useState("");
@@ -298,6 +303,7 @@ export default function Geriatria({ student, students, allPatients, currentModul
         setFragilidadeIndicators(saved.fragilidadeIndicators || {});
         setFragilidadeResult(saved.fragilidadeResult || null);
         setEvolucaoGeriatria(saved.evolucaoGeriatria || "");
+        setLocalDor(saved.localDor || []);
         if (saved.pain) enhancer.setPain(saved.pain);
         if (saved.logs) enhancer.setLogs(saved.logs);
         if (saved.redFlags) enhancer.setRedFlags(saved.redFlags);
@@ -305,6 +311,14 @@ export default function Geriatria({ student, students, allPatients, currentModul
       }
     }
   }, [student?.id, student?.nome]);
+
+  const { entities } = useClinicalScan(queixaGeriatria);
+  const { detected } = useSemanticScanner(queixaGeriatria, {});
+
+  useEffect(() => {
+    const regions = detectLocalDor(queixaGeriatria);
+    if (regions.length > 0) setLocalDor(prev => [...new Set([...prev, ...regions])]);
+  }, [queixaGeriatria]);
 
   const handleSave = () => {
     if (!student?.id && !student?.nome) return;
@@ -317,7 +331,7 @@ export default function Geriatria({ student, students, allPatients, currentModul
       sarcFScores, sarcFResult, dinamometria, circunferenciaPanturrilha, velocidadeMarcha,
       tinettiBalanceScores, tinettiGaitScores, tinettiResult, tugSegundos,
       fragilidadeIndicators, fragilidadeResult,
-      evolucaoGeriatria,
+      evolucaoGeriatria, localDor,
       pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
     });
@@ -518,11 +532,27 @@ export default function Geriatria({ student, students, allPatients, currentModul
           <>
             <Section title="Anamnese Geriátrica" icon="📋">
               <div style={{ fontSize:12, color:C.textMuted, marginBottom:12 }}>História clínica, comorbidades, medicações e condições funcionais e sociais.</div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
-                <div>
-                  <span style={lbl()}>Queixa principal / Motivo da consulta</span>
-                  <AudioField value={queixaGeriatria} onChange={v => setQueixaGeriatria(typeof v === "function" ? v(queixaGeriatria) : v)} placeholder="Ex: Dificuldade para andar, quedas frequentes, fraqueza..." rows={2} />
+              <div style={{ background:C.redBg, border:`1.5px solid ${C.red}`, borderRadius:12, padding:"14px 16px", marginBottom:12 }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginBottom:8 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.1em", color:C.red }}>Queixa principal</span>
+                    <span style={{ fontSize:9, fontWeight:800, color:"#fff", background:C.red, borderRadius:6, padding:"2px 8px", letterSpacing:"0.05em", textTransform:"uppercase" }}>OBRIGATÓRIO</span>
+                  </div>
+                  <span style={{ fontSize:10, color:C.red, opacity:0.7 }}>— digite ou use o microfone</span>
                 </div>
+                <AudioField value={queixaGeriatria} onChange={v => setQueixaGeriatria(typeof v === "function" ? v(queixaGeriatria) : v)} placeholder="Ex: Quedas recorrentes há 3 meses, fraqueza em MMII, medo de cair..." rows={2} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,padding:"9px 12px",fontFamily:F,lineHeight:1.5}} />
+              </div>
+              {queixaGeriatria && entities && (entities.muscles?.length>0||entities.laterality||entities.painChars?.length>0) && (
+                <div style={{ background:C.blueBg, border:`1px solid ${C.blue}40`, borderRadius:10, padding:"10px 14px", margin:"0 0 12px 0" }}>
+                  <div style={{ fontSize:10, fontWeight:800, color:C.blue, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:8 }}>🔍 Varredura Semântica</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6, fontSize:12 }}>
+                    {entities.muscles?.length>0 && <span style={{color:C.textSub}}>Músculos: <strong style={{color:C.text}}>{entities.muscles.join(", ")}</strong></span>}
+                    {entities.laterality && <span style={{color:C.textSub}}>Lateralidade: <strong style={{color:C.text}}>{entities.laterality}</strong></span>}
+                    {entities.painChars?.length>0 && <span style={{color:C.textSub}}>Caráter: <strong style={{color:C.text}}>{entities.painChars.join(", ")}</strong></span>}
+                  </div>
+                </div>
+              )}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
                 <div>
                   <span style={lbl()}>História da Doença Atual (HDA)</span>
                   <AudioField value={hdaGeriatria} onChange={v => setHdaGeriatria(typeof v === "function" ? v(hdaGeriatria) : v)} placeholder="Início, evolução, tratamentos anteriores, exames realizados..." rows={3} />
@@ -570,7 +600,7 @@ export default function Geriatria({ student, students, allPatients, currentModul
               </div>
             </Section>
 
-            <GeneralAssessment storageKey="geriatria" studentId={sid} colors={{ ...C, accent: C.green }} />
+            <GeneralAssessment storageKey="geriatria" studentId={sid} colors={{ ...C, accent: C.green }} initialBodyPain={localDor} />
 
             <CifSection cifSuggestions={cifSuggestionsGeriatria} autoCif={autoCifGeriatria} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
@@ -810,9 +840,22 @@ export default function Geriatria({ student, students, allPatients, currentModul
         {tab === "sessoes" && (
           <>
             <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={geriatriaColors} />
-            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
-              flags={["Queda recente com trauma","Confusão mental súbita","Síncope","Perda de peso >5% em 1 mês","Imobilização súbita","Febre no idoso","Déficit focal agudo"]}
-              colors={geriatriaColors} />
+            {enhancer.redFlags.length > 0 && (
+              <div style={{ background:C.redBg, border:`1px solid ${C.red}40`, borderRadius:8, padding:"8px 12px", marginTop:12, marginBottom:10 }}>
+                <div style={{ fontSize:10, fontWeight:800, color:C.red, letterSpacing:"0.1em", marginBottom:6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                  {["Queda recente com trauma","Confusão mental súbita","Síncope","Perda de peso >5% em 1 mês","Imobilização súbita","Febre no idoso","Déficit focal agudo"].map(f => {
+                  const active = enhancer.redFlags.includes(f);
+                  return (
+                    <button key={f} onClick={() => enhancer.setRedFlags(active ? enhancer.redFlags.filter(x=>x!==f) : [...enhancer.redFlags, f])}
+                      style={{ fontSize:11, color:active?"#fff":C.red, background:active?C.red:C.redBg, border:`1px solid ${C.red}50`, borderRadius:6, padding:"3px 10px", cursor:"pointer", fontFamily:F, fontWeight:active?700:400, transition:"all 0.12s" }}>
+                      {active && "✓ "}{f}
+                    </button>
+                  );
+                })}
+                </div>
+              </div>
+            )}
             <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={geriatriaColors} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Paciente: ${student?.nome || "—"}\nQueixa: ${queixaGeriatria}\nQuedas (1 ano): ${historicoQuedas}\nComorbidades: ${comorbidadesGeriatria.join(", ")}\nDispositivo: ${usoDispositivoAuxilio}\nMEEM: ${meemResult?.total || "—"}\nGDS-15: ${gds15Result?.total || "—"}\nKatz: ${katzResult?.indep || "—"}/6\nLawton: ${lawtonResult?.total || "—"}/24\nSARC-F: ${sarcFResult?.total || "—"}\nTinetti: ${tinettiResult?.total || "—"}/28\nTUG: ${tugSegundos || "—"}s\nFried: ${fragilidadeResult?.count || "—"}/5\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nEvolução: ${evolucaoGeriatria}`}
