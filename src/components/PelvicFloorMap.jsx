@@ -57,6 +57,7 @@ export default function PelvicFloorMap({ value = [], onChange, sexo, colors }) {
 
   const [activeZone, setActiveZone] = useState(null);
   const [hovered, setHovered] = useState(null);
+  const [zoomed, setZoomed] = useState(false);
 
   const isMale = sexo === "Masculino";
   const zones = isMale ? ZONES_M : ZONES_F;
@@ -77,14 +78,29 @@ export default function PelvicFloorMap({ value = [], onChange, sexo, colors }) {
         Mapa do Assoalho Pélvico — {isMale ? "Masculino" : "Feminino"}
       </div>
 
-      <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+      <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexDirection: zoomed ? "column" : "row" }}>
         {/* Imagem anatômica à esquerda */}
-        <div style={{ position: "relative", background: "#fff", borderRadius: 8, border: `1px solid ${border}`, overflow: "hidden", width: 180, flexShrink: 0 }}>
+        <div style={{ position: "relative", background: "#fff", borderRadius: 8, border: `1px solid ${border}`, overflow: "hidden", width: zoomed ? "100%" : 240, flexShrink: 0 }}>
           <img
             src={isMale ? "/pelvic-floor-male.png" : "/pelvic-floor-female.png"}
             alt={`Assoalho Pélvico — ${isMale ? "Masculino" : "Feminino"}`}
-            style={{ width: "100%", height: "auto", display: "block" }}
+            style={{ width: "100%", height: "auto", display: "block", cursor: "zoom-out" }}
+            onClick={(e) => { if (zoomed) { e.stopPropagation(); setZoomed(false); } }}
           />
+          {/* Botão de zoom */}
+          <button
+            onClick={() => setZoomed(!zoomed)}
+            title={zoomed ? "Reduzir" : "Ampliar"}
+            style={{
+              position: "absolute", top: 6, right: 6,
+              background: "rgba(0,0,0,0.6)", color: "#fff",
+              border: "none", borderRadius: 4, width: 26, height: 26,
+              cursor: "pointer", fontSize: 14, display: "flex",
+              alignItems: "center", justifyContent: "center",
+              fontFamily: font, lineHeight: 1, padding: 0,
+            }}>
+            {zoomed ? "−" : "+"}
+          </button>
           {/* Zonas clicáveis */}
           {zones.map(z => {
             const active = value?.some(e => e.zona === z.id);
