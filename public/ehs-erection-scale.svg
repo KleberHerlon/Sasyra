@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 340" width="120" height="340">
+  <defs>
+    <style>
+      .zone { cursor: pointer; }
+      .zone rect { transition: all 0.15s; }
+    </style>
+  </defs>
+
+  <!-- E0 - Sem ereção -->
+  <g class="zone" id="ehs-0">
+    <rect x="0" y="2" width="120" height="78" fill="transparent" stroke="transparent" stroke-width="2" rx="4"/>
+    <!-- Silhueta -->
+    <ellipse cx="60" cy="60" rx="16" ry="18" fill="none" stroke="#8899AA" stroke-width="1" opacity="0.35"/>
+    <line x1="52" y1="74" x2="50" y2="82" stroke="#8899AA" stroke-width="1.2" opacity="0.3" stroke-linecap="round"/>
+    <line x1="68" y1="74" x2="70" y2="82" stroke="#8899AA" stroke-width="1.2" opacity="0.3" stroke-linecap="round"/>
+    <!-- Pênis flácido pendente -->
+    <path d="M60,46 Q62,54 64,62 Q66,68 64,72" fill="none" stroke="#8899AA" stroke-width="3.5" stroke-linecap="round" opacity="0.45"/>
+    <ellipse cx="62" cy="74" rx="6" ry="4.5" fill="none" stroke="#8899AA" stroke-width="2.5" opacity="0.45"/>
+    <!-- Check zone -->
+    <circle cx="108" cy="14" r="10" fill="transparent"/>
+    <text x="108" y="18" text-anchor="middle" font-size="12" font-weight="800" fill="transparent">✓</text>
+  </g>
+
+  <!-- Separador -->
+  <line x1="20" y1="82" x2="100" y2="82" stroke="#1F2E45" stroke-width="0.5" opacity="0.4"/>
+
+  <!-- E1 - Aumentado -->
+  <g class="zone" id="ehs-1">
+    <rect x="0" y="84" width="120" height="78" fill="transparent" stroke="transparent" stroke-width="2" rx="4"/>
+    <ellipse cx="60" cy="142" rx="16" ry="18" fill="none" stroke="#8899AA" stroke-width="1" opacity="0.35"/>
+    <line x1="52" y1="156" x2="50" y2="164" stroke="#8899AA" stroke-width="1.2" opacity="0.3" stroke-linecap="round"/>
+    <line x1="68" y1="156" x2="70" y2="164" stroke="#8899AA" stroke-width="1.2" opacity="0.3" stroke-linecap="round"/>
+    <!-- Pênis semi-flácido -->
+    <path d="M60,128 Q56,134 52,140 Q48,146 46,150" fill="none" stroke="#FBBF24" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+    <ellipse cx="44" cy="152" rx="7" ry="5" fill="none" stroke="#FBBF24" stroke-width="3" opacity="0.6"/>
+    <circle cx="108" cy="96" r="10" fill="transparent"/>
+    <text x="108" y="100" text-anchor="middle" font-size="12" font-weight="800" fill="transparent">✓</text>
+  </g>
+
+  <line x1="20" y1="164" x2="100" y2="164" stroke="#1F2E45" stroke-width="0.5" opacity="0.4"/>
+
+  <!-- E2 - Rígido parcial -->
+  <g class="zone" id="ehs-2">
+    <rect x="0" y="166" width="120" height="78" fill="transparent" stroke="transparent" stroke-width="2" rx="4"/>
+    <ellipse cx="60" cy="224" rx="16" ry="18" fill="none" stroke="#8899AA" stroke-width="1" opacity="0.35"/>
+    <line x1="52" y1="238" x2="50" y2="246" stroke="#8899AA" stroke-width="1.2" opacity="0.3" stroke-linecap="round"/>
+    <line x1="68" y1="238" x2="70" y2="246" stroke="#8899AA" stroke-width="1.2" opacity="0.3" stroke-linecap="round"/>
+    <!-- Pênis semi-ereto (45°) -->
+    <path d="M58,210 Q50,214 42,218 Q34,222 28,224" fill="none" stroke="#FBBF24" stroke-width="4.5" stroke-linecap="round" opacity="0.7"/>
+    <ellipse cx="26" cy="226" rx="8" ry="5.5" fill="none" stroke="#FBBF24" stroke-width="3" opacity="0.7" transform="rotate(-25,26,226)"/>
+    <circle cx="108" cy="178" r="10" fill="transparent"/>
+    <text x="108" y="182" text-anchor="middle" font-size="12" font-weight="800" fill="transparent">✓</text>
+  </g>
+
+  <line x1="20" y1="246" x2="100" y2="246" stroke="#1F2E45" stroke-width="0.5" opacity="0.4"/>
+
+  <!-- E3 - Rígido total -->
+  <g class="zone" id="ehs-3">
+    <rect x="0" y="248" width="120" height="90" fill="transparent" stroke="transparent" stroke-width="2" rx="4"/>
+    <ellipse cx="60" cy="316" rx="16" ry="18" fill="none" stroke="#8899AA" stroke-width="1" opacity="0.35"/>
+    <line x1="52" y1="328" x2="50" y2="338" stroke="#8899AA" stroke-width="1.2" opacity="0.3" stroke-linecap="round"/>
+    <line x1="68" y1="328" x2="70" y2="338" stroke="#8899AA" stroke-width="1.2" opacity="0.3" stroke-linecap="round"/>
+    <!-- Pênis ereto (75°) -->
+    <path d="M56,300 Q44,296 32,290 Q20,284 16,280" fill="none" stroke="#4ADE80" stroke-width="5" stroke-linecap="round" opacity="0.85"/>
+    <ellipse cx="14" cy="276" rx="9" ry="6.5" fill="none" stroke="#4ADE80" stroke-width="3.5" opacity="0.85" transform="rotate(-30,14,276)"/>
+    <circle cx="108" cy="260" r="10" fill="transparent"/>
+    <text x="108" y="264" text-anchor="middle" font-size="12" font-weight="800" fill="transparent">✓</text>
+  </g>
+</svg>

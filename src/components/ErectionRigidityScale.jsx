@@ -7,6 +7,13 @@ const EHS_STAGES = [
   { grade: 3, label: "E3 — Rígido total", desc: "Ereção completa, adequada para relação sexual", detail: "Normal" },
 ];
 
+const TYPE_ZONES = [
+  { y: 0.6,  h: 23 },     // E0
+  { y: 24.7, h: 23 },     // E1
+  { y: 48.8, h: 23 },     // E2
+  { y: 72.9, h: 26.5 },   // E3
+];
+
 export default function ErectionRigidityScale({ value, onChange, colors }) {
   const C = colors || {};
   const surface = C.surface || "#111822";
@@ -29,80 +36,51 @@ export default function ErectionRigidityScale({ value, onChange, colors }) {
       </div>
 
       <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-        {/* Ilustração à esquerda */}
-        <div style={{ position: "relative", background: `${border}40`, borderRadius: 8, border: `1px solid ${border}`, overflow: "hidden", width: 120, flexShrink: 0 }}>
-          <svg width="120" height="300" viewBox="0 0 120 300" style={{ display: "block" }}>
-            {/* Fundo levemente demarcado */}
-            <rect x="0" y="0" width="120" height="300" fill="transparent" />
-
-            {/* Zonas por grade */}
-            {[
-              { grade: 0, y: 6,  h: 60, label: "E0" },
-              { grade: 1, y: 74, h: 60, label: "E1" },
-              { grade: 2, y: 142, h: 70, label: "E2" },
-              { grade: 3, y: 212, h: 76, label: "E3" },
-            ].map((zone) => {
-              const s = EHS_STAGES.find(e => e.grade === zone.grade);
-              const active = value === zone.grade;
-              const isHovered = hovered === zone.grade;
-              const c = gradeColor(zone.grade);
-
-              return (
-                <g key={zone.grade}
-                  onClick={() => onChange(active ? null : zone.grade)}
-                  onMouseEnter={() => setHovered(zone.grade)}
-                  onMouseLeave={() => setHovered(null)}
-                  style={{ cursor: "pointer" }}>
-                  {/* Hit zone */}
-                  <rect x="0" y={zone.y} width="120" height={zone.h}
-                    fill={active ? `${c}12` : isHovered ? `${c}08` : "transparent"}
-                    stroke={active ? c : isHovered ? `${c}40` : "transparent"}
-                    strokeWidth={active ? 1.5 : isHovered ? 1 : 0}
-                    rx={4} />
-                  {/* Checkmark */}
-                  {active && (
-                    <>
-                      <circle cx="110" cy={zone.y + 14} r="10" fill={c} />
-                      <text x="110" y={zone.y + 18} textAnchor="middle" fill="#fff" fontSize="12" fontWeight="800">✓</text>
-                    </>
-                  )}
-
-                  {/* Ilustração do estágio */}
-                  {/* Corpo (abdômen) */}
-                  <ellipse cx="68" cy={zone.y + zone.h - 16} rx="14" ry="16" fill="none" stroke={textMuted} strokeWidth="0.8" opacity="0.25" />
-                  <line x1="62" y1={zone.y + zone.h - 4} x2="64" y2={zone.y + zone.h + 4} stroke={textMuted} strokeWidth="0.8" opacity="0.2" />
-                  <line x1="74" y1={zone.y + zone.h - 4} x2="76" y2={zone.y + zone.h + 4} stroke={textMuted} strokeWidth="0.8" opacity="0.2" />
-
-                  {/* Pênis — cada grade com inclinação/ângulo diferente */}
-                  {zone.grade === 0 && <>
-                    <path d={`M68,${zone.y + zone.h - 20} Q68,${zone.y + zone.h - 34} 68,${zone.y + zone.h - 40}`}
-                      fill="none" stroke={c} strokeWidth="2.5" strokeLinecap="round" opacity="0.35" />
-                    <ellipse cx="68" cy={zone.y + zone.h - 44} rx="6" ry="4" fill="none" stroke={c} strokeWidth="2" opacity="0.35" />
-                  </>}
-                  {zone.grade === 1 && <>
-                    <path d={`M66,${zone.y + zone.h - 20} Q62,${zone.y + zone.h - 34} 58,${zone.y + zone.h - 44}`}
-                      fill="none" stroke={c} strokeWidth="3" strokeLinecap="round" opacity="0.55" />
-                    <ellipse cx="58" cy={zone.y + zone.h - 46} rx="7" ry="5" fill="none" stroke={c} strokeWidth="2.5" opacity="0.55" />
-                  </>}
-                  {zone.grade === 2 && <>
-                    <path d={`M62,${zone.y + zone.h - 20} Q54,${zone.y + zone.h - 34} 48,${zone.y + zone.h - 46} L44,${zone.y + 16}`}
-                      fill="none" stroke={c} strokeWidth="3.5" strokeLinecap="round" opacity="0.7" />
-                    <ellipse cx="43" cy={zone.y + 12} rx="8" ry="5" fill="none" stroke={c} strokeWidth="3" opacity="0.7" transform={`rotate(-22,43,${zone.y + 12})`} />
-                  </>}
-                  {zone.grade === 3 && <>
-                    <path d={`M58,${zone.y + zone.h - 20} Q48,${zone.y + zone.h - 34} 40,${zone.y + zone.h - 50} L36,${zone.y + 10} L32,${zone.y + 2}`}
-                      fill="none" stroke={c} strokeWidth="4.5" strokeLinecap="round" opacity="0.9" />
-                    <ellipse cx="32" cy={zone.y} rx="9" ry="6" fill="none" stroke={c} strokeWidth="3.5" opacity="0.9" transform={`rotate(-28,32,${zone.y})`} />
-                  </>}
-                </g>
-              );
-            })}
-
-            {/* Linhas separadoras sutis */}
-            {[72, 140, 210].map(ly => (
-              <line key={ly} x1="14" y1={ly} x2="106" y2={ly} stroke={border} strokeWidth="0.5" opacity="0.5" />
-            ))}
-          </svg>
+        {/* Imagem à esquerda */}
+        <div style={{ position: "relative", background: "#fff", borderRadius: 8, border: `1px solid ${border}`, overflow: "hidden", width: 100, flexShrink: 0 }}>
+          <img
+            src="/ehs-erection-scale.svg"
+            alt="Escala de Rigidez da Ereção"
+            style={{ width: "100%", height: "auto", display: "block" }}
+          />
+          {TYPE_ZONES.map((zone, i) => {
+            const t = EHS_STAGES[i];
+            const active = value === t.grade;
+            const isHovered = hovered === t.grade;
+            const c = gradeColor(t.grade);
+            return (
+              <div key={t.grade}
+                onClick={() => onChange(active ? null : t.grade)}
+                onMouseEnter={() => setHovered(t.grade)}
+                onMouseLeave={() => setHovered(null)}
+                style={{
+                  position: "absolute",
+                  left: 0, right: 0,
+                  top: `${zone.y}%`,
+                  height: `${zone.h}%`,
+                  cursor: "pointer",
+                  background: active ? `${c}18` : isHovered ? `${c}08` : "transparent",
+                  border: active ? `2px solid ${c}` : isHovered ? `1px dashed ${c}50` : "1px solid transparent",
+                  transition: "all 0.12s",
+                  display: "flex", alignItems: "center", justifyContent: "flex-end",
+                  paddingRight: 8,
+                  boxSizing: "border-box",
+                }}>
+                {active && (
+                  <span style={{
+                    background: c, color: "#fff",
+                    borderRadius: "50%", width: 18, height: 18,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 10, fontWeight: 800,
+                    boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+                  }}>✓</span>
+                )}
+                {isHovered && !active && (
+                  <span style={{ fontSize: 8, color: c, fontWeight: 700, opacity: 0.8 }}>{t.label}</span>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Descrições à direita */}
