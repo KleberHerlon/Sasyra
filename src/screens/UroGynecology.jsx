@@ -160,7 +160,7 @@ export default function UroGynecology({ student, students, allPatients, currentM
   const [editTarget, setEditTarget] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
-  const [tab, setTab] = useState("anamnese");
+  const [tab, setTab] = useState("avaliacao");
   const [regiao, setRegiao] = useState("Centro-Oeste");
 
   const [queixaUro, setQueixaUro] = useState("");
@@ -475,7 +475,7 @@ export default function UroGynecology({ student, students, allPatients, currentM
           {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
         <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
-          {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
+          {[["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{ background:tab === k ? C.amberBg : "transparent", border:`1px solid ${tab === k ? C.amber + "50" : "transparent"}`, borderRadius:8, padding:"7px 16px", fontSize:13, fontWeight:tab === k ? 700 : 400, color:tab === k ? C.amber : C.textMuted, cursor:"pointer", fontFamily:F }}>{ic} {lb}</button>
           ))}
         </div>
@@ -494,7 +494,7 @@ export default function UroGynecology({ student, students, allPatients, currentM
       </div>
 
       <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
-        {tab === "anamnese" && (
+        {tab === "avaliacao" && (
           <>
             <Section title="Anamnese Uro-Ginecológica" icon="📋">
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
@@ -565,14 +565,6 @@ export default function UroGynecology({ student, students, allPatients, currentM
 
             <CifSection cifSuggestions={cifSuggestionsUro} autoCif={autoCifUro} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
-            <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
-              <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Anamnese</button>
-            </div>
-          </>
-        )}
-
-        {tab === "avaliacao" && (
-          <>
             <Section title="Sintomas Miccionais" icon="🚽">
               <div style={{ marginBottom:14 }}>
                 <span style={lbl()}>Perda de urina</span>
@@ -773,7 +765,8 @@ export default function UroGynecology({ student, students, allPatients, currentM
         )}
 
         {tab === "evolucao" && (
-          <Section title="Evolução e Reavaliação" icon="📈">
+          <>
+            <Section title="Evolução e Reavaliação" icon="📈">
             <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
               Registre a evolução da paciente, resposta às intervenções e planejamento das próximas sessões.
             </div>
@@ -795,28 +788,10 @@ export default function UroGynecology({ student, students, allPatients, currentM
               <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Evolução</button>
             </div>
           </Section>
-        )}
-
-        {tab === "sessoes" && (
-          <>
-            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={uroColors} />
             {enhancer.redFlags.length > 0 && (
-              <div style={{ background:"var(--redBg)", border:"1px solid rgba(239,68,68,0.25)", borderRadius:8, padding:"8px 12px", marginTop:12, marginBottom:10 }}>
-                <div style={{ fontSize:10, fontWeight:800, color:"var(--red)", letterSpacing:"0.1em", marginBottom:6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                  {["Perda súbita de grande volume","Sangramento vaginal","Febre pós-parto","Dor pélvica intensa","Prolapso grau III/IV","Retenção urinária aguda","Fístula"].map(f => {
-                    const active = enhancer.redFlags.includes(f);
-                    return (
-                      <button key={f} onClick={() => enhancer.setRedFlags(active ? enhancer.redFlags.filter(x=>x!==f) : [...enhancer.redFlags, f])}
-                        style={{ fontSize:11, color:active?"#fff":"var(--red)", background:active?"var(--red)":"var(--redBg)", border:"1px solid rgba(239,68,68,0.3)", borderRadius:6, padding:"3px 10px", cursor:"pointer", fontFamily:"'Inter',sans-serif", fontWeight:active?700:400, transition:"all 0.12s" }}>
-                        {active && "✓ "}{f}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags} flags={["Sangramento vaginal anormal pós-menopausa","Dor pélvica aguda intensa","Retenção urinária aguda","Prolapso de órgão pélvico irredutível","Massa pélvica palpável","Fístula urinária/fecal","Sinais de infecção urinária grave (febre, calafrios, dor lombar)"]} colors={uroColors} />
             )}
-            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={uroColors} />
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={uroColors} sessionLabel="Evolução" specialty="uroginecologia" defaultExpanded={true} pain={enhancer.pain} setPain={enhancer.setPain} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Paciente: ${student?.nome || "—"}\nQueixa: ${queixaUro}\nG/P: ${gesta}/${para}\nCirurgias: ${cirurgiasPelvicas.join(", ")}\nPerda urina: ${perdaUrina.join(", ")}\nUrgência: ${urgenciaMiccional.join(", ")}\nOxford: ${oxfordResult.grade}\nPERFECT: ${perfectResult.total}\nICIQ-SF: ${iciqSF || "—"}/21\nPFDI-20: ${pfdi20 || "—"}/100\nFSFI: ${fsfi || "—"}/36\nEVA Dor: ${enhancer.pain.evaRep}/10\nEvolução: ${evolucaoUro}`}
               colors={uroColors} />

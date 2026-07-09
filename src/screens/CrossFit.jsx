@@ -589,7 +589,7 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
           <span style={{ fontSize: isMobile ? 10 : 11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>{isMobile ? "💪" : "💪 CrossFit"}</span>
         </div>
         <div style={{ display:"flex", gap:4, overflowX: isMobile ? "auto" : "visible", flexShrink:1, msOverflowStyle:"none", scrollbarWidth:"none" }}>
-          {[["avaliacao","📋",isMobile?"":"Avaliação"],["sessoes","📅",isMobile?"":"Sessões"],["relatorio","📊",isMobile?"":"Relatório"],["evidencias","🔬",isMobile?"":"Evidências"]].map(([k,ic,lb]) => (
+          {[["avaliacao","📋",isMobile?"":"Avaliação"],["evolucao","📈",isMobile?"":"Evolução"],["relatorio","📊",isMobile?"":"Relatório"],["evidencias","🔬",isMobile?"":"Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               background: tab === k ? C.amberBg : "transparent", border: `1px solid ${tab === k ? C.amber + "50" : "transparent"}`,
               borderRadius: 8, padding: isMobile ? "6px 10px" : "7px 14px", fontSize: isMobile ? 10 : 12,
@@ -799,13 +799,14 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
           </Section>
         )}
 
-        {/* ════════ TAB: SESSÕES ════════ */}
-        {tab === "sessoes" && (
+        {/* ════════ TAB: EVOLUÇÃO ════════ */}
+        {tab === "evolucao" && (
           <>
-            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={cfColors} />
-            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
-              flags={mergedRedFlags} colors={cfColors} />
-            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={cfColors} />
+            {enhancer.redFlags.length > 0 && (
+              <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
+                flags={mergedRedFlags} colors={cfColors} />
+            )}
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={cfColors} sessionLabel="Evolução" specialty="crossfit" defaultExpanded={true} pain={enhancer.pain} setPain={enhancer.setPain} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Atleta: ${student?.nome || "—"}\nNível: ${nivelAtleta}\nQueixa: ${queixaAtleta}\nModalidades: ${modalidades.join(", ")}\nLesões: ${lesoesPrevias.join(", ")}\nRestrições: ${restricoesMovimentos.join(", ")}\nObjetivos: ${objetivos.join(", ")}\nEVA Mov: ${enhancer.pain.evaMov || evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep || evaRep}/10\nDor local: ${enhancer.pain.localDor || localDor}\nSnatch: ${snatchRM || "—"}kg\nC&J: ${cleanJerkRM || "—"}kg\nBack SQ: ${backSquatRM || "—"}kg\nTreinos: ${historicoTreinos.length}\nYellow Flags: ${yellowFlags.join(", ")}\nDCT: ${diagnosticoCinesio}\nEvolução: ${evolucao}`}
               colors={cfColors} />

@@ -161,7 +161,7 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
   const [editTarget, setEditTarget] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
-  const [tab, setTab] = useState("anamnese");
+  const [tab, setTab] = useState("avaliacao");
   const [regiao, setRegiao] = useState("Centro-Oeste");
 
   const [queixaOnco, setQueixaOnco] = useState("");
@@ -439,7 +439,7 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
           {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
         <div style={{ display:"flex", gap:4 }}>
-          {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
+          {[["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{background:tab===k?C.amberBg:"transparent",border:`1px solid ${tab===k?C.amber+"50":"transparent"}`,borderRadius:8,padding:"7px 14px",fontSize:12,fontWeight:tab===k?700:400,color:tab===k?C.amber:C.textMuted,cursor:"pointer",fontFamily:F}}>{ic} {lb}</button>
           ))}
         </div>
@@ -458,7 +458,7 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
       </div>
 
       <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
-        {tab === "anamnese" && (
+        {tab === "avaliacao" && (
           <>
             <Section title="Anamnese Oncológica" icon="📋">
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
@@ -513,14 +513,6 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
 
             <CifSection cifSuggestions={cifSuggestionsOnco} autoCif={autoCifOnco} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
-            <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
-              <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Anamnese</button>
-            </div>
-          </>
-        )}
-
-        {tab === "avaliacao" && (
-          <>
             <Section title="Performance Status" icon="🏃">
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
                 <div>
@@ -713,7 +705,8 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
         )}
 
         {tab === "evolucao" && (
-          <Section title="Evolução e Reavaliação" icon="📈">
+          <>
+            <Section title="Evolução e Reavaliação" icon="📈">
             <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
               Registre a evolução do paciente oncológico, resposta às intervenções, tolerância ao exercício e planejamento.
             </div>
@@ -738,28 +731,10 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
               <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Evolução</button>
             </div>
           </Section>
-        )}
-
-        {tab === "sessoes" && (
-          <>
-            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={oncoColors} />
             {enhancer.redFlags.length > 0 && (
-              <div style={{ background:"C.redBg", border:"1px solid rgba(239,68,68,0.25)", borderRadius:8, padding:"8px 12px", marginTop:12, marginBottom:10 }}>
-                <div style={{ fontSize:10, fontWeight:800, color:"C.red", letterSpacing:"0.1em", marginBottom:6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                  {["Febre neutropênica","TEP suspeito","Sangramento ativo","Fratura patológica","Compressão medular","Síndrome da veia cava superior","Hipercalcemia sintomática","Linfangite/ erisipela"].map(f => {
-                    const active = enhancer.redFlags.includes(f);
-                    return (
-                      <button key={f} onClick={() => enhancer.setRedFlags(active ? enhancer.redFlags.filter(x=>x!==f) : [...enhancer.redFlags, f])}
-                        style={{ fontSize:11, color:active?"#fff":"C.red", background:active?"C.red":"C.redBg", border:"1px solid rgba(239,68,68,0.3)", borderRadius:6, padding:"3px 10px", cursor:"pointer", fontFamily:"'Inter',sans-serif", fontWeight:active?700:400, transition:"all 0.12s" }}>
-                        {active && "✓ "}{f}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags} flags={["Dor óssea noturna progressiva","Linfedema agudo/infeccioso","Déficit neurológico novo","Trombose venosa profunda suspeita","Síndrome de compressão medular","Hipercalcemia suspeita (náusea, constipação, confusão)","Neutropenia febril"]} colors={oncoColors} />
             )}
-            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={oncoColors} />
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={oncoColors} sessionLabel="Evolução" specialty="oncologia" defaultExpanded={true} pain={enhancer.pain} setPain={enhancer.setPain} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Paciente: ${student?.nome || "—"}\nDiagnóstico: ${diagnosticoOnco}\nTipo câncer: ${tipoCancer}\nEstadiamento: ${estadiamento}\nTratamentos: ${tratamentosRealizados.join(", ")}\nECOG: ${ecog || "—"}\nKPS: ${kps || "—"}\nFACT-F: ${factFScore || "—"}/52\nEVA Dor: ${dorEVA || "—"}/10\nESAS: ${esasResult?.total || "—"}/90\nEvolução: ${evolucaoOnco}`}
               colors={oncoColors} />

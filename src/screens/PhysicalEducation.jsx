@@ -347,7 +347,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
   const [editTarget, setEditTarget] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
-  const [tab, setTab] = useState("anamnese");
+  const [tab, setTab] = useState("avaliacao");
   const [objetivo, setObjetivo] = useState("");
   const [queixa, setQueixa] = useState("");
   const [condicoesDetectadas, setCondicoesDetectadas] = useState([]);
@@ -433,7 +433,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
   const [testResults, setTestResults] = useState([]);
   const [yellowFlags, setYellowFlags] = useState([]);
   const [diagnosticoCinesio, setDiagnosticoCinesio] = useState("");
-  const [expandedSections, setExpandedSections] = useState(["cif", "bodymap", "gonio", "mrc", "testes"]);
+  const [expandedSections, setExpandedSections] = useState([]);
   const toggleSection = (s) => setExpandedSections(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
   const cifKeys = useMemo(() => autoCIFKeysPE({ condicoesDetectadas, restricoes, objetivo, queixa, enhancer }), [condicoesDetectadas, restricoes, objetivo, queixa, enhancer.pain]);
@@ -866,7 +866,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
           </span>}
         </div>
         <div style={{ display:"flex", gap: isMobile ? 2 : 4, overflowX:"auto", flexShrink:0 }}>
-          {[["anamnese","📋","Anamnese",bridgeExibidas.length],["avaliacao","🔬","Avaliação Física"],["prescricao","📝","Prescrição"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["dashboard","📊","Dashboard"],["evidencias","🔬","Evidências"]].map(([k,ic,lb,badge]) => (
+          {[["avaliacao","🔬","Avaliação Física"],["prescricao","📝","Prescrição"],["evolucao","📈","Evolução"],["relatorio","📊","Relatório"],["dashboard","📊","Dashboard"],["evidencias","🔬","Evidências"]].map(([k,ic,lb,badge]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               background: tab === k ? C.greenBg : "transparent",
               border: `1px solid ${tab === k ? C.green + "50" : "transparent"}`,
@@ -919,178 +919,176 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
 
       <div style={{ maxWidth:960, margin:"0 auto", padding: isMobile ? "12px 10px" : "20px 16px" }}>
 
-        {tab === "anamnese" && (
-          <Section title="Anamnese e Mapeamento de Objetivos" icon="📋">
-            <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
-              Descreva o objetivo principal, restrições clínicas e queixas do aluno. O sistema detectará automaticamente restrições e metas.
-            </div>
-            <div>
-              <span style={lbl()}>Objetivo Principal / Queixa</span>
-              <AudioField value={queixa} onChange={handleQueixaChange}
-                placeholder="Ex: Aluno busca hipertrofia de MMSS, emagrecimento, relata condromalácia patelar no joelho E…" rows={3} />
-            </div>
+        {tab === "avaliacao" && (
+          <>
+            <Section title="Anamnese e Mapeamento de Objetivos" icon="📋">
+              <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
+                Descreva o objetivo principal, restrições clínicas e queixas do aluno. O sistema detectará automaticamente restrições e metas.
+              </div>
+              <div>
+                <span style={lbl()}>Objetivo Principal / Queixa</span>
+                <AudioField value={queixa} onChange={handleQueixaChange}
+                  placeholder="Ex: Aluno busca hipertrofia de MMSS, emagrecimento, relata condromalácia patelar no joelho E…" rows={3} />
+              </div>
 
-            {condicoesDetectadas.length > 0 && (
-              <div style={{ marginTop:12, background:C.blueBg, border:`1px solid ${C.blue}40`, borderRadius:10, padding:"12px 14px" }}>
-                <div style={{ fontSize:10, fontWeight:800, color:C.blue, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>
-                  🔍 Condições identificadas na queixa
+              {condicoesDetectadas.length > 0 && (
+                <div style={{ marginTop:12, background:C.blueBg, border:`1px solid ${C.blue}40`, borderRadius:10, padding:"12px 14px" }}>
+                  <div style={{ fontSize:10, fontWeight:800, color:C.blue, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>
+                    🔍 Condições identificadas na queixa
+                  </div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                    {condicoesDetectadas.map(c => (
+                      <span key={c} style={{ fontSize:11, color:C.blue, background:C.blueBg, border:`1px solid ${C.blue}30`, borderRadius:6, padding:"3px 10px" }}>
+                        {c.replace(/-/g, " ")}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                  {condicoesDetectadas.map(c => (
-                    <span key={c} style={{ fontSize:11, color:C.blue, background:C.blueBg, border:`1px solid ${C.blue}30`, borderRadius:6, padding:"3px 10px" }}>
-                      {c.replace(/-/g, " ")}
+              )}
+
+              {restricoes.length > 0 && (
+                <div style={{ marginTop:12 }}>
+                  {restricoes.map((r, i) => (
+                    <div key={i} style={{ background: r.tipo === "alerta" ? C.redBg : C.amberBg, border:`1px solid ${r.tipo === "alerta" ? C.red : C.amber}40`, borderRadius:10, padding:"12px 14px", marginBottom:8 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                        <span style={{ fontSize:14 }}>{r.tipo === "alerta" ? "🚫" : "⚠️"}</span>
+                        <span style={{ fontWeight:700, fontSize:12, color: r.tipo === "alerta" ? C.red : C.amber }}>{r.local}</span>
+                      </div>
+                      <div style={{ fontSize:12, color:C.textSub, lineHeight:1.6 }}>{r.descricao || r.alerta}</div>
+                      <div style={{ fontSize:10, color:C.textMuted, marginTop:6, fontStyle:"italic" }}>{r.evidencia}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {acsmRisk && (
+                <div style={{ marginTop:12, background: `${acsmRisk.cor}12`, border:`1px solid ${acsmRisk.cor}50`, borderRadius:10, padding:"12px 14px" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                    <span style={{ fontSize:16 }}>{acsmRisk.estagio === 3 ? "🔴" : acsmRisk.estagio === 2 ? "🟡" : "🟢"}</span>
+                    <span style={{ fontSize:11, fontWeight:800, letterSpacing:"0.1em", textTransform:"uppercase", color: acsmRisk.cor }}>
+                      Estratificação de Risco ACSM — {acsmRisk.label}
                     </span>
+                  </div>
+                  <div style={{ fontSize:12, color:C.textSub, lineHeight:1.6, marginBottom:6 }}>{acsmRisk.descricao}</div>
+                  <div style={{ fontSize:11, color: acsmRisk.cor, background:`${acsmRisk.cor}18`, borderRadius:6, padding:"6px 10px", lineHeight:1.5 }}>
+                    📋 {acsmRisk.recomendacao}
+                  </div>
+                  {acsmRisk.fatoresIdentificados?.length > 0 && (
+                    <div style={{ marginTop:8, display:"flex", flexWrap:"wrap", gap:4 }}>
+                      {acsmRisk.fatoresIdentificados.map(f => (
+                        <span key={f} style={{ fontSize:10, color:C.textMuted, background:C.surface, border:`1px solid ${C.border}`, borderRadius:6, padding:"2px 8px" }}>
+                          {RISK_FACTOR_LABELS[f] || f}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {bridgeExibidas.length > 0 && (
+                <div style={{ marginTop:16, border:`1px solid ${C.amber}50`, borderRadius:12, overflow:"hidden" }}>
+                  <div style={{ background:C.amberBg, padding:"10px 14px", borderBottom:`1px solid ${C.amber}30`, display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:14 }}>🔗</span>
+                    <span style={{ fontSize:11, fontWeight:800, color:C.amber, textTransform:"uppercase", letterSpacing:"0.08em", flex:1 }}>
+                      Ponte de Transição — Dados da Fisioterapia ({bridgeExibidas.length} {bridgeExibidas.length === 1 ? "restrição" : "restrições"})
+                    </span>
+                    <span style={{ fontSize:9, color:C.textMuted }}>sasyra_assessments</span>
+                  </div>
+                  <div style={{ padding:"10px 14px", background:C.card }}>
+                    {bridgeExibidas.map((r, i) => {
+                      const desatualizada = isAvaliacaoDesatualizada(r.dataAvaliacao);
+                      return (
+                      <div key={i} style={{
+                        background: r.tipo === "alerta" ? C.redBg : r.tipo === "modificacao" ? C.amberBg : C.blueBg,
+                        border:`1px solid ${r.tipo === "alerta" ? C.red : r.tipo === "modificacao" ? C.amber : C.blue}30`,
+                        borderRadius:8, padding:"10px 12px", marginBottom:6,
+                        opacity: desatualizada ? 0.7 : 1,
+                      }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                          <span style={{ fontSize:13 }}>{r.tipo === "alerta" ? "🚫" : r.tipo === "modificacao" ? "⚠️" : "ℹ️"}</span>
+                          <span style={{ fontSize:11, fontWeight:700, color: r.tipo === "alerta" ? C.red : r.tipo === "modificacao" ? C.amber : C.blue }}>
+                            {r.local}{r.dataAvaliacao ? ` · ${r.dataAvaliacao}` : ""}
+                          </span>
+                          {desatualizada && (
+                            <span style={{ fontSize:9, background:C.amberBg, color:C.amber, border:`1px solid ${C.amber}40`, borderRadius:4, padding:"1px 6px", fontWeight:700 }}>
+                              +90 dias
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize:11, color:C.textSub, lineHeight:1.5, marginBottom:4 }}>{r.descricao}</div>
+                        {r.alternativa && (
+                          <div style={{ fontSize:10, color:C.amber, background:C.amberBg, borderRadius:4, padding:"4px 8px", marginTop:4 }}>
+                            💡 {r.alternativa}
+                          </div>
+                        )}
+                        <div style={{ fontSize:9, color:C.textMuted, marginTop:4, fontStyle:"italic" }}>{r.evidencia}</div>
+                        <div style={{ fontSize:8, color:C.textDim, marginTop:3 }}>Origem: {r.origem}</div>
+                        {desatualizada && (
+                          <div style={{ marginTop:6, fontSize:10, color:C.amber, fontStyle:"italic" }}>
+                            📅 Avaliação com mais de 90 dias — reavaliar antes de prescrever.
+                          </div>
+                        )}
+                      </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ marginTop:16 }}>
+                <span style={lbl()}>Objetivo do Treino</span>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:6 }}>
+                  {OBJETIVOS.map(o => (
+                    <button key={o.id} onClick={() => setObjetivo(objetivo === o.id ? "" : o.id)} style={iconBtn(objetivo === o.id, C.green)}>
+                      {objetivo === o.id && <span style={{fontSize:10}}>✓ </span>}{o.icon} {o.label}
+                    </button>
                   ))}
                 </div>
               </div>
-            )}
 
-            {restricoes.length > 0 && (
-              <div style={{ marginTop:12 }}>
-                {restricoes.map((r, i) => (
-                  <div key={i} style={{ background: r.tipo === "alerta" ? C.redBg : C.amberBg, border:`1px solid ${r.tipo === "alerta" ? C.red : C.amber}40`, borderRadius:10, padding:"12px 14px", marginBottom:8 }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
-                      <span style={{ fontSize:14 }}>{r.tipo === "alerta" ? "🚫" : "⚠️"}</span>
-                      <span style={{ fontWeight:700, fontSize:12, color: r.tipo === "alerta" ? C.red : C.amber }}>{r.local}</span>
-                    </div>
-                    <div style={{ fontSize:12, color:C.textSub, lineHeight:1.6 }}>{r.descricao || r.alerta}</div>
-                    <div style={{ fontSize:10, color:C.textMuted, marginTop:6, fontStyle:"italic" }}>{r.evidencia}</div>
-                  </div>
-                ))}
+              <div style={{ marginTop:16 }}>
+                <span style={lbl()}>Nível do Aluno</span>
+                <SingleSelect options={[{ value:"iniciante", label:"Iniciante" }, { value:"intermediario", label:"Intermediário" }, { value:"avancado", label:"Avançado" }]}
+                  value={nivel} onChange={setNivel} />
               </div>
-            )}
 
-            {acsmRisk && (
-              <div style={{ marginTop:12, background: `${acsmRisk.cor}12`, border:`1px solid ${acsmRisk.cor}50`, borderRadius:10, padding:"12px 14px" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-                  <span style={{ fontSize:16 }}>{acsmRisk.estagio === 3 ? "🔴" : acsmRisk.estagio === 2 ? "🟡" : "🟢"}</span>
-                  <span style={{ fontSize:11, fontWeight:800, letterSpacing:"0.1em", textTransform:"uppercase", color: acsmRisk.cor }}>
-                    Estratificação de Risco ACSM — {acsmRisk.label}
-                  </span>
-                </div>
-                <div style={{ fontSize:12, color:C.textSub, lineHeight:1.6, marginBottom:6 }}>{acsmRisk.descricao}</div>
-                <div style={{ fontSize:11, color: acsmRisk.cor, background:`${acsmRisk.cor}18`, borderRadius:6, padding:"6px 10px", lineHeight:1.5 }}>
-                  📋 {acsmRisk.recomendacao}
-                </div>
-                {acsmRisk.fatoresIdentificados?.length > 0 && (
-                  <div style={{ marginTop:8, display:"flex", flexWrap:"wrap", gap:4 }}>
-                    {acsmRisk.fatoresIdentificados.map(f => (
-                      <span key={f} style={{ fontSize:10, color:C.textMuted, background:C.surface, border:`1px solid ${C.border}`, borderRadius:6, padding:"2px 8px" }}>
-                        {RISK_FACTOR_LABELS[f] || f}
+              <Section title="CIF — Classificação Internacional de Funcionalidade" icon="🏛️">
+                {cifKeys.length > 0 && (
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                    {cifEntries.slice(0, 12).map(c => (
+                      <span key={c.code} style={{ fontSize:11, color:C.green, background:C.greenBg, border:`1px solid ${C.green}30`, borderRadius:6, padding:"3px 10px", lineHeight:1.6 }}>
+                        <strong>{c.code}</strong>: {c.desc}
                       </span>
                     ))}
                   </div>
                 )}
-              </div>
-            )}
-
-            {bridgeExibidas.length > 0 && (
-              <div style={{ marginTop:16, border:`1px solid ${C.amber}50`, borderRadius:12, overflow:"hidden" }}>
-                <div style={{ background:C.amberBg, padding:"10px 14px", borderBottom:`1px solid ${C.amber}30`, display:"flex", alignItems:"center", gap:8 }}>
-                  <span style={{ fontSize:14 }}>🔗</span>
-                  <span style={{ fontSize:11, fontWeight:800, color:C.amber, textTransform:"uppercase", letterSpacing:"0.08em", flex:1 }}>
-                    Ponte de Transição — Dados da Fisioterapia ({bridgeExibidas.length} {bridgeExibidas.length === 1 ? "restrição" : "restrições"})
-                  </span>
-                  <span style={{ fontSize:9, color:C.textMuted }}>sasyra_assessments</span>
-                </div>
-                <div style={{ padding:"10px 14px", background:C.card }}>
-                  {bridgeExibidas.map((r, i) => {
-                    const desatualizada = isAvaliacaoDesatualizada(r.dataAvaliacao);
-                    return (
-                    <div key={i} style={{
-                      background: r.tipo === "alerta" ? C.redBg : r.tipo === "modificacao" ? C.amberBg : C.blueBg,
-                      border:`1px solid ${r.tipo === "alerta" ? C.red : r.tipo === "modificacao" ? C.amber : C.blue}30`,
-                      borderRadius:8, padding:"10px 12px", marginBottom:6,
-                      opacity: desatualizada ? 0.7 : 1,
-                    }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
-                        <span style={{ fontSize:13 }}>{r.tipo === "alerta" ? "🚫" : r.tipo === "modificacao" ? "⚠️" : "ℹ️"}</span>
-                        <span style={{ fontSize:11, fontWeight:700, color: r.tipo === "alerta" ? C.red : r.tipo === "modificacao" ? C.amber : C.blue }}>
-                          {r.local}{r.dataAvaliacao ? ` · ${r.dataAvaliacao}` : ""}
-                        </span>
-                        {desatualizada && (
-                          <span style={{ fontSize:9, background:C.amberBg, color:C.amber, border:`1px solid ${C.amber}40`, borderRadius:4, padding:"1px 6px", fontWeight:700 }}>
-                            +90 dias
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ fontSize:11, color:C.textSub, lineHeight:1.5, marginBottom:4 }}>{r.descricao}</div>
-                      {r.alternativa && (
-                        <div style={{ fontSize:10, color:C.amber, background:C.amberBg, borderRadius:4, padding:"4px 8px", marginTop:4 }}>
-                          💡 {r.alternativa}
-                        </div>
-                      )}
-                      <div style={{ fontSize:9, color:C.textMuted, marginTop:4, fontStyle:"italic" }}>{r.evidencia}</div>
-                      <div style={{ fontSize:8, color:C.textDim, marginTop:3 }}>Origem: {r.origem}</div>
-                      {desatualizada && (
-                        <div style={{ marginTop:6, fontSize:10, color:C.amber, fontStyle:"italic" }}>
-                          📅 Avaliação com mais de 90 dias — reavaliar antes de prescrever.
-                        </div>
-                      )}
-                    </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div style={{ marginTop:16 }}>
-              <span style={lbl()}>Objetivo do Treino</span>
-              <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:6 }}>
-                {OBJETIVOS.map(o => (
-                  <button key={o.id} onClick={() => setObjetivo(objetivo === o.id ? "" : o.id)} style={iconBtn(objetivo === o.id, C.green)}>
-                    {objetivo === o.id && <span style={{fontSize:10}}>✓ </span>}{o.icon} {o.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ marginTop:16 }}>
-              <span style={lbl()}>Nível do Aluno</span>
-              <SingleSelect options={[{ value:"iniciante", label:"Iniciante" }, { value:"intermediario", label:"Intermediário" }, { value:"avancado", label:"Avançado" }]}
-                value={nivel} onChange={setNivel} />
-            </div>
-
-            <Section title="CIF — Classificação Internacional de Funcionalidade" icon="🏛️">
-              {cifKeys.length > 0 && (
-                <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                  {cifEntries.slice(0, 12).map(c => (
-                    <span key={c.code} style={{ fontSize:11, color:C.green, background:C.greenBg, border:`1px solid ${C.green}30`, borderRadius:6, padding:"3px 10px", lineHeight:1.6 }}>
-                      <strong>{c.code}</strong>: {c.desc}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {cifKeys.length === 0 && (
-                <div style={{ fontSize:12, color:C.textMuted }}>Preencha a anamnese acima para gerar sugestões de CIF automaticamente.</div>
-              )}
-
-              <div style={{ marginTop:12 }}>
-                <span style={lbl()}>Diagnóstico Cinesioterapêutico (DCT)</span>
-                <input type="text" value={diagnosticoCinesio} onChange={e => setDiagnosticoCinesio(e.target.value)} style={inp()} placeholder="Ex: Programa de exercícios para condicionamento cardiorrespiratório e redução de peso" />
-                {!diagnosticoCinesio && dctSuggestion && (
-                  <button onClick={() => setDiagnosticoCinesio(dctSuggestion)}
-                    style={{ ...ghostBtn({ fontSize:10, marginTop:6 }), borderStyle:"dashed" }}>
-                    💡 Sugerir DCT
-                  </button>
+                {cifKeys.length === 0 && (
+                  <div style={{ fontSize:12, color:C.textMuted }}>Preencha a anamnese acima para gerar sugestões de CIF automaticamente.</div>
                 )}
+
+                <div style={{ marginTop:12 }}>
+                  <span style={lbl()}>Diagnóstico Cinesioterapêutico (DCT)</span>
+                  <input type="text" value={diagnosticoCinesio} onChange={e => setDiagnosticoCinesio(e.target.value)} style={inp()} placeholder="Ex: Programa de exercícios para condicionamento cardiorrespiratório e redução de peso" />
+                  {!diagnosticoCinesio && dctSuggestion && (
+                    <button onClick={() => setDiagnosticoCinesio(dctSuggestion)}
+                      style={{ ...ghostBtn({ fontSize:10, marginTop:6 }), borderStyle:"dashed" }}>
+                      💡 Sugerir DCT
+                    </button>
+                  )}
+                </div>
+              </Section>
+
+              <div style={{ marginTop:14 }}>
+                <span style={lbl()}>Bandeiras Amarelas (Yellow Flags)</span>
+                <TagSelect options={YELLOW_FLAGS_PE.map(f => f.label)}
+                  value={yellowFlags} onChange={setYellowFlags} activeColor={C.amber} />
               </div>
+
+              <CollapsibleSection title="BodyMap — Mapa Corporal de Dor" icon="🧍" expanded={expandedSections.includes("bodymap")} onToggle={() => toggleSection("bodymap")}>
+                <BodyMap value={bodyPain} onChange={setBodyPain} colors={{ mark:C.green, ...C }} />
+              </CollapsibleSection>
             </Section>
 
-            <div style={{ marginTop:14 }}>
-              <span style={lbl()}>Bandeiras Amarelas (Yellow Flags)</span>
-              <TagSelect options={YELLOW_FLAGS_PE.map(f => f.label)}
-                value={yellowFlags} onChange={setYellowFlags} activeColor={C.amber} />
-            </div>
-
-            <CollapsibleSection title="BodyMap — Mapa Corporal de Dor" icon="🧍" expanded={expandedSections.includes("bodymap")} onToggle={() => toggleSection("bodymap")}>
-              <BodyMap value={bodyPain} onChange={setBodyPain} colors={{ mark:C.green, ...C }} />
-            </CollapsibleSection>
-          </Section>
-        )}
-
-        {tab === "avaliacao" && (
-          <>
             <Accordion title="Composição Corporal — Protocolo de Pollock" icon="📏" defaultOpen>
               <div style={{ fontSize:12, color:C.textMuted, marginBottom:12, lineHeight:1.6 }}>
                 Protocolo de Pollock de {protocoloDobras === "7" ? "7" : "3"} dobras cutâneas. Selecione o protocolo e preencha as medidas em milímetros.
@@ -1928,13 +1926,14 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
           />
         )}
 
-        {tab === "sessoes" && (
+        {tab === "evolucao" && (
           <>
-            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={peColors} />
-            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
-              flags={["Dor torácica ao esforço","Falta de ar / dispneia anormal","Tontura/síncope durante treino","Palpitações","Edema articular sem trauma","Perda de força súbita","Febre + mialgia","Cefaleia intensa pós-exercício"]}
-              colors={peColors} />
-            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={peColors} />
+            {enhancer.redFlags.length > 0 && (
+              <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
+                flags={["Dor torácica ao esforço","Falta de ar / dispneia anormal","Tontura/síncope durante treino","Palpitações","Edema articular sem trauma","Perda de força súbita","Febre + mialgia","Cefaleia intensa pós-exercício"]}
+                colors={peColors} />
+            )}
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={peColors} sessionLabel="Evolução" specialty="pe" defaultExpanded={true} pain={enhancer.pain} setPain={enhancer.setPain} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Aluno: ${student?.nome || "—"}\nObjetivo: ${objetivo}\nQueixa: ${queixa}\nRestrições: ${restricoes.map(r=>r.local).join(", ")}\nNível: ${nivel}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nBodyPain: ${bodyPain.join(", ")}\nTreinos prescritos: ${estruturaTreino.length}\nPSE médio: ${pseSessoes.length > 0 ? (pseSessoes.reduce((a,b)=>a+Number(b.rpe||0),0)/pseSessoes.length).toFixed(1) : "—"}/10\nAvaliações: ${savedAssessments.length}\nCIF: ${cifKeys.join(", ")}\nDCT: ${diagnosticoCinesio}\nYellow Flags: ${yellowFlags.join(", ")}\nGoniometria: ${gonioRows.filter(g=>g.l||g.r).map(g=>`${g.joint}: ${g.l||"-"}/${g.r||"-"}`).join("; ")}\nMRC: ${mrcRows.map(m=>`${m.muscle}: ${m.value}`).join(", ")}\nTestes: ${testResults.map(t=>t.name).join(", ")}`}
               colors={peColors} />

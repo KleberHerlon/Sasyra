@@ -213,7 +213,7 @@ export default function Rheumatology({ student, students, allPatients, currentMo
   const [editTarget, setEditTarget] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
-  const [tab, setTab] = useState("anamnese");
+  const [tab, setTab] = useState("avaliacao");
   const [regiao, setRegiao] = useState("Centro-Oeste");
 
   const [queixaReumato, setQueixaReumato] = useState("");
@@ -508,7 +508,7 @@ export default function Rheumatology({ student, students, allPatients, currentMo
           {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
         <div style={{ display:"flex", gap:4 }}>
-          {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
+          {[["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               background: tab === k ? C.purpleBg : "transparent",
               border: `1px solid ${tab === k ? C.purple + "50" : "transparent"}`,
@@ -533,7 +533,7 @@ export default function Rheumatology({ student, students, allPatients, currentMo
       </div>
 
       <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
-        {tab === "anamnese" && (
+        {tab === "avaliacao" && (
           <>
             <Section title="Anamnese Reumatológica" icon="📋">
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
@@ -619,14 +619,6 @@ export default function Rheumatology({ student, students, allPatients, currentMo
 
             <CifSection cifSuggestions={cifSuggestionsReuma} autoCif={autoCifReuma} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
-            <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
-              <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Anamnese</button>
-            </div>
-          </>
-        )}
-
-        {tab === "avaliacao" && (
-          <>
             <Section title="DAS28 — Atividade de Doença (AR)" icon="📊">
               <div style={{ fontSize:12, color:C.textMuted, marginBottom:10, lineHeight:1.5 }}>
                 Disease Activity Score 28 joint count. Avalia atividade da artrite reumatoide. VHS (ESR) em mm/h. Calculado automaticamente.
@@ -800,7 +792,8 @@ export default function Rheumatology({ student, students, allPatients, currentMo
         )}
 
         {tab === "evolucao" && (
-          <Section title="Evolução e Reavaliação" icon="📈">
+          <>
+            <Section title="Evolução e Reavaliação" icon="📈">
             <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
               Registre a evolução do paciente, resposta às intervenções, mudanças na atividade de doença e planejamento das próximas sessões.
             </div>
@@ -825,28 +818,10 @@ export default function Rheumatology({ student, students, allPatients, currentMo
               <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Evolução</button>
             </div>
           </Section>
-        )}
-
-        {tab === "sessoes" && (
-          <>
-            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={reumatoColors} />
             {enhancer.redFlags.length > 0 && (
-              <div style={{ background:"C.redBg", border:"1px solid rgba(239,68,68,0.25)", borderRadius:8, padding:"8px 12px", marginTop:12, marginBottom:10 }}>
-                <div style={{ fontSize:10, fontWeight:800, color:"C.red", letterSpacing:"0.1em", marginBottom:6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                  {["Artrite de início súbito monoarticular","Febre + rash articular","Rigidez matinal >2h","Deformidade articular progressiva","Derrame articular significativo","Síndrome de cauda equina suspeita","Uveíte/irite"].map(f => {
-                    const active = enhancer.redFlags.includes(f);
-                    return (
-                      <button key={f} onClick={() => enhancer.setRedFlags(active ? enhancer.redFlags.filter(x=>x!==f) : [...enhancer.redFlags, f])}
-                        style={{ fontSize:11, color:active?"#fff":"C.red", background:active?"C.red":"C.redBg", border:"1px solid rgba(239,68,68,0.3)", borderRadius:6, padding:"3px 10px", cursor:"pointer", fontFamily:"'Inter',sans-serif", fontWeight:active?700:400, transition:"all 0.12s" }}>
-                        {active && "✓ "}{f}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags} flags={["Artrite séptica suspeita (monoartrite aguda + febre)","Síndrome de cauda equina","Compressão medular","Vasculite ativa (púrpura, mononeurite)","Perda visual súbita (arterite temporal)","Nefrite lúpica ativa (edema, HAS, hematúria)"]} colors={reumatoColors} />
             )}
-            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={reumatoColors} />
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={reumatoColors} sessionLabel="Evolução" specialty="reumatologia" defaultExpanded={true} pain={enhancer.pain} setPain={enhancer.setPain} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Paciente: ${student?.nome || "—"}\nDiagnóstico: ${diagnosticoReumato}\nQueixa: ${queixaReumato}\nTempo diagnóstico: ${tempoDiagnostico}\nRigidez matinal: ${rigidezMatinal} min\nArtic. dolorosas (28): ${articulacoesDolorosas.length}\nArtic. edemaciadas (28): ${articulacoesEdemaciadas.length}\nDAS28: ${das28Result?.total || "—"} (${das28Result?.level || "—"})\nBASDAI: ${basdaiResult?.total || "—"}\nHAQ: ${haqResult?.total || "—"}\nWOMAC: ${womacResult?.grandTotal || "—"}\nWPI: ${wpiResult?.total || "—"}\nFadiga (FACT-F): ${fadigaFACT || "—"}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nEvolução: ${evolucaoReumato}`}
               colors={reumatoColors} />

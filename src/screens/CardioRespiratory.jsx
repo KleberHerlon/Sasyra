@@ -184,7 +184,7 @@ export default function CardioRespiratory({ student, students, allPatients, curr
   const [editTarget, setEditTarget] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
-  const [tab, setTab] = useState("anamnese");
+  const [tab, setTab] = useState("avaliacao");
   const [regiao, setRegiao] = useState("Centro-Oeste");
 
   const [queixaCardio, setQueixaCardio] = useState("");
@@ -490,7 +490,7 @@ export default function CardioRespiratory({ student, students, allPatients, curr
           {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
         <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
-          {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
+          {[["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{ background:tab === k ? C.redBg : "transparent", border:`1px solid ${tab === k ? C.red + "50" : "transparent"}`, borderRadius:8, padding:isMobile?"5px 10px":"7px 16px", fontSize:isMobile?11:13, fontWeight:tab === k ? 700 : 400, color:tab === k ? C.red : C.textMuted, cursor:"pointer", fontFamily:F }}>{ic} {lb}</button>
           ))}
         </div>
@@ -509,7 +509,7 @@ export default function CardioRespiratory({ student, students, allPatients, curr
       </div>
 
       <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
-        {tab === "anamnese" && (
+        {tab === "avaliacao" && (
           <>
             <Section title="Anamnese Cardiorrespiratória" icon="📋">
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
@@ -590,14 +590,6 @@ export default function CardioRespiratory({ student, students, allPatients, curr
 
             <CifSection cifSuggestions={cifSuggestionsCardio} autoCif={autoCifCardio} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
-            <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
-              <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Anamnese</button>
-            </div>
-          </>
-        )}
-
-        {tab === "avaliacao" && (
-          <>
             <Section title="Exame Físico" icon="🔬">
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"12px 16px", marginBottom:14 }}>
                 <NumericField label="Frequência Cardíaca (FC)" value={fc} onChange={setFc} unit="bpm" min={20} max={220} />
@@ -747,50 +739,33 @@ export default function CardioRespiratory({ student, students, allPatients, curr
         )}
 
         {tab === "evolucao" && (
-          <Section title="Evolução e Reavaliação" icon="📈">
-            <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
-              Registre a evolução do paciente cardiorrespiratório, resposta às intervenções e planejamento terapêutico.
-            </div>
-            <div style={{ marginBottom:14 }}>
-              <span style={lbl()}>Evolução clínica / Observações</span>
-              <textarea value={evolucaoCardio} onChange={e => setEvolucaoCardio(e.target.value)} rows={4}
-                style={{ ...inp({ resize:"vertical", lineHeight:1.6 }) }}
-                placeholder="Descreva a evolução desde a última sessão, resposta à reabilitação, sinais vitais, tolerância ao exercício..." />
-            </div>
-            {minnesotaResult && (
-              <div style={{ background:C.cardAlt, borderRadius:10, padding:"14px 16px", marginBottom:14 }}>
-                <div style={{ fontSize:10, fontWeight:800, color:C.red, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Última avaliação</div>
-                <div style={{ fontSize:13, color:C.textSub, lineHeight:1.7 }}>
-                  <strong>NYHA:</strong> {nyha || "—"} · <strong>Borg:</strong> {borg || "—"} · <strong>mMRC:</strong> {mrcDispneia || "—"} · <strong>TC6M:</strong> {tc6mDistancia || "—"}m · <strong>SpO₂:</strong> {spo2 || "—"}% · <strong>MLHFQ:</strong> {minnesotaResult.total}/{minnesotaResult.max} ({minnesotaResult.level})
-                </div>
-              </div>
-            )}
-            <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
-              <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Evolução</button>
-            </div>
-          </Section>
-        )}
-
-        {tab === "sessoes" && (
           <>
-            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={cardioColors} />
-            {enhancer.redFlags.length > 0 && (
-              <div style={{ background:C.redBg, border:`1px solid ${C.red}40`, borderRadius:8, padding:"8px 12px", marginTop:12, marginBottom:10 }}>
-                <div style={{ fontSize:10, fontWeight:800, color:C.red, letterSpacing:"0.1em", marginBottom:6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                  {["Dor torácica súbita (IAM)","Dispneia súbita (TEP)","Cianose","Hemoptise","Palpitações com síncope","Tontura/ Síncope","Febre + secreção purulenta","SpO2 < 88% em repouso","Edema agudo de pulmão","Choque cardiogênico","FC > 120 bpm em repouso","PA > 220/120 mmHg","Ganho de peso > 2kg/3dias","Crises de asma graves"].map(f => {
-                  const active = enhancer.redFlags.includes(f);
-                  return (
-                    <button key={f} onClick={() => enhancer.setRedFlags(active ? enhancer.redFlags.filter(x=>x!==f) : [...enhancer.redFlags, f])}
-                      style={{ fontSize:11, color:active?"#fff":C.red, background:active?C.red:C.redBg, border:`1px solid ${C.red}50`, borderRadius:6, padding:"3px 10px", cursor:"pointer", fontFamily:F, fontWeight:active?700:400, transition:"all 0.12s" }}>
-                      {active && "✓ "}{f}
-                    </button>
-                  );
-                })}
-                </div>
+            <Section title="Evolução e Reavaliação" icon="📈">
+              <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
+                Registre a evolução do paciente cardiorrespiratório, resposta às intervenções e planejamento terapêutico.
               </div>
+              <div style={{ marginBottom:14 }}>
+                <span style={lbl()}>Evolução clínica / Observações</span>
+                <textarea value={evolucaoCardio} onChange={e => setEvolucaoCardio(e.target.value)} rows={4}
+                  style={{ ...inp({ resize:"vertical", lineHeight:1.6 }) }}
+                  placeholder="Descreva a evolução desde a última sessão, resposta à reabilitação, sinais vitais, tolerância ao exercício..." />
+              </div>
+              {minnesotaResult && (
+                <div style={{ background:C.cardAlt, borderRadius:10, padding:"14px 16px", marginBottom:14 }}>
+                  <div style={{ fontSize:10, fontWeight:800, color:C.red, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Última avaliação</div>
+                  <div style={{ fontSize:13, color:C.textSub, lineHeight:1.7 }}>
+                    <strong>NYHA:</strong> {nyha || "—"} · <strong>Borg:</strong> {borg || "—"} · <strong>mMRC:</strong> {mrcDispneia || "—"} · <strong>TC6M:</strong> {tc6mDistancia || "—"}m · <strong>SpO₂:</strong> {spo2 || "—"}% · <strong>MLHFQ:</strong> {minnesotaResult.total}/{minnesotaResult.max} ({minnesotaResult.level})
+                  </div>
+                </div>
+              )}
+              <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
+                <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Evolução</button>
+              </div>
+            </Section>
+            {enhancer.redFlags.length > 0 && (
+              <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags} flags={["Dor torácica em repouso","Dispneia em repouso","Hemoptise","Síncope","Cianose central","Taquicardia >120 bpm em repouso","SpO2 <88% em repouso","PA sistólica >180 ou <90 mmHg","Febre >38°C + sintomas respiratórios","TEP suspeita (dor pleurítica + dispneia súbita)"]} colors={cardioColors} />
             )}
-            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={cardioColors} />
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={cardioColors} sessionLabel="Evolução" specialty="cardiorespiratorio" defaultExpanded={true} pain={enhancer.pain} setPain={enhancer.setPain} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Paciente: ${student?.nome || "—"}\nQueixa: ${queixaCardio}\nComorbidades: ${comorbidadesCardio.join(", ")}\nSintomas: ${sintomasCardio.join(", ")}\nFC: ${fc} bpm | SpO2: ${spo2}% | PA: ${paSist}/${paDiast} mmHg\nNYHA: ${nyha}\nBorg: ${borg}\nmMRC: ${mrcDispneia}\nTC6M: ${tc6mDistancia}m\nEspirometria: CVF ${cvf}L, VEF1 ${vef1}L, Rel ${relacaoVEF1CVF}%\nMLHFQ: ${minnesotaResult?.total || "—"}/105\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nAusculta pulmonar: ${auscultaPulmonar}\nAusculta cardíaca: ${auscultaCardiaca}\nEdema: ${edema}\nJugular: ${jugular}\nEvolução: ${evolucaoCardio}`}
               colors={cardioColors} />

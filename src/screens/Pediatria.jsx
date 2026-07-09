@@ -377,6 +377,8 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
   const [yellowFlags, setYellowFlags] = useState([]);
   const [evaMov, setEvaMov] = useState(0);
   const [evaRep, setEvaRep] = useState(0);
+  const [nivelAti, setNivelAti] = useState("");
+  const [avdsPed, setAvdsPed] = useState([]);
   const [localDor, setLocalDor] = useState([]);
   const [bodyPain, setBodyPain] = useState([]);
   const [gonioRows, setGonioRows] = useState(JSON.parse(JSON.stringify(PED_GONIO_DEFAULT)));
@@ -470,6 +472,8 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
         setYellowFlags(saved.yellowFlags || []);
         setEvaMov(saved.evaMov || 0);
         setEvaRep(saved.evaRep || 0);
+        setNivelAti(saved.nivelAti || "");
+        setAvdsPed(saved.avdsPed || []);
         setLocalDor(saved.localDor || []);
         setBodyPain(saved.bodyPain || []);
         setGonioRows(saved.gonioRows || JSON.parse(JSON.stringify(PED_GONIO_DEFAULT)));
@@ -497,7 +501,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
       growthHistory,
       gmfcs, aimsScore, mchat,
       objetivosFuncionais, atividadesTerapeuticas, frequencia, orientacoesCuidador,
-      evolucao, diagnosticoCinesio, yellowFlags, evaMov, evaRep, localDor, bodyPain,
+      evolucao, diagnosticoCinesio, yellowFlags, evaMov, evaRep, nivelAti, avdsPed, localDor, bodyPain,
       gonioRows, mrcRows, testResults, expandedSections,
       pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
@@ -515,7 +519,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
       queixa: queixaPrincipal,
       diagnostico: diagnosticoMedico,
       gmfcs, aims: aimsScore, mchat: mchat.length,
-      tonus, comorbidades: [...comorbidades], evaMov, evaRep,
+      tonus, comorbidades: [...comorbidades], evaMov, evaRep, nivelAti, avdsPed: [...avdsPed],
       gonioRows: JSON.parse(JSON.stringify(gonioRows)),
       mrcRows: JSON.parse(JSON.stringify(mrcRows)),
       testResults: [...testResults],
@@ -539,6 +543,8 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
     setComorbidades(entry.comorbidades || []);
     setEvaMov(entry.evaMov || 0);
     setEvaRep(entry.evaRep || 0);
+    setNivelAti(entry.nivelAti || "");
+    setAvdsPed(entry.avdsPed || []);
     setGonioRows(entry.gonioRows || JSON.parse(JSON.stringify(PED_GONIO_DEFAULT)));
     setMrcRows(entry.mrcRows || JSON.parse(JSON.stringify(PED_MRC_DEFAULT)));
     setTestResults(entry.testResults || []);
@@ -726,7 +732,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
           {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
         <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
-          {[["avaliacao","📋",isMobile?"":"Avaliação"],["sessoes","📅",isMobile?"":"Sessões"],["relatorio","📊",isMobile?"":"Relatório"],["evidencias","🔬",isMobile?"":"Evidências"]].map(([k,ic,lb])=>(
+          {[["avaliacao","📋",isMobile?"":"Avaliação"],["evolucao","📈",isMobile?"":"Evolução"],["relatorio","📊",isMobile?"":"Relatório"],["evidencias","🔬",isMobile?"":"Evidências"]].map(([k,ic,lb])=>(
             <button key={k} onClick={()=>setTab(k)} style={{background:tab===k?C.blueBg:"transparent",border:`1px solid ${tab===k?C.blue+"50":"transparent"}`,borderRadius:8,padding:isMobile?"5px 10px":"7px 16px",fontSize:isMobile?11:13,fontWeight:tab===k?700:400,color:tab===k?C.blue:C.textMuted,cursor:"pointer",fontFamily:F}}>{ic} {lb}</button>
           ))}
         </div>
@@ -905,6 +911,20 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
           </CollapsibleSection>
 
           <GeneralAssessment storageKey="pediatria" studentId={sid} colors={{ ...C, accent: C.blue }} initialBodyPain={localDor} pediatric />
+
+          {/* ⚡ Dor e Funcionalidade */}
+          <CollapsibleSection title="Dor e Funcionalidade" icon="⚡" expanded={expandedSections.includes("dor")} onToggle={()=>toggleSection("dor")}>
+            <Row cols={isMobile?"1fr":"1fr 1fr"} gap="12px 16px">
+              <CollapsibleSub title="Escala de Dor (EVA)">
+                <EvaSlider label="EVA — Movimento" value={evaMov} onChange={setEvaMov} color={C.blue} />
+                <div style={{marginTop:8}}><EvaSlider label="EVA — Repouso" value={evaRep} onChange={setEvaRep} color={C.blue} /></div>
+              </CollapsibleSub>
+              <CollapsibleSub title="Função e Atividades">
+                <div><span style={lbl()}>Nível de atividade</span><SingleSelect options={["Brincando livremente","Ativo com limitações","Pouco ativo","Restrito ao leito"]} value={nivelAti} onChange={setNivelAti} activeColor={C.blue} /></div>
+                <div style={{marginTop:10}}><span style={lbl()}>AVDs comprometidas</span><TagSelect options={["Andar","Engatinhar","Sentar","Rolar","Alcançar objetos","Agarrar","Brincar","Alimentar-se","Vestir-se","Higiene","Dormir","Falar/comunicar-se","Sem limitações"]} value={avdsPed} onChange={setAvdsPed} activeColor={C.blue} /></div>
+              </CollapsibleSub>
+            </Row>
+          </CollapsibleSection>
 
           {/* 🔬 Exame Físico */}
           <CollapsibleSection title="Exame Físico" icon="🔬" expanded={expandedSections.includes("exame")} onToggle={()=>toggleSection("exame")}>
@@ -1139,27 +1159,14 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
           </Section>
         )}
 
-        {/* ════════ TAB: SESSÕES ════════ */}
-        {tab === "sessoes" && (
+        {/* ════════ TAB: EVOLUÇÃO ════════ */}
+        {tab === "evolucao" && (
           <>
-            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={pedColors} />
             {enhancer.redFlags.length > 0 && (
-              <div style={{ background:C.redBg, border:`1px solid ${C.red}40`, borderRadius:8, padding:"8px 12px", marginTop:12, marginBottom:10 }}>
-                <div style={{ fontSize:10, fontWeight:800, color:C.red, letterSpacing:"0.1em", marginBottom:6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                  {mergedRedFlags.map(f => {
-                  const active = enhancer.redFlags.includes(f);
-                  return (
-                    <button key={f} onClick={() => enhancer.setRedFlags(active ? enhancer.redFlags.filter(x=>x!==f) : [...enhancer.redFlags, f])}
-                      style={{ fontSize:11, color:active?"#fff":C.red, background:active?C.red:C.redBg, border:`1px solid ${C.red}50`, borderRadius:6, padding:"3px 10px", cursor:"pointer", fontFamily:F, fontWeight:active?700:400, transition:"all 0.12s" }}>
-                      {active && "✓ "}{f}
-                    </button>
-                  );
-                })}
-                </div>
-              </div>
+              <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
+                flags={mergedRedFlags} colors={pedColors} />
             )}
-            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={pedColors} />
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={pedColors} sessionLabel="Evolução" specialty="pediatria" defaultExpanded={true} pain={enhancer.pain} setPain={enhancer.setPain} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Paciente pediátrico: ${student?.nome || "—"}\nQueixa: ${queixaPrincipal}\nDiagnóstico: ${diagnosticoMedico}\nComorbidades: ${comorbidades.join(", ")}\nGMFCS: ${gmfcs || "—"}\nAIMS: ${aimsScore || "—"}\nM-CHAT: ${mchat.length} itens\nTônus: ${tonus}\nEVA Mov: ${enhancer.pain.evaMov || evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep || evaRep}/10\nDor local: ${enhancer.pain.localDor || localDor}\nMarcos motores: ${allMarcos.join(", ")}\nAtividades: ${atividadesTerapeuticas.join(", ")}\nYellow Flags: ${yellowFlags.join(", ")}\nDCT: ${diagnosticoCinesio}\nEvolução: ${evolucao}`}
               patientName={student?.nome} moduleLabel="Pediatria" colors={pedColors} />

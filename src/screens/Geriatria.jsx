@@ -207,7 +207,7 @@ export default function Geriatria({ student, students, allPatients, currentModul
   const [editTarget, setEditTarget] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
-  const [tab, setTab] = useState("anamnese");
+  const [tab, setTab] = useState("avaliacao");
   const [regiao, setRegiao] = useState("Centro-Oeste");
 
   const [queixaGeriatria, setQueixaGeriatria] = useState("");
@@ -509,7 +509,7 @@ export default function Geriatria({ student, students, allPatients, currentModul
           {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
         <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
-          {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
+          {[["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{ background:tab === k ? C.greenBg : "transparent", border:`1px solid ${tab === k ? C.green + "50" : "transparent"}`, borderRadius:8, padding:"7px 16px", fontSize:13, fontWeight:tab === k ? 700 : 400, color:tab === k ? C.green : C.textMuted, cursor:"pointer", fontFamily:F }}>{ic} {lb}</button>
           ))}
         </div>
@@ -528,7 +528,7 @@ export default function Geriatria({ student, students, allPatients, currentModul
       </div>
 
       <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
-        {tab === "anamnese" && (
+        {tab === "avaliacao" && (
           <>
             <Section title="Anamnese Geriátrica" icon="📋">
               <div style={{ fontSize:12, color:C.textMuted, marginBottom:12 }}>História clínica, comorbidades, medicações e condições funcionais e sociais.</div>
@@ -604,14 +604,6 @@ export default function Geriatria({ student, students, allPatients, currentModul
 
             <CifSection cifSuggestions={cifSuggestionsGeriatria} autoCif={autoCifGeriatria} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
-            <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
-              <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Anamnese</button>
-            </div>
-          </>
-        )}
-
-        {tab === "avaliacao" && (
-          <>
             <Section title="Avaliação Cognitiva" icon="🧠">
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"16px" }}>
                 <div>
@@ -811,6 +803,7 @@ export default function Geriatria({ student, students, allPatients, currentModul
         )}
 
         {tab === "evolucao" && (
+          <>
             <Section title="Evolução e Reavaliação" icon="📈">
             <div style={{ fontSize:12, color:C.textMuted, marginBottom:12 }}>Registre a evolução, resposta às intervenções e planejamento.</div>
             <div style={{ marginBottom:14 }}>
@@ -835,28 +828,10 @@ export default function Geriatria({ student, students, allPatients, currentModul
               <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Evolução</button>
             </div>
           </Section>
-        )}
-
-        {tab === "sessoes" && (
-          <>
-            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={geriatriaColors} />
             {enhancer.redFlags.length > 0 && (
-              <div style={{ background:C.redBg, border:`1px solid ${C.red}40`, borderRadius:8, padding:"8px 12px", marginTop:12, marginBottom:10 }}>
-                <div style={{ fontSize:10, fontWeight:800, color:C.red, letterSpacing:"0.1em", marginBottom:6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                  {["Queda recente com trauma","Confusão mental súbita","Síncope","Perda de peso >5% em 1 mês","Imobilização súbita","Febre no idoso","Déficit focal agudo"].map(f => {
-                  const active = enhancer.redFlags.includes(f);
-                  return (
-                    <button key={f} onClick={() => enhancer.setRedFlags(active ? enhancer.redFlags.filter(x=>x!==f) : [...enhancer.redFlags, f])}
-                      style={{ fontSize:11, color:active?"#fff":C.red, background:active?C.red:C.redBg, border:`1px solid ${C.red}50`, borderRadius:6, padding:"3px 10px", cursor:"pointer", fontFamily:F, fontWeight:active?700:400, transition:"all 0.12s" }}>
-                      {active && "✓ "}{f}
-                    </button>
-                  );
-                })}
-                </div>
-              </div>
+              <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags} flags={["Queda com TCE","Perda de peso >5% em 1 mês","Confusão mental aguda","Dor óssea noturna","Incontinência de início súbito","Déficit neurológico agudo","Febre sem foco aparente"]} colors={geriatriaColors} />
             )}
-            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={geriatriaColors} />
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={geriatriaColors} sessionLabel="Evolução" specialty="geriatria" defaultExpanded={true} pain={enhancer.pain} setPain={enhancer.setPain} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Paciente: ${student?.nome || "—"}\nQueixa: ${queixaGeriatria}\nQuedas (1 ano): ${historicoQuedas}\nComorbidades: ${comorbidadesGeriatria.join(", ")}\nDispositivo: ${usoDispositivoAuxilio}\nMEEM: ${meemResult?.total || "—"}\nGDS-15: ${gds15Result?.total || "—"}\nKatz: ${katzResult?.indep || "—"}/6\nLawton: ${lawtonResult?.total || "—"}/24\nSARC-F: ${sarcFResult?.total || "—"}\nTinetti: ${tinettiResult?.total || "—"}/28\nTUG: ${tugSegundos || "—"}s\nFried: ${fragilidadeResult?.count || "—"}/5\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nEvolução: ${evolucaoGeriatria}`}
               colors={geriatriaColors} />

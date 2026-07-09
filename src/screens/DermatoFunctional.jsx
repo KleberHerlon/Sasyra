@@ -151,7 +151,7 @@ export default function DermatoFunctional({ student, students, onSelectStudent, 
   const [editTarget, setEditTarget] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
-  const [tab, setTab] = useState("anamnese");
+  const [tab, setTab] = useState("avaliacao");
   const [regiao, setRegiao] = useState("Centro-Oeste");
 
   const [queixaDermato, setQueixaDermato] = useState("");
@@ -429,7 +429,7 @@ export default function DermatoFunctional({ student, students, onSelectStudent, 
           {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
         <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
-          {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
+          {[["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{ background:tab === k ? C.amberBg : "transparent", border:`1px solid ${tab === k ? C.amber + "50" : "transparent"}`, borderRadius:8, padding:isMobile?"5px 10px":"7px 16px", fontSize:isMobile?11:13, fontWeight:tab === k ? 700 : 400, color:tab === k ? C.amber : C.textMuted, cursor:"pointer", fontFamily:F }}>{ic} {lb}</button>
           ))}
         </div>
@@ -448,7 +448,7 @@ export default function DermatoFunctional({ student, students, onSelectStudent, 
       </div>
 
       <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
-        {tab === "anamnese" && (
+        {tab === "avaliacao" && (
           <>
             <Section title="Anamnese Dermatofuncional" icon="📋">
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
@@ -529,14 +529,6 @@ export default function DermatoFunctional({ student, students, onSelectStudent, 
 
             <CifSection cifSuggestions={cifSuggestionsDermato} autoCif={autoCifDermato} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
-            <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
-              <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Anamnese</button>
-            </div>
-          </>
-        )}
-
-        {tab === "avaliacao" && (
-          <>
             <Section title="Escala de Vancouver (VSS)" icon="📏">
               <div style={{ fontSize:12, color:C.textMuted, marginBottom:10, lineHeight:1.5 }}>
                 Avaliação de cicatrizes: Pigmentação (0-2), Vascularização (0-3), Flexibilidade (0-5), Altura (0-3). Máximo 13 pontos.
@@ -744,51 +736,34 @@ export default function DermatoFunctional({ student, students, onSelectStudent, 
           </>
         )}
 
+        {/* ════════ TAB: EVOLUÇÃO ════════ */}
         {tab === "evolucao" && (
-          <Section title="Evolução e Reavaliação" icon="📈">
-            <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
-              Registre a evolução do paciente dermatofuncional, resposta às intervenções estéticas e reparadoras e planejamento das próximas sessões.
-            </div>
-            <div style={{ marginBottom:14 }}>
-              <span style={lbl()}>Evolução clínica / Observações</span>
-              <textarea value={evolucaoDermato} onChange={e => setEvolucaoDermato(e.target.value)} rows={4}
-                style={{ ...inp({ resize:"vertical", lineHeight:1.6 }) }}
-                placeholder="Descreva a evolução desde a última sessão: melhora da cicatriz, redução de edema, ganho de ADM, aderência ao tratamento..." />
-            </div>
-            {vancouverResult && (
-              <div style={{ background:C.cardAlt, borderRadius:10, padding:"14px 16px", marginBottom:14 }}>
-                <div style={{ fontSize:10, fontWeight:800, color:C.amber, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Última avaliação</div>
-                <div style={{ fontSize:13, color:C.textSub, lineHeight:1.7 }}>
-                  <strong>Vancouver:</strong> {vancouverResult.total}/13 ({vancouverResult.level}) · <strong>Edema:</strong> {edemaResult?.description || "—"} · <strong>Perimetria:</strong> {Object.values(perimetria).reduce((a,b) => a + (Number(b)||0), 0) || "—"} mm
-                </div>
-              </div>
-            )}
-            <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
-              <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Evolução</button>
-            </div>
-          </Section>
-        )}
-
-        {tab === "sessoes" && (
           <>
-            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={dermatoColors} />
             {enhancer.redFlags.length > 0 && (
-              <div style={{ background:C.redBg, border:"1px solid rgba(239,68,68,0.25)", borderRadius:8, padding:"8px 12px", marginTop:12, marginBottom:10 }}>
-                <div style={{ fontSize:10, fontWeight:800, color:C.red, letterSpacing:"0.1em", marginBottom:6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                  {["Sangramento ativo","Infecção local (pus, calor, rubor)","Deiscência de sutura","Necrose tecidual","Trombose venosa profunda suspeita","Queimadura de 3º grau face/mãos/genitália","Síndrome compartimental"].map(f => {
-                  const active = enhancer.redFlags.includes(f);
-                  return (
-                    <button key={f} onClick={() => enhancer.setRedFlags(active ? enhancer.redFlags.filter(x=>x!==f) : [...enhancer.redFlags, f])}
-                      style={{ fontSize:11, color:active?"#fff":C.red, background:active?C.red:C.redBg, border:"1px solid rgba(239,68,68,0.3)", borderRadius:6, padding:"3px 10px", cursor:"pointer", fontFamily:F, fontWeight:active?700:400, transition:"all 0.12s" }}>
-                      {active && "✓ "}{f}
-                    </button>
-                  );
-                })}
-                </div>
-              </div>
+              <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
+                flags={["Sangramento ativo","Infecção local (pus, calor, rubor)","Deiscência de sutura","Necrose tecidual","Trombose venosa profunda suspeita","Queimadura de 3º grau face/mãos/genitália","Síndrome compartimental"]}
+                colors={dermatoColors} />
             )}
-            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={dermatoColors} />
+            <Section title="Evolução e Reavaliação" icon="📈">
+              <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
+                Registre a evolução do paciente dermatofuncional, resposta às intervenções e planejamento das próximas sessões.
+              </div>
+              <div style={{ marginBottom:14 }}>
+                <span style={lbl()}>Evolução clínica / Observações</span>
+                <textarea value={evolucaoDermato} onChange={e => setEvolucaoDermato(e.target.value)} rows={4}
+                  style={{ ...inp({ resize:"vertical", lineHeight:1.6 }) }}
+                  placeholder="Descreva a evolução desde a última sessão: melhora da cicatriz, redução de edema, ganho de ADM, aderência ao tratamento..." />
+              </div>
+              {vancouverResult && (
+                <div style={{ background:C.cardAlt, borderRadius:10, padding:"14px 16px", marginBottom:14 }}>
+                  <div style={{ fontSize:10, fontWeight:800, color:C.amber, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Última avaliação</div>
+                  <div style={{ fontSize:13, color:C.textSub, lineHeight:1.7 }}>
+                    <strong>Vancouver:</strong> {vancouverResult.total}/13 ({vancouverResult.level}) · <strong>Edema:</strong> {edemaResult?.description || "—"} · <strong>Perimetria:</strong> {Object.values(perimetria).reduce((a,b) => a + (Number(b)||0), 0) || "—"} mm
+                  </div>
+                </div>
+              )}
+            </Section>
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={dermatoColors} sessionLabel="Evolução" specialty="dermatofuncional" defaultExpanded={true} pain={enhancer.pain} setPain={enhancer.setPain} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Paciente: ${student?.nome || "—"}\nQueixa: ${queixaDermato}\nTipo cirurgia: ${tipoCirurgia}\nData: ${dataCirurgia}\nDoenças: ${doencasDermato.join(", ")}\nVancouver: ${vancouverResult?.total || "—"}/13\nPerimetria: ${Object.values(perimetria).reduce((a,b) => a + (Number(b)||0), 0) || "—"} mm\nEdema: ${edemaResult?.description || "—"}\nFibrose: ${fibrose.join(", ")}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nEvolução: ${evolucaoDermato}`}
               colors={dermatoColors} />

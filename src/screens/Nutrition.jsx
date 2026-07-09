@@ -617,7 +617,7 @@ export default function Nutrition({ student, students, onSelectStudent, onAddStu
           <span style={{ fontSize: isMobile ? 10 : 11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>{isMobile ? "🥗" : "🥗 Nutrição"}</span>
         </div>
         <div style={{ display:"flex", gap:4, overflowX: isMobile ? "auto" : "visible", flexShrink:1, msOverflowStyle:"none", scrollbarWidth:"none" }}>
-          {[["avaliacao","📋",isMobile?"":"Avaliação"],["sessoes","📅",isMobile?"":"Sessões"],["relatorio","📊",isMobile?"":"Relatório"],["evidencias","🔬",isMobile?"":"Evidências"]].map(([k,ic,lb]) => (
+          {[["avaliacao","📋",isMobile?"":"Avaliação"],["evolucao","📈",isMobile?"":"Evolução"],["relatorio","📊",isMobile?"":"Relatório"],["evidencias","🔬",isMobile?"":"Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               background: tab === k ? C.amberBg : "transparent", border: `1px solid ${tab === k ? C.amber + "50" : "transparent"}`,
               borderRadius: 8, padding: isMobile ? "6px 10px" : "7px 14px", fontSize: isMobile ? 10 : 12,
@@ -786,13 +786,14 @@ export default function Nutrition({ student, students, onSelectStudent, onAddStu
 
 
 
-        {/* ════════ TAB: SESSÕES ════════ */}
-        {tab === "sessoes" && (
+        {/* ════════ TAB: EVOLUÇÃO ════════ */}
+        {tab === "evolucao" && (
           <>
-            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={nutriColors} />
-            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
-              flags={mergedRedFlags} colors={nutriColors} />
-            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={nutriColors} />
+            {enhancer.redFlags.length > 0 && (
+              <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
+                flags={mergedRedFlags} colors={nutriColors} />
+            )}
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={nutriColors} sessionLabel="Evolução" specialty="nutricao" defaultExpanded={true} pain={enhancer.pain} setPain={enhancer.setPain} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Paciente: ${student?.nome || "—"}\nQueixa: ${queixaNutri}\nDoenças: ${doencas.join(", ")}\nAlergias: ${alergias.join(", ")}\nRestrições: ${restricoes.join(", ")}\nPeso: ${pesoAtual || "—"}kg\nIMC: ${imcCalc?.imc || "—"}\nRCQ: ${rcqCalc?.rcq || "—"}\nMUST: ${mustScore?.total || "—"}\nSARC-F: ${sarcfScore?.total || "—"}\nTMB: ${tmbResult?.tmb || "—"}kcal\nGET: ${tmbResult?.get || "—"}kcal\n%Gordura: ${biaResult?.percentualGordura || pollockResult?.percentualGordura || "—"}%\nEVA Mov: ${enhancer.pain.evaMov || evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep || evaRep}/10\nDor local: ${enhancer.pain.localDor || localDor}\nYellow Flags: ${yellowFlags.join(", ")}\nIPAQ: ${ipaq}\nEvolução: ${evolucao}\nConduta: ${conduta}`}
               colors={nutriColors} />

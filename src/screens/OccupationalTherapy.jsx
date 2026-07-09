@@ -698,7 +698,7 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
           <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>🤲 Terapia Ocupacional</span>
         </div>
         <div style={{ display:"flex", gap:4, overflowX: isMobile ? "auto" : "visible", flexShrink:1, msOverflowStyle:"none", scrollbarWidth:"none" }}>
-          {[["avaliacao","📋",isMobile?"":"Avaliação"],["sessoes","📅",isMobile?"":"Sessões"],["relatorio","📊",isMobile?"":"Relatório"],["evidencias","🔬",isMobile?"":"Evidências"]].map(([k,ic,lb]) => (
+          {[["avaliacao","📋",isMobile?"":"Avaliação"],["evolucao","📈",isMobile?"":"Evolução"],["relatorio","📊",isMobile?"":"Relatório"],["evidencias","🔬",isMobile?"":"Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               background: tab === k ? C.purpleBg : "transparent",
               border: `1px solid ${tab === k ? C.purple + "50" : "transparent"}`,
@@ -1108,13 +1108,14 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
           </>
         )}
 
-        {/* ════════ TAB: SESSÕES ════════ */}
-        {tab === "sessoes" && (
+        {/* ════════ TAB: EVOLUÇÃO ════════ */}
+        {tab === "evolucao" && (
           <>
-            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={toColors} />
-            <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
-              flags={mergedRedFlags} colors={toColors} />
-            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={toColors} />
+            {enhancer.redFlags.length > 0 && (
+              <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags}
+                flags={mergedRedFlags} colors={toColors} />
+            )}
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={toColors} sessionLabel="Evolução" specialty="terapia_ocupacional" defaultExpanded={true} pain={enhancer.pain} setPain={enhancer.setPain} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Paciente: ${student?.nome || "—"}\nDiagnóstico: ${diagnosticoMedico}\nQueixa: ${queixaTO}\nOcupação: ${ocupacao}\nAVDs: ${avds.join(", ")}\nAIVDs: ${aivds.join(", ")}\nTecnologia assistiva: ${tecnologiaAssistiva.join(", ")}\nBarreiras: ${barreiras.join(", ")}\nBarthel: ${barthelResult?.total || "—"}/100\nLawton: ${lawtonResult?.total || "—"}/24\nMEEM: ${miniMental || "—"}/30\nEVA Mov: ${enhancer.pain.evaMov || evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep || evaRep}/10\nDor local: ${enhancer.pain.localDor || localDor}\nYellow Flags: ${yellowFlags.join(", ")}\nDCT: ${diagnosticoCinesio}\nEvolução: ${evolucao}`}
               colors={toColors} />

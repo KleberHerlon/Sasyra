@@ -10,6 +10,7 @@
 
 - [ ] Corrigir erro do componente `Logo` (mover para fora do render/e escopo estável)
 - [ ] Resolver erros/avisos de lint (`MoneyCell` em render, `setState` em `useEffect`, etc.)
+- [ ] **BrainMap — Mapeamento Cerebral (Neuro)** — Componente extraído do módulo Neuro. Implementações testadas e recusadas: SVG inline (qualidade insatisfatória), BioDigital Human (requer licença paga), BrainFacts.org (menus ocultos pelo recorte do iframe, sem pt-BR), Z-Anatomy (Unity WebGL, sem pt-BR). Código do componente preservado em `src/components/BrainMap.jsx`. Retomar quando encontrar modelo 3D de cérebro: (a) em português ou com terminologia latina aceitável, (b) que permita embed gratuito (iframe/WebGL), (c) com qualidade anatômica compatível com https://www.msdmanuals.com/pt/casa/multimedia/3dmodel/c%C3%A9rebro. Para reativar: reimportar `BrainMap` em `Neuro.jsx`, adicionar `CollapsibleSection`, restaurar estado `brainMap` e persistência.
 
 ---
 

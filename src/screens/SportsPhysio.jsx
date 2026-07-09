@@ -162,7 +162,7 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
   const [editTarget, setEditTarget] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
-  const [tab, setTab] = useState("anamnese");
+  const [tab, setTab] = useState("avaliacao");
   const [regiao, setRegiao] = useState("Centro-Oeste");
 
   const [nomeAtleta, setNomeAtleta] = useState("");
@@ -490,7 +490,7 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
           {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Financeiro">💰 Financeiro</button>}
         </div>
         <div style={{ display:"flex", gap:4 }}>
-          {[["anamnese","📋","Anamnese"],["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["sessoes","📅","Sessões"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
+          {[["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (
             <button key={k} onClick={() => setTab(k)} style={{
               background: tab === k ? C.blueBg : "transparent",
               border: `1px solid ${tab === k ? C.blue + "50" : "transparent"}`,
@@ -519,7 +519,7 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
       </div>
 
       <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
-        {tab === "anamnese" && (
+        {tab === "avaliacao" && (
           <>
             <Section title="Perfil do Atleta" icon="⚽">
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
@@ -621,14 +621,6 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
 
             <CifSection cifSuggestions={cifSuggestionsSports} autoCif={autoCifSports} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
-            <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
-              <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Anamnese</button>
-            </div>
-          </>
-        )}
-
-        {tab === "avaliacao" && (
-          <>
             <Section title="Y-Balance Test (SEBT)" icon="🦶">
               <div style={{ fontSize:12, color:C.textMuted, marginBottom:10, lineHeight:1.5 }}>
                 Teste de equilíbrio e propriocepção em apoio unipodal. Valores em cm. Assimetria {'>'} 4 cm ou LSI {'<'} 90% = risco elevado de lesão.
@@ -836,7 +828,8 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
         )}
 
         {tab === "evolucao" && (
-          <Section title="Evolução e Reavaliação" icon="📈">
+          <>
+            <Section title="Evolução e Reavaliação" icon="📈">
             <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
               Registre a evolução do atleta, resposta às intervenções, progressão nas fases de reabilitação e planejamento das próximas etapas.
             </div>
@@ -858,28 +851,10 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
               <button onClick={handleSave} style={primaryBtn({ padding:"10px 24px" })}>💾 Salvar Evolução</button>
             </div>
           </Section>
-        )}
-
-        {tab === "sessoes" && (
-          <>
-            <PainSection pain={enhancer.pain} setPain={enhancer.setPain} colors={sportColors} />
             {enhancer.redFlags.length > 0 && (
-              <div style={{ background:"C.redBg", border:"1px solid rgba(239,68,68,0.25)", borderRadius:8, padding:"8px 12px", marginTop:12, marginBottom:10 }}>
-                <div style={{ fontSize:10, fontWeight:800, color:"C.red", letterSpacing:"0.1em", marginBottom:6 }}>🚩 RED FLAGS — INVESTIGAR ANTES DE PROSSEGUIR</div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                  {["Dor súbita intensa durante atividade","Edema significativo pós-exercício","Instabilidade articular","Falseio/ giving way","Sintomas neurológicos (formigamento, fraqueza)","Sinais de fratura por estresse","Recidiva de lesão"].map(f => {
-                    const active = enhancer.redFlags.includes(f);
-                    return (
-                      <button key={f} onClick={() => enhancer.setRedFlags(active ? enhancer.redFlags.filter(x=>x!==f) : [...enhancer.redFlags, f])}
-                        style={{ fontSize:11, color:active?"#fff":"C.red", background:active?"C.red":"C.redBg", border:"1px solid rgba(239,68,68,0.3)", borderRadius:6, padding:"3px 10px", cursor:"pointer", fontFamily:"'Inter',sans-serif", fontWeight:active?700:400, transition:"all 0.12s" }}>
-                        {active && "✓ "}{f}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <RedFlagsSection redFlags={enhancer.redFlags} setRedFlags={enhancer.setRedFlags} flags={["Dor óssea à palpação (fratura por estresse)","Derrame articular agudo pós-trauma","Instabilidade articular franca","Síndrome compartimental suspeita","Luxação irredutível","Dor em crescendo (síndrome de overtraining)","Perda de força súbita (lesão neurológica)"]} colors={sportColors} />
             )}
-            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={sportColors} />
+            <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={sportColors} sessionLabel="Evolução" specialty="esportiva" defaultExpanded={true} pain={enhancer.pain} setPain={enhancer.setPain} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
               summaryText={`Atleta: ${student?.nome || "—"}\nModalidade: ${modalidadeEsporte}\nNível: ${nivelCompetitivo}\nFase temporada: ${faseTemporada}\nQueixa: ${queixaEsportiva}\nHDA: ${hdaSports}\nDCT: ${diagnosticoCinesioSports}\nMecanismo: ${mecanismoLesao}\nLesões prévias: ${lesoesPrevias.join(", ")}\nY-Balance LSI: ${yBalanceResult?.lsi || "—"}%\nHop LSI: ${calcLSIBidirectional(hopTest.singleD,hopTest.singleE,ladoAfetado)}%\nRTS: ${rtsResult?.pct || "—"}%\nPlank: ${plank || "—"}s\nFase reabilitação: ${faseReabilitacao}\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nDor local: ${enhancer.pain.localDor.join(", ")}\nTestes especiais (+): ${testesEspeciais.join(", ")}\nEvolução: ${evolucaoEsportiva}`}
               colors={sportColors} />
