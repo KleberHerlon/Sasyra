@@ -31,13 +31,13 @@ const primaryBtn = (e={}) => ({ background:C.purple, color:"#fff", border:"none"
 const ghostBtn = (e={}) => ({ background:"transparent", color:C.purple, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 16px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:F, display:"inline-flex", alignItems:"center", gap:6, ...e });
 const iconBtn = (active=false, activeColor=C.purple, e={}) => ({ background:active ? `${activeColor}18` : C.surface, border:`1px solid ${active ? activeColor+"50" : C.border}`, color:active ? activeColor : C.textMuted, borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:active ? 700 : 400, cursor:"pointer", fontFamily:F, transition:"all 0.12s", ...e });
 
-function NumericField({ label, value, onChange, unit, min, max, step }) {
+function NumericField({ label, value, onChange, unit, min, max, step, readOnly }) {
   return (
     <div>
       <span style={lbl()}>{label}</span>
       <div style={{ display:"flex", alignItems:"center", background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, overflow:"hidden" }}>
-        <input type="number" value={value} min={min} max={max} step={step || 1} onChange={e => onChange(e.target.value)}
-          style={{ ...inp(), border:"none", background:"transparent", textAlign:"center", fontSize:16, fontWeight:700, color:C.text, padding:"10px 4px", flex:1 }} />
+        <input type="number" value={value} min={min} max={max} step={step || 1} onChange={onChange ? (e => onChange(e.target.value)) : undefined} readOnly={readOnly || false}
+          style={{ ...inp(), border:"none", background:"transparent", textAlign:"center", fontSize:16, fontWeight:700, color:C.text, padding:"10px 4px", flex:1, ...(readOnly ? { opacity:0.7, cursor:"not-allowed" } : {}) }} />
         {unit && <span style={{ fontSize:11, color:C.textMuted, paddingRight:12, flexShrink:0 }}>{unit}</span>}
       </div>
     </div>
@@ -319,6 +319,18 @@ export default function Rheumatology({ student, students, allPatients, currentMo
     const regions = detectLocalDor(queixaReumato);
     if (regions.length > 0) setLocalDor(prev => [...new Set([...prev, ...regions])]);
   }, [queixaReumato]);
+
+  useEffect(() => {
+    const count = articulacoesDolorosas.length;
+    setDas28Tender(count);
+    setDas28Result(calcDAS28(count, das28Swollen, das28ESR, das28Global));
+  }, [articulacoesDolorosas]);
+
+  useEffect(() => {
+    const count = articulacoesEdemaciadas.length;
+    setDas28Swollen(count);
+    setDas28Result(calcDAS28(das28Tender, count, das28ESR, das28Global));
+  }, [articulacoesEdemaciadas]);
 
   const handleSave = () => {
     if (!student?.id && !student?.nome) return;
@@ -624,8 +636,8 @@ export default function Rheumatology({ student, students, allPatients, currentMo
                 Disease Activity Score 28 joint count. Avalia atividade da artrite reumatoide. VHS (ESR) em mm/h. Calculado automaticamente.
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
-                <NumericField label="Nº articulações dolorosas (28)" value={das28Tender} onChange={v => { setDas28Tender(v); setDas28Result(calcDAS28(v, das28Swollen, das28ESR, das28Global)); }} min={0} max={28} />
-                <NumericField label="Nº articulações edemaciadas (28)" value={das28Swollen} onChange={v => { setDas28Swollen(v); setDas28Result(calcDAS28(das28Tender, v, das28ESR, das28Global)); }} min={0} max={28} />
+                <NumericField label="Nº articulações dolorosas (28)" value={das28Tender} readOnly min={0} max={28} />
+                <NumericField label="Nº articulações edemaciadas (28)" value={das28Swollen} readOnly min={0} max={28} />
                 <NumericField label="VHS / ESR (mm/h)" value={das28ESR} onChange={v => { setDas28ESR(v); setDas28Result(calcDAS28(das28Tender, das28Swollen, v, das28Global)); }} min={0} max={200} />
                 <NumericField label="Saúde global (0-100)" value={das28Global} onChange={v => { setDas28Global(v); setDas28Result(calcDAS28(das28Tender, das28Swollen, das28ESR, v)); }} min={0} max={100} />
               </div>
@@ -773,7 +785,7 @@ export default function Rheumatology({ student, students, allPatients, currentMo
             {/* 📊 Escalas Padronizadas */}
             <CollapsibleSection title="Escalas Padronizadas" icon="📊" expanded={expandedSections.includes("escalas")} onToggle={()=>toggleSection("escalas")}>
               <div style={{fontSize:12,color:C.textMuted,marginBottom:12,lineHeight:1.5}}>Selecione uma escala validada para aplicar ao paciente. Os resultados ficam salvos neste módulo.</div>
-              <ScaleSelector scaleNames={["BASDAI (Bath Ankylosing Spondylitis Disease Activity Index)","DAS28","HAQ","WOMAC","FIQ","WPI","SSS (Symptom Severity Scale)"]} onSave={handleScaleSave} savedResults={savedScales} />
+                             <ScaleSelector scaleNames={["FIQ (Fibromyalgia Impact Questionnaire)","BASFI","SDAI","CDAI"]} onSave={handleScaleSave} savedResults={savedScales} />
               {savedScales.length > 0 && (
                 <div style={{marginTop:12}}>
                   <span style={{fontSize:9,fontWeight:700,color:C.green,textTransform:"uppercase",letterSpacing:"0.08em"}}>✓ Resultados Salvos: {savedScales.length}</span>

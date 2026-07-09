@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcMEEM, calcGDS15, calcSarcF, calcKatz, calcLawton, calcTinetti, calcFragilidade } from '../geriatriaScales';
+import { calcMEEM, calcGDS15, calcSarcF, calcKatz, calcLawton, calcTinetti, calcFragilidade, calcBBS } from '../geriatriaScales';
 
 describe('calcMEEM', () => {
   it('classifica >= 24 como normal', () => {
@@ -116,5 +116,31 @@ describe('calcFragilidade', () => {
 
   it('>= 3 = frágil', () => {
     expect(calcFragilidade({ a: true, b: true, c: true }).level).toBe('Frágil');
+  });
+});
+
+describe('calcBBS', () => {
+  it('soma os 14 itens até 56', () => {
+    const s = { b1:4,b2:4,b3:4,b4:4,b5:4,b6:4,b7:4,b8:4,b9:4,b10:4,b11:4,b12:4,b13:4,b14:4 };
+    const r = calcBBS(s);
+    expect(r.total).toBe(56);
+    expect(r.max).toBe(56);
+    expect(r.level).toContain('Baixo');
+  });
+
+  it('41-56 = baixo risco', () => {
+    expect(calcBBS({ b1:3,b2:3,b3:3,b4:3,b5:3,b6:3,b7:3,b8:3,b9:3,b10:3,b11:3,b12:3,b13:3,b14:3 }).level).toContain('Baixo');
+  });
+
+  it('21-40 = médio risco', () => {
+    expect(calcBBS({ b1:2,b2:2,b3:2,b4:2,b5:2,b6:2,b7:2,b8:2,b9:2,b10:2,b11:2,b12:2,b13:2,b14:2 }).level).toContain('Médio');
+  });
+
+  it('≤20 = alto risco', () => {
+    expect(calcBBS({ b1:1,b2:1,b3:1,b4:1,b5:1,b6:1,b7:1,b8:1,b9:1,b10:1,b11:1,b12:1,b13:1,b14:1 }).level).toContain('Alto');
+  });
+
+  it('valores vazios/nulos são ignorados', () => {
+    expect(calcBBS({ b1:4,b2:4,b3:undefined,b4:null,b5:"" }).total).toBe(8);
   });
 });

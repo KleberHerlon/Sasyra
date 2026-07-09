@@ -4,7 +4,7 @@ import CifAndHonorarios from "../components/CifAndHonorarios";
 import CifSection from "../components/CifSection";
 import { CIF } from "../data/cif";
 import { calcMinnesota } from "../data/cardioScales";
-import { CollapsibleSection, CollapsibleSub, useMediaQuery, AudioField } from "../components";
+import { CollapsibleSection, CollapsibleSub, Row, useMediaQuery, AudioField } from "../components";
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import GeneralAssessment from "../components/GeneralAssessment";
@@ -227,6 +227,15 @@ export default function CardioRespiratory({ student, students, allPatients, curr
 
   const [evolucaoCardio, setEvolucaoCardio] = useState("");
 
+  const [fcAlvo, setFcAlvo] = useState("");
+  const [pctFcReserva, setPctFcReserva] = useState("");
+  const [borgAlvo, setBorgAlvo] = useState("");
+  const [tipoExercicio, setTipoExercicio] = useState("");
+  const [duracaoExercicio, setDuracaoExercicio] = useState("");
+  const [freqExercicio, setFreqExercicio] = useState("");
+  const [spo2Alvo, setSpo2Alvo] = useState("");
+  const [obsExercicio, setObsExercicio] = useState("");
+
   const [expandedSections, setExpandedSections] = useState([]);
   const toggleSection = (id) => { setExpandedSections(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]); };
   const sid = student?.id || student?.nome;
@@ -283,6 +292,14 @@ export default function CardioRespiratory({ student, students, allPatients, curr
         setMinnesotaScores(saved.minnesotaScores || {});
         setMinnesotaResult(saved.minnesotaResult || null);
         setEvolucaoCardio(saved.evolucaoCardio || "");
+        setFcAlvo(saved.fcAlvo || "");
+        setPctFcReserva(saved.pctFcReserva || "");
+        setBorgAlvo(saved.borgAlvo || "");
+        setTipoExercicio(saved.tipoExercicio || "");
+        setDuracaoExercicio(saved.duracaoExercicio || "");
+        setFreqExercicio(saved.freqExercicio || "");
+        setSpo2Alvo(saved.spo2Alvo || "");
+        setObsExercicio(saved.obsExercicio || "");
         setHdaCardio(saved.hdaCardio || "");
         setDiagnosticoCinesioCardio(saved.diagnosticoCinesioCardio || "");
         setLocalDor(saved.localDor || []);
@@ -313,6 +330,7 @@ export default function CardioRespiratory({ student, students, allPatients, curr
       nyha, borg, mrcDispneia, tc6mDistancia, tc6mSpO2, cvf, vef1, relacaoVEF1CVF,
       minnesotaScores, minnesotaResult,
       evolucaoCardio, localDor,
+      fcAlvo, pctFcReserva, borgAlvo, tipoExercicio, duracaoExercicio, freqExercicio, spo2Alvo, obsExercicio,
       pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
     });
@@ -663,6 +681,23 @@ export default function CardioRespiratory({ student, students, allPatients, curr
               </div>
             </Section>
 
+            <CollapsibleSub title="Prescrição de Exercício" defaultOpen={false}>
+              <div style={{fontSize:10,color:C.textMuted,marginBottom:8}}>Parâmetros para prescrição segura do programa de reabilitação cardiorrespiratória.</div>
+              <Row cols={isMobile?"1fr":"1fr 1fr 1fr"} gap="8px 14px">
+                <div><span style={lbl()}>FC alvo (bpm)</span><input type="number" value={fcAlvo} onChange={e=>setFcAlvo(e.target.value)} style={inp()} min={30} max={220} placeholder="Ex: 110" /></div>
+                <div><span style={lbl()}>% FC reserva</span><input type="number" value={pctFcReserva} onChange={e=>setPctFcReserva(e.target.value)} style={inp()} min={0} max={100} placeholder="Ex: 60" /></div>
+                <div><span style={lbl()}>Borg alvo (CR10)</span>
+                  <SingleSelect options={[{value:"0",label:"0 — Nenhum"},{value:"0.5",label:"0.5 — Muito, muito leve"},{value:"1",label:"1 — Muito leve"},{value:"2",label:"2 — Leve"},{value:"3",label:"3 — Moderado"},{value:"4",label:"4 — Pouco intenso"},{value:"5",label:"5-6 — Intenso"},{value:"7",label:"7-9 — Muito intenso"},{value:"10",label:"10 — Máximo"}]} value={borgAlvo} onChange={setBorgAlvo} activeColor={C.green} /></div>
+              </Row>
+              <Row cols={isMobile?"1fr":"1fr 1fr 1fr 1fr"} gap="8px 14px" style={{marginTop:8}}>
+                <div><span style={lbl()}>Tipo de exercício</span><SingleSelect options={["Aeróbio contínuo","Aeróbio intervalado","Resistido","Combinado (aeróbio + resistido)","Inspiratório (IMT)","Funcional"]} value={tipoExercicio} onChange={setTipoExercicio} activeColor={C.green} /></div>
+                <div><span style={lbl()}>Duração (min)</span><input type="number" value={duracaoExercicio} onChange={e=>setDuracaoExercicio(e.target.value)} style={inp()} min={5} max={120} placeholder="Ex: 30" /></div>
+                <div><span style={lbl()}>Frequência (x/semana)</span><input type="number" value={freqExercicio} onChange={e=>setFreqExercicio(e.target.value)} style={inp()} min={1} max={7} placeholder="Ex: 3" /></div>
+                <div><span style={lbl()}>Saturação alvo (%)</span><input type="number" value={spo2Alvo} onChange={e=>setSpo2Alvo(e.target.value)} style={inp()} min={88} max={100} placeholder="≥92" /></div>
+              </Row>
+              <div style={{marginTop:8}}><span style={lbl()}>Observações / Precauções</span><textarea value={obsExercicio} onChange={e=>setObsExercicio(e.target.value)} rows={2} style={{...inp({resize:"vertical",lineHeight:1.5})}} placeholder="Precauções específicas, progressão planejada, critérios de interrupção..." /></div>
+            </CollapsibleSub>
+
             <Section title="Teste de Caminhada 6 Minutos" icon="🚶">
               <div style={{ fontSize:12, color:C.textMuted, marginBottom:10, lineHeight:1.5 }}>
                 Avaliação funcional submáxima. Registre a distância percorrida em 6 minutos e SpO₂ final.
@@ -671,6 +706,19 @@ export default function CardioRespiratory({ student, students, allPatients, curr
                 <NumericField label="Distância percorrida" value={tc6mDistancia} onChange={setTc6mDistancia} unit="m" min={0} max={1000} />
                 <NumericField label="SpO₂ final" value={tc6mSpO2} onChange={setTc6mSpO2} unit="%" min={50} max={100} />
               </div>
+              {student?.altura && student?.peso && tc6mDistancia && (() => {
+                const idade = student?.idade || 60;
+                const altura = Number(student?.altura);
+                const peso = Number(student?.peso);
+                const sexo = student?.sexo || "Masculino";
+                const sexoKey = sexo === "Feminino" || sexo === "female" ? "F" : "M";
+                const predito = sexoKey === "F"
+                  ? (2.11 * altura) - (2.29 * peso) - (5.78 * idade) + 667
+                  : (7.57 * altura) - (5.02 * idade) - (1.76 * peso) - 309;
+                const pct = Math.round((tc6mDistancia / predito) * 100);
+                const cor = pct >= 80 ? C.green : pct >= 60 ? C.amber : C.red;
+                return <div style={{marginTop:10,fontSize:11,color:cor,fontWeight:600}}>% Predito: {pct}% ({tc6mDistancia}m / {Math.round(predito)}m previsto &mdash; Enright&Sherrill)</div>;
+              })()}
             </Section>
 
             <Section title="Espirometria" icon="🫁">
@@ -720,7 +768,7 @@ export default function CardioRespiratory({ student, students, allPatients, curr
             {/* 📊 Escalas Padronizadas */}
             <CollapsibleSection title="Escalas Padronizadas" icon="📊" expanded={expandedSections.includes("escalas")} onToggle={()=>toggleSection("escalas")}>
               <div style={{fontSize:12,color:C.textMuted,marginBottom:12,lineHeight:1.5}}>Selecione uma escala validada para aplicar ao paciente. Os resultados ficam salvos neste módulo.</div>
-              <ScaleSelector scaleNames={["NYHA Functional Classification","Borg CR10 Scale","mMRC Dyspnea Scale","BODE Index","6 Minute Walk Test (6MWT)"]} onSave={handleScaleSave} savedResults={savedScales} />
+                             <ScaleSelector scaleNames={["BODE Index","London Chest Activity of Daily Living (LCADL)","Duke Activity Status Index (DASI)"]} onSave={handleScaleSave} savedResults={savedScales} />
               {savedScales.length > 0 && (
                 <div style={{marginTop:12}}>
                   <span style={{fontSize:9,fontWeight:700,color:C.green,textTransform:"uppercase",letterSpacing:"0.08em"}}>✓ Resultados Salvos: {savedScales.length}</span>

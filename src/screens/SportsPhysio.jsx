@@ -193,6 +193,7 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
 
   const [plank, setPlank] = useState("");
   const [sidePlank, setSidePlank] = useState("");
+  const [fmsScores, setFmsScores] = useState({});
 
   const [admEsportiva, setAdmEsportiva] = useState({ flexaoJoelhoD:"", extensaoJoelhoD:"", flexaoJoelhoE:"", extensaoJoelhoE:"", flexaoOmbroD:"", abducaoOmbroD:"", flexaoOmbroE:"", abducaoOmbroE:"" });
 
@@ -266,6 +267,7 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
         setHopTest(saved.hopTest || { singleD:"", tripleD:"", crossoverD:"", singleE:"", tripleE:"", crossoverE:"" });
         setPlank(saved.plank || "");
         setSidePlank(saved.sidePlank || "");
+        setFmsScores(saved.fmsScores || {});
         setAdmEsportiva(saved.admEsportiva || { flexaoJoelhoD:"", extensaoJoelhoD:"", flexaoJoelhoE:"", extensaoJoelhoE:"", flexaoOmbroD:"", abducaoOmbroD:"", flexaoOmbroE:"", abducaoOmbroE:"" });
         setForcaEsportiva(saved.forcaEsportiva || { quadricepsD:"", quadricepsE:"", isquiotibiaisD:"", isquiotibiaisE:"", gluteoD:"", gluteoE:"", adutoresD:"", adutoresE:"", rotacaoExternaOmbroD:"", rotacaoExternaOmbroE:"" });
         setRtsCriteria(saved.rtsCriteria || [
@@ -313,7 +315,7 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
       comprimentoPerna, ladoAfetado, yBalance, yBalanceResult, hopTest, plank, sidePlank, admEsportiva, forcaEsportiva,
       rtsCriteria, rtsResult, testesEspeciais,
       faseReabilitacao, objetivosFase, exerciciosPrescritos, progressaoCarga,
-      evolucaoEsportiva, localDor,
+      evolucaoEsportiva, localDor, fmsScores,
       pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
     });
@@ -703,6 +705,66 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
               ) : null}
             </Section>
 
+            <Section title="FMS — Functional Movement Screen" icon="🏃">
+              <CollapsibleSub title="FMS — Functional Movement Screen (7 testes)" defaultOpen={false}>
+                <div style={{fontSize:10,color:C.textMuted,marginBottom:8}}>0=Dor, 1=Incapaz, 2=Compensação, 3=Perfeito. Total 0-21. ≤14 = risco aumentado de lesão.</div>
+                {[
+                  {id:"fms1",label:"1. Deep Squat (Agachamento profundo)",desc:"Padrão bilateral, simétrico, funcional. Mobilidade de ombro, quadril, joelho e tornozelo + estabilidade do core.",bilateral:false},
+                  {id:"fms2",label:"2. Hurdle Step (Passagem sobre barreira)",desc:"Padrão unilateral de passo. Estabilidade em apoio + mobilidade do membro contralateral.",bilateral:true},
+                  {id:"fms3",label:"3. Inline Lunge (Avanço em linha)",desc:"Padrão de agachamento em base estreita. Mobilidade de quadril, estabilidade de core e tornozelo.",bilateral:true},
+                  {id:"fms4",label:"4. Shoulder Mobility (Mobilidade de ombro)",desc:"Padrão recíproco de alcance: adução+rotação interna / abdução+rotação externa. Medir distância entre punhos + teste de impacto.",bilateral:true},
+                  {id:"fms5",label:"5. Active Straight Leg Raise (Elevação passiva da perna estendida)",desc:"Padrão de dissociação de MMII com estabilidade de tronco. Mobilidade de cadeia posterior + flexibilidade ativa de quadril.",bilateral:true},
+                  {id:"fms6",label:"6. Trunk Stability Push-Up (Flexão de braços — estabilidade de tronco)",desc:"Padrão de estabilidade de tronco no plano sagital durante cadeia cinética fechada de MMSS.",bilateral:false},
+                  {id:"fms7",label:"7. Rotary Stability (Estabilidade rotacional)",desc:"Padrão de estabilidade rotacional. Coordenação inter-membros e estabilização reflexa de tronco.",bilateral:true},
+                ].map(test => {
+                  const scoreD = fmsScores?.[test.id] ?? "";
+                  const scoreE = test.bilateral ? (fmsScores?.[test.id+"_e"] ?? "") : null;
+                  return (
+                    <div key={test.id} style={{padding:"4px 0",borderBottom:`1px solid ${C.borderLight}`}}>
+                      <div style={{fontSize:11,fontWeight:600,color:C.text,display:"flex",gap:8,alignItems:"center",marginBottom:3}}>
+                        <span style={{flex:1}}>{test.label}</span>
+                      </div>
+                      <div style={{fontSize:9,color:C.textMuted,marginBottom:4}}>{test.desc}</div>
+                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                        <span style={{fontSize:9,color:C.textMuted,minWidth:14}}>{test.bilateral?"D:":"Score:"}</span>
+                        <select value={scoreD} onChange={e=>setFmsScores(p=>({...p,[test.id]:e.target.value?Number(e.target.value):undefined}))}
+                          style={{...sel({padding:"2px 6px",fontSize:9,width:48,textAlign:"center",borderRadius:6})}}>
+                          <option value="">—</option>
+                          {[0,1,2,3].map(v=><option key={v} value={v}>{v}</option>)}
+                        </select>
+                        {test.bilateral && <>
+                          <span style={{fontSize:9,color:C.textMuted,minWidth:14}}>E:</span>
+                          <select value={scoreE ?? ""} onChange={e=>setFmsScores(p=>({...p,[test.id+"_e"]:e.target.value?Number(e.target.value):undefined}))}
+                            style={{...sel({padding:"2px 6px",fontSize:9,width:48,textAlign:"center",borderRadius:6})}}>
+                            <option value="">—</option>
+                            {[0,1,2,3].map(v=><option key={v} value={v}>{v}</option>)}
+                          </select>
+                        </>}
+                        {test.bilateral && scoreD && scoreE && scoreD!==scoreE && (
+                          <span style={{fontSize:9,color:C.amber,fontWeight:700}}>⚠ Assimetria ({Math.abs(scoreD-scoreE)}pt)</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                {(()=>{
+                  const scores = Object.values(fmsScores||{}).filter(v=>v!==undefined&&v!=="");
+                  const total = scores.reduce((a,b)=>a+(Number(b)||0),0);
+                  const max = scores.length * 3;
+                  if(total===0) return null;
+                  const risco = total<=14?"🔴 Risco elevado de lesão":total<=17?"🟡 Risco moderado":"🟢 Baixo risco";
+                  const cor = total<=14?C.red:total<=17?C.amber:C.green;
+                  return (
+                    <div style={{marginTop:8,background:`${cor}15`,border:`1px solid ${cor}40`,borderRadius:10,padding:"10px 14px",textAlign:"center"}}>
+                      <div style={{fontSize:10,color:C.textMuted,fontWeight:700,textTransform:"uppercase"}}>FMS — Escore Composto</div>
+                      <div style={{fontSize:24,fontWeight:900,color:cor}}>{total}/{max}</div>
+                      <div style={{fontSize:12,fontWeight:700,color:cor,marginTop:2}}>{risco}</div>
+                    </div>
+                  );
+                })()}
+              </CollapsibleSub>
+            </Section>
+
             <Section title="ADM Articular" icon="🔄">
               <div style={{ fontSize:12, color:C.textMuted, marginBottom:10, lineHeight:1.5 }}>
                 Amplitude de movimento dos principais segmentos relevantes para o esporte.
@@ -809,7 +871,7 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
             {/* 📊 Escalas Padronizadas */}
             <CollapsibleSection title="Escalas Padronizadas" icon="📊" expanded={expandedSections.includes("escalas")} onToggle={()=>toggleSection("escalas")}>
               <div style={{fontSize:12,color:C.textMuted,marginBottom:12,lineHeight:1.5}}>Selecione uma escala validada para aplicar ao paciente. Os resultados ficam salvos neste módulo.</div>
-              <ScaleSelector scaleNames={["IKDC","Lysholm","Tegner Activity Scale","ACL-RSI","Y-Balance Test (SEBT) Composite","HAGOS","VISA-P","VISA-A","FAAM","Return to Sport Criteria (RTS)","LSI","Fonseca Anamnestic Index","RDC/TMD (Research Diagnostic Criteria for TMD)"]} onSave={handleScaleSave} savedResults={savedScales} />
+                             <ScaleSelector scaleNames={["IKDC","Lysholm","Tegner Activity Scale","ACL-RSI","HAGOS","VISA-P","VISA-A","FAAM","Fonseca Anamnestic Index","RDC/TMD"]} onSave={handleScaleSave} savedResults={savedScales} />
               {savedScales.length > 0 && (
                 <div style={{marginTop:12}}>
                   <span style={{fontSize:9,fontWeight:700,color:C.green,textTransform:"uppercase",letterSpacing:"0.08em"}}>✓ Resultados Salvos: {savedScales.length}</span>

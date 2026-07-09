@@ -180,6 +180,9 @@ export default function DermatoFunctional({ student, students, onSelectStudent, 
   const [edemaNivel, setEdemaNivel] = useState("");
   const [edemaResult, setEdemaResult] = useState(null);
 
+  const [posasScores, setPosasScores] = useState({});
+  const [fotosDermato, setFotosDermato] = useState([]);
+
   const [evolucaoDermato, setEvolucaoDermato] = useState("");
 
   const [expandedSections, setExpandedSections] = useState([]);
@@ -225,6 +228,8 @@ export default function DermatoFunctional({ student, students, onSelectStudent, 
         setSuperficieQueimada(saved.superficieQueimada || "");
         setEdemaNivel(saved.edemaNivel || "");
         setEdemaResult(saved.edemaResult || null);
+        setPosasScores(saved.posasScores || {});
+        setFotosDermato(saved.fotosDermato || []);
         setEvolucaoDermato(saved.evolucaoDermato || "");
         setLocalDor(saved.localDor || []);
         if (saved.pain) enhancer.setPain(saved.pain);
@@ -251,6 +256,7 @@ export default function DermatoFunctional({ student, students, onSelectStudent, 
       doencasDermato, medicamentosDermato, alergiasDermato, historicoTabagismo,
       vancouverScores, vancouverResult, perimetria, bioimpedancia,
       fibrose, fibroseSeveridade, tipoQueimadura, superficieQueimada, edemaNivel, edemaResult,
+      posasScores, fotosDermato,
       evolucaoDermato, localDor,
       pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
@@ -602,6 +608,67 @@ export default function DermatoFunctional({ student, students, onSelectStudent, 
               )}
             </Section>
 
+            <CollapsibleSub title="POSAS — Patient and Observer Scar Assessment Scale" defaultOpen={false}>
+              <div style={{fontSize:10,color:C.textMuted,marginBottom:8}}>Escala composta: avaliação do paciente (6 itens) + observador (6 itens). Cada item 1-10.</div>
+              <div style={{fontWeight:700,fontSize:11,color:C.text,marginBottom:6}}>Parte do Paciente</div>
+              {[
+                {id:"posas_p_dor",label:"A cicatriz tem sido dolorida?"},
+                {id:"posas_p_prurido",label:"A cicatriz tem coçado (prurido)?"},
+                {id:"posas_p_cor",label:"A cor da cicatriz é diferente da pele normal?"},
+                {id:"posas_p_rigidez",label:"A rigidez da cicatriz é diferente da pele normal?"},
+                {id:"posas_p_espessura",label:"A espessura da cicatriz é diferente da pele normal?"},
+                {id:"posas_p_irregularidade",label:"A cicatriz é mais irregular que a pele normal?"},
+              ].map(q=>(<div key={q.id} style={{display:"flex",alignItems:"center",gap:6,padding:"2px 0"}}>
+                <span style={{flex:1,fontSize:11,color:C.textSub}}>{q.label}</span>
+                <input type="range" min={1} max={10} value={posasScores?.[q.id]||1} onChange={e=>setPosasScores(p=>({...p,[q.id]:Number(e.target.value)}))} style={{width:80,accentColor:C.amber}} />
+                <span style={{fontSize:10,color:C.textMuted,minWidth:18,textAlign:"right"}}>{posasScores?.[q.id]||1}</span>
+              </div>))}
+              <div style={{marginTop:10,fontWeight:700,fontSize:11,color:C.text,marginBottom:6}}>Parte do Observador</div>
+              {[
+                {id:"posas_o_vascularizacao",label:"Vascularização (vascularity)"},
+                {id:"posas_o_pigmentacao",label:"Pigmentação"},
+                {id:"posas_o_espessura",label:"Espessura"},
+                {id:"posas_o_relevo",label:"Relevo (relief)"},
+                {id:"posas_o_flexibilidade",label:"Flexibilidade (pliability)"},
+                {id:"posas_o_area",label:"Área da superfície"},
+              ].map(q=>(<div key={q.id} style={{display:"flex",alignItems:"center",gap:6,padding:"2px 0"}}>
+                <span style={{flex:1,fontSize:11,color:C.textSub}}>{q.label}</span>
+                <input type="range" min={1} max={10} value={posasScores?.[q.id]||1} onChange={e=>setPosasScores(p=>({...p,[q.id]:Number(e.target.value)}))} style={{width:80,accentColor:C.amber}} />
+                <span style={{fontSize:10,color:C.textMuted,minWidth:18,textAlign:"right"}}>{posasScores?.[q.id]||1}</span>
+              </div>))}
+              {(()=>{
+                const pTotal=Object.entries(posasScores||{}).filter(([k])=>k.startsWith("posas_p_")).reduce((a,[,v])=>a+(Number(v)||0),0);
+                const oTotal=Object.entries(posasScores||{}).filter(([k])=>k.startsWith("posas_o_")).reduce((a,[,v])=>a+(Number(v)||0),0);
+                const total=pTotal+oTotal;
+                return total>12?<div style={{marginTop:8,background:C.amberBg,border:`1px solid ${C.amber}40`,borderRadius:8,padding:"8px 12px",textAlign:"center",fontSize:11,fontWeight:700}}>POSAS: Paciente {pTotal}/60 + Observador {oTotal}/60 = Total {total}/120</div>:null;
+              })()}
+            </CollapsibleSub>
+
+            <CollapsibleSub title="Registro Fotográfico da Evolução" defaultOpen={false}>
+              <div style={{fontSize:10,color:C.textMuted,marginBottom:8}}>Capture ou faça upload de fotos para acompanhamento da evolução. As imagens são armazenadas como data URIs no localStorage.</div>
+              <div style={{display:"flex",gap:8,marginBottom:8}}>
+                <div style={{position:"relative",overflow:"hidden",display:"inline-block"}}>
+                  <button style={ghostBtn({padding:"6px 12px",fontSize:11})}>📷 Capturar / Upload</button>
+                  <input type="file" accept="image/*" capture="environment" onChange={e=>{
+                    const file=e.target.files?.[0];if(!file)return;
+                    const reader=new FileReader();reader.onload=()=>setFotosDermato(p=>[...p,{id:Date.now(),dataUrl:reader.result,data:new Date().toISOString().slice(0,10),nota:""}]);
+                    reader.readAsDataURL(file);
+                  }} style={{position:"absolute",inset:0,opacity:0,cursor:"pointer"}} />
+                </div>
+                <span style={{fontSize:9,color:C.textMuted,alignSelf:"center"}}>{fotosDermato.length} foto(s) registrada(s)</span>
+              </div>
+              {fotosDermato.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr",gap:8}}>
+                {fotosDermato.map((foto,i)=>(<div key={foto.id} style={{position:"relative",background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:8,padding:4}}>
+                  <img src={foto.dataUrl} alt={`Foto ${i+1}`} style={{width:"100%",height:120,objectFit:"cover",borderRadius:4}} />
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
+                    <span style={{fontSize:9,color:C.textMuted}}>{foto.data}</span>
+                    <button onClick={()=>setFotosDermato(p=>p.filter(x=>x.id!==foto.id))} style={{background:"transparent",border:"none",color:C.red,fontSize:10,cursor:"pointer",fontFamily:F}}>✕</button>
+                  </div>
+                  <input type="text" value={foto.nota} onChange={e=>{const nx=[...fotosDermato];nx[i]={...nx[i],nota:e.target.value};setFotosDermato(nx)}} placeholder="Nota (ex: pré-tto)" style={{...inp({fontSize:9,padding:"2px 6px",marginTop:2,borderRadius:4})}} />
+                </div>))}
+              </div>}
+            </CollapsibleSub>
+
             <Section title="Perimetria Segmentar" icon="📐">
               <div style={{ fontSize:12, color:C.textMuted, marginBottom:10, lineHeight:1.5 }}>
                 Circunferência do membro em mm em diferentes pontos de referência para avaliação de edema e volumetria.
@@ -718,7 +785,7 @@ export default function DermatoFunctional({ student, students, onSelectStudent, 
             {/* 📊 Escalas Padronizadas */}
             <CollapsibleSection title="Escalas Padronizadas" icon="📊" expanded={expandedSections.includes("escalas")} onToggle={()=>toggleSection("escalas")}>
               <div style={{fontSize:12,color:C.textMuted,marginBottom:12,lineHeight:1.5}}>Selecione uma escala validada para aplicar ao paciente. Os resultados ficam salvos neste módulo.</div>
-              <ScaleSelector scaleNames={["Vancouver Scar Scale (VSS)","POSAS (Patient and Observer Scar Assessment Scale)","LEFS (Lower Extremity Functional Scale)"]} onSave={handleScaleSave} savedResults={savedScales} />
+                             <ScaleSelector scaleNames={["LEFS","DLQI","Patient-Specific Functional Scale (PSFS)"]} onSave={handleScaleSave} savedResults={savedScales} />
               {savedScales.length > 0 && (
                 <div style={{marginTop:12}}>
                   <span style={{fontSize:9,fontWeight:700,color:C.green,textTransform:"uppercase",letterSpacing:"0.08em"}}>✓ Resultados Salvos: {savedScales.length}</span>

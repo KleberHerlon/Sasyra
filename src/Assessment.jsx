@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { AudioField, NumericDrum, EvaSlider, TagSelect, SingleSelect, GonioRow, MRCRow, TestCard, SessionCounter, HonorariosCard, Section, Row, Field, BodyMap, useMediaQuery } from "./components";
 import { useClinicalScan } from "./hooks/useClinicalScan";
 import { useSemanticScanner } from "./hooks/useSemanticScanner";
@@ -100,6 +100,22 @@ export default function Assessment({
   const [expandedSections, setExpandedSections] = useState([]);
   const toggleSection = (key) => setExpandedSections(p => p.includes(key) ? p.filter(x => x !== key) : [...p, key]);
   const isMobile = useMediaQuery("(max-width:767px)");
+
+  // Neuro periférico
+  const [neuroDermatomos, setNeuroDermatomos] = useState({});
+  const [neuroMiotomos, setNeuroMiotomos] = useState({});
+  const [neuroReflexos, setNeuroReflexos] = useState({});
+  const [neuroPatologicos, setNeuroPatologicos] = useState({});
+
+  const nSel = (key, state, setter, options) => {
+    const value = state[key] || "";
+    return (
+      <select value={value} onChange={e => setter({...state, [key]: e.target.value})} style={{...sel(), fontSize:11, padding:"4px 8px", flex:1}}>
+        <option value="">—</option>
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
+    );
+  };
 
   useEffect(() => {
     if (kbList.length > 0) {
@@ -505,6 +521,79 @@ export default function Assessment({
           <GonioRow key={row.id} row={row} onUpdate={u => updG(row.id, u)} onRemove={() => remG(row.id)} />
         ))}
         <button onClick={addG} style={{ ...primaryBtn({ background: "transparent", color: C.green, border: `1px solid ${C.border}`, padding: "8px 16px", fontSize: 12 }), marginTop: 12 }}>+ Adicionar medida</button>
+      </CollapsibleSection>
+
+      {/* Avaliação Neurológica Periférica */}
+      <CollapsibleSection title="Avaliação Neurológica Periférica" icon="🧠" expanded={expandedSections.includes("neuro")} onToggle={()=>toggleSection("neuro")}>
+
+        <CollapsibleSub title="Dermátomos — MMSS (C5–T1) e MMII (L1–S2)">
+          <div style={{display:"grid", gridTemplateColumns:"minmax(80px,auto) 1fr 1fr", gap:"3px 8px", alignItems:"center"}}>
+            <span style={{fontSize:9, fontWeight:700, color:C.textDim, letterSpacing:"0.08em", textTransform:"uppercase"}}>Raiz</span>
+            <span style={{fontSize:9, fontWeight:700, color:C.textDim, letterSpacing:"0.08em", textTransform:"uppercase", textAlign:"center"}}>Direito</span>
+            <span style={{fontSize:9, fontWeight:700, color:C.textDim, letterSpacing:"0.08em", textTransform:"uppercase", textAlign:"center"}}>Esquerdo</span>
+            {["C5","C6","C7","C8","T1","L1","L2","L3","L4","L5","S1","S2"].map(d => (
+              <Fragment key={d}>
+                <span style={{fontSize:12, fontWeight:700, color:C.text, padding:"4px 0"}}>{d}</span>
+                {nSel(`${d}_D`, neuroDermatomos, setNeuroDermatomos, ["Normal","Hipoestesia","Hiperestesia","Parestesia","Anestesia","Alodínia"])}
+                {nSel(`${d}_E`, neuroDermatomos, setNeuroDermatomos, ["Normal","Hipoestesia","Hiperestesia","Parestesia","Anestesia","Alodínia"])}
+              </Fragment>
+            ))}
+          </div>
+        </CollapsibleSub>
+
+        <CollapsibleSub title="Miótomos — Escala MRC (0–5)">
+          <div style={{display:"grid", gridTemplateColumns:"minmax(120px,auto) 1fr 1fr", gap:"3px 8px", alignItems:"center"}}>
+            <span style={{fontSize:9, fontWeight:700, color:C.textDim, letterSpacing:"0.08em", textTransform:"uppercase"}}>Raiz / Movimento</span>
+            <span style={{fontSize:9, fontWeight:700, color:C.textDim, letterSpacing:"0.08em", textTransform:"uppercase", textAlign:"center"}}>Direito</span>
+            <span style={{fontSize:9, fontWeight:700, color:C.textDim, letterSpacing:"0.08em", textTransform:"uppercase", textAlign:"center"}}>Esquerdo</span>
+            {[
+              {k:"C5",m:"Abdução de ombro"},{k:"C6",m:"Flexão de cotovelo"},{k:"C7",m:"Extensão de cotovelo"},
+              {k:"C8",m:"Extensão do polegar"},{k:"T1",m:"Abdução dos dedos"},{k:"L2",m:"Flexão de quadril"},
+              {k:"L3",m:"Extensão de joelho"},{k:"L4",m:"Dorsiflexão de tornozelo"},{k:"L5",m:"Extensão do hálux"},
+              {k:"S1",m:"Flexão plantar / Extensão de quadril"},
+            ].map(({k,m}) => (
+              <Fragment key={k}>
+                <span style={{fontSize:11, color:C.text, padding:"4px 0"}}><strong>{k}</strong> <span style={{color:C.textSub,fontSize:10}}>— {m}</span></span>
+                {nSel(`${k}_D`, neuroMiotomos, setNeuroMiotomos, ["0","1","2","3","4","5"])}
+                {nSel(`${k}_E`, neuroMiotomos, setNeuroMiotomos, ["0","1","2","3","4","5"])}
+              </Fragment>
+            ))}
+          </div>
+        </CollapsibleSub>
+
+        <CollapsibleSub title="Reflexos Osteotendinosos — ROTs (0–4+)">
+          <div style={{display:"grid", gridTemplateColumns:"minmax(100px,auto) 1fr 1fr", gap:"3px 8px", alignItems:"center"}}>
+            <span style={{fontSize:9, fontWeight:700, color:C.textDim, letterSpacing:"0.08em", textTransform:"uppercase"}}>Reflexo</span>
+            <span style={{fontSize:9, fontWeight:700, color:C.textDim, letterSpacing:"0.08em", textTransform:"uppercase", textAlign:"center"}}>Direito</span>
+            <span style={{fontSize:9, fontWeight:700, color:C.textDim, letterSpacing:"0.08em", textTransform:"uppercase", textAlign:"center"}}>Esquerdo</span>
+            {[
+              {k:"Bicipital",l:"C5–C6"},{k:"Estilorradial",l:"C6"},{k:"Tricipital",l:"C7"},
+              {k:"Patelar",l:"L3–L4"},{k:"Aquileu",l:"S1"},
+            ].map(({k,l}) => (
+              <Fragment key={k}>
+                <span style={{fontSize:11, color:C.text, padding:"4px 0"}}><strong>{k}</strong> <span style={{color:C.textSub,fontSize:10}}>({l})</span></span>
+                {nSel(`${k}_D`, neuroReflexos, setNeuroReflexos, ["0","1+","2+","3+","4+"])}
+                {nSel(`${k}_E`, neuroReflexos, setNeuroReflexos, ["0","1+","2+","3+","4+"])}
+              </Fragment>
+            ))}
+          </div>
+        </CollapsibleSub>
+
+        <CollapsibleSub title="Reflexos Patológicos">
+          <div style={{display:"grid", gridTemplateColumns:"minmax(80px,auto) 1fr 1fr", gap:"3px 8px", alignItems:"center"}}>
+            <span style={{fontSize:9, fontWeight:700, color:C.textDim, letterSpacing:"0.08em", textTransform:"uppercase"}}>Reflexo</span>
+            <span style={{fontSize:9, fontWeight:700, color:C.textDim, letterSpacing:"0.08em", textTransform:"uppercase", textAlign:"center"}}>Direito</span>
+            <span style={{fontSize:9, fontWeight:700, color:C.textDim, letterSpacing:"0.08em", textTransform:"uppercase", textAlign:"center"}}>Esquerdo</span>
+            {["Babinski","Hoffman"].map(r => (
+              <Fragment key={r}>
+                <span style={{fontSize:11, fontWeight:700, color:C.text, padding:"4px 0"}}>{r}</span>
+                {nSel(`${r}_D`, neuroPatologicos, setNeuroPatologicos, ["Ausente","Presente"])}
+                {nSel(`${r}_E`, neuroPatologicos, setNeuroPatologicos, ["Ausente","Presente"])}
+              </Fragment>
+            ))}
+          </div>
+        </CollapsibleSub>
+
       </CollapsibleSection>
 
       {/* Testes especiais */}

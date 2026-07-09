@@ -8,7 +8,7 @@ import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import GeneralAssessment from "../components/GeneralAssessment";
 import { detectLocalDor } from "../utils/clinicalDetection.js";
-import { calcMEEM, calcGDS15, calcSarcF, calcKatz, calcLawton, calcTinetti, calcFragilidade } from "../data/geriatriaScales";
+import { calcMEEM, calcGDS15, calcSarcF, calcKatz, calcLawton, calcTinetti, calcFragilidade, calcBBS } from "../data/geriatriaScales";
 import { useClinicalScan } from "../hooks/useClinicalScan.js";
 import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
 import { extractClinicalEntities } from "../utils/clinicalDetection.js";
@@ -245,6 +245,8 @@ export default function Geriatria({ student, students, allPatients, currentModul
   const [tinettiResult, setTinettiResult] = useState(null);
   const [tugSegundos, setTugSegundos] = useState("");
 
+  const [bergScores, setBergScores] = useState({});
+
   const [fragilidadeIndicators, setFragilidadeIndicators] = useState({});
   const [fragilidadeResult, setFragilidadeResult] = useState(null);
 
@@ -300,6 +302,7 @@ export default function Geriatria({ student, students, allPatients, currentModul
         setTinettiGaitScores(saved.tinettiGaitScores || {});
         setTinettiResult(saved.tinettiResult || null);
         setTugSegundos(saved.tugSegundos || "");
+        setBergScores(saved.bergScores || {});
         setFragilidadeIndicators(saved.fragilidadeIndicators || {});
         setFragilidadeResult(saved.fragilidadeResult || null);
         setEvolucaoGeriatria(saved.evolucaoGeriatria || "");
@@ -330,6 +333,7 @@ export default function Geriatria({ student, students, allPatients, currentModul
       katzScores, katzResult, lawtonScores, lawtonResult,
       sarcFScores, sarcFResult, dinamometria, circunferenciaPanturrilha, velocidadeMarcha,
       tinettiBalanceScores, tinettiGaitScores, tinettiResult, tugSegundos,
+      bergScores,
       fragilidadeIndicators, fragilidadeResult,
       evolucaoGeriatria, localDor,
       pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
@@ -752,6 +756,47 @@ export default function Geriatria({ student, students, allPatients, currentModul
                   <div style={{ fontSize:13, fontWeight:700, color:tinettiResult.color, marginTop:4 }}>{tinettiResult.level}</div>
                 </div>
               )}
+              <CollapsibleSub title="Berg Balance Scale (BBS) — 14 itens" defaultOpen={false}>
+                <div style={{fontSize:10,color:C.textMuted,marginBottom:8}}>Cada item 0-4. Pontuação máxima: 56. &lt;20 alto risco, 21-40 médio, 41-56 baixo.</div>
+                {[
+                  {id:"b1",label:"1. Sentado para em pé"},
+                  {id:"b2",label:"2. Em pé sem apoio"},
+                  {id:"b3",label:"3. Sentado sem apoio (costas apoiadas, pés no chão)"},
+                  {id:"b4",label:"4. Em pé para sentado"},
+                  {id:"b5",label:"5. Transferências (cadeira com braço → cadeira sem braço)"},
+                  {id:"b6",label:"6. Em pé com olhos fechados"},
+                  {id:"b7",label:"7. Em pé com pés juntos"},
+                  {id:"b8",label:"8. Alcançar à frente com braço estendido"},
+                  {id:"b9",label:"9. Pegar objeto do chão"},
+                  {id:"b10",label:"10. Virar-se para olhar atrás (sobre ombros D/E)"},
+                  {id:"b11",label:"11. Girar 360 graus (completo, ambos lados)"},
+                  {id:"b12",label:"12. Apoio alternado dos pés em banco (4x cada pé em 20s)"},
+                  {id:"b13",label:"13. Em pé com um pé à frente (tandem, sem apoio)"},
+                  {id:"b14",label:"14. Em pé sobre uma perna (apoio unipodal, sem apoio)"},
+                ].map(item => (
+                  <div key={item.id} style={{display:"flex",alignItems:"center",gap:8,padding:"3px 0",borderBottom:`1px solid ${C.borderLight}`}}>
+                    <span style={{flex:1,fontSize:11,color:C.text}}>{item.label}</span>
+                    <select value={bergScores?.[item.id] ?? ""} onChange={e=>setBergScores(p=>({...p,[item.id]:e.target.value?Number(e.target.value):undefined}))}
+                      style={{...sel({padding:"3px 6px",fontSize:10,borderRadius:6,width:140})}}>
+                      <option value="">—</option>
+                      {[0,1,2,3,4].map(v=><option key={v} value={v}>{v} — {["Incapaz","Ajuda substancial","Ajuda moderada","Ajuda mínima","Independente"][v]}</option>)}
+                    </select>
+                  </div>
+                ))}
+                {(()=>{
+                  const total = Object.values(bergScores||{}).reduce((a,b)=>a+(Number(b)||0),0);
+                  if(total===0) return null;
+                  const nivel = total<=20?"🔴 Alto risco de queda":total<=40?"🟡 Médio risco de queda":"🟢 Baixo risco de queda";
+                  const cor = total<=20?C.red:total<=40?C.amber:C.green;
+                  return (
+                    <div style={{marginTop:8,background:`${cor}15`,border:`1px solid ${cor}40`,borderRadius:10,padding:"10px 14px",textAlign:"center"}}>
+                      <div style={{fontSize:10,color:C.textMuted,fontWeight:700,textTransform:"uppercase"}}>Berg Balance Scale</div>
+                      <div style={{fontSize:24,fontWeight:900,color:cor}}>{total}/56</div>
+                      <div style={{fontSize:12,fontWeight:700,color:cor,marginTop:2}}>{nivel}</div>
+                    </div>
+                  );
+                })()}
+              </CollapsibleSub>
             </Section>
 
             <Section title="Síndrome de Fragilidade (Fried Criteria)" icon="📉">
@@ -784,7 +829,7 @@ export default function Geriatria({ student, students, allPatients, currentModul
             {/* 📊 Escalas Padronizadas */}
             <CollapsibleSection title="Escalas Padronizadas" icon="📊" expanded={expandedSections.includes("escalas")} onToggle={()=>toggleSection("escalas")}>
               <div style={{fontSize:12,color:C.textMuted,marginBottom:12,lineHeight:1.5}}>Selecione uma escala validada para aplicar ao paciente. Os resultados ficam salvos neste módulo.</div>
-              <ScaleSelector scaleNames={["MEEM (Mini-Exame do Estado Mental)","GDS-15 (Geriatric Depression Scale)","Katz Index of Independence in ADLs","Lawton Instrumental ADL Scale","Tinetti Performance Oriented Mobility Assessment","FES-I (Falls Efficacy Scale)","MNA (Mini Nutritional Assessment)","Timed Up and Go (TUG)"]} onSave={handleScaleSave} savedResults={savedScales} />
+                             <ScaleSelector scaleNames={["FES-I (Falls Efficacy Scale)","MNA (Mini Nutritional Assessment)","Short Physical Performance Battery (SPPB)","Clinical Frailty Scale (CFS)"]} onSave={handleScaleSave} savedResults={savedScales} />
               {savedScales.length > 0 && (
                 <div style={{marginTop:12}}>
                   <span style={{fontSize:9,fontWeight:700,color:C.green,textTransform:"uppercase",letterSpacing:"0.08em"}}>✓ Resultados Salvos: {savedScales.length}</span>
@@ -833,7 +878,7 @@ export default function Geriatria({ student, students, allPatients, currentModul
             )}
             <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={geriatriaColors} sessionLabel="Evolução" specialty="geriatria" defaultExpanded={true} pain={enhancer.pain} setPain={enhancer.setPain} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
-              summaryText={`Paciente: ${student?.nome || "—"}\nQueixa: ${queixaGeriatria}\nQuedas (1 ano): ${historicoQuedas}\nComorbidades: ${comorbidadesGeriatria.join(", ")}\nDispositivo: ${usoDispositivoAuxilio}\nMEEM: ${meemResult?.total || "—"}\nGDS-15: ${gds15Result?.total || "—"}\nKatz: ${katzResult?.indep || "—"}/6\nLawton: ${lawtonResult?.total || "—"}/24\nSARC-F: ${sarcFResult?.total || "—"}\nTinetti: ${tinettiResult?.total || "—"}/28\nTUG: ${tugSegundos || "—"}s\nFried: ${fragilidadeResult?.count || "—"}/5\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nEvolução: ${evolucaoGeriatria}`}
+              summaryText={`Paciente: ${student?.nome || "—"}\nQueixa: ${queixaGeriatria}\nQuedas (1 ano): ${historicoQuedas}\nComorbidades: ${comorbidadesGeriatria.join(", ")}\nDispositivo: ${usoDispositivoAuxilio}\nMEEM: ${meemResult?.total || "—"}\nGDS-15: ${gds15Result?.total || "—"}\nKatz: ${katzResult?.indep || "—"}/6\nLawton: ${lawtonResult?.total || "—"}/24\nSARC-F: ${sarcFResult?.total || "—"}\nTinetti: ${tinettiResult?.total || "—"}/28\nBBS: ${(()=>{const t=Object.values(bergScores||{}).reduce((a,b)=>a+(Number(b)||0),0);return t||"—";})()}/56\nTUG: ${tugSegundos || "—"}s\nFried: ${fragilidadeResult?.count || "—"}/5\nEVA Mov: ${enhancer.pain.evaMov}/10\nEVA Rep: ${enhancer.pain.evaRep}/10\nEvolução: ${evolucaoGeriatria}`}
               colors={geriatriaColors} />
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
               <button onClick={handleSave} style={primaryBtn({ padding:"11px 26px", fontSize:14 })}>💾 Salvar Tudo</button>

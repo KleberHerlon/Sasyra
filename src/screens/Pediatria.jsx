@@ -388,6 +388,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
   const [expandedSections, setExpandedSections] = useState([]);
   const [assessmentHistory, setAssessmentHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [gmfmScores, setGmfmScores] = useState({});
 
   const sid = student?.id || student?.nome;
   const isMobile = useMediaQuery("(max-width:767px)");
@@ -479,6 +480,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
         setGonioRows(saved.gonioRows || JSON.parse(JSON.stringify(PED_GONIO_DEFAULT)));
         setMrcRows(saved.mrcRows || JSON.parse(JSON.stringify(PED_MRC_DEFAULT)));
         setTestResults(saved.testResults || []);
+        setGmfmScores(saved.gmfmScores || {});
         setExpandedSections(saved.expandedSections || []);
         if (saved.pain) enhancer.setPain(saved.pain);
         if (saved.logs) enhancer.setLogs(saved.logs);
@@ -502,7 +504,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
       gmfcs, aimsScore, mchat,
       objetivosFuncionais, atividadesTerapeuticas, frequencia, orientacoesCuidador,
       evolucao, diagnosticoCinesio, yellowFlags, evaMov, evaRep, nivelAti, avdsPed, localDor, bodyPain,
-      gonioRows, mrcRows, testResults, expandedSections,
+      gonioRows, mrcRows, testResults, expandedSections, gmfmScores,
       pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
       data: new Date().toISOString().slice(0,10),
     });
@@ -524,6 +526,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
       mrcRows: JSON.parse(JSON.stringify(mrcRows)),
       testResults: [...testResults],
       yellowFlags: [...yellowFlags],
+      gmfmScores: { ...gmfmScores },
     };
     const history = loadHistory(sid);
     history.unshift(entry);
@@ -549,6 +552,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
     setMrcRows(entry.mrcRows || JSON.parse(JSON.stringify(PED_MRC_DEFAULT)));
     setTestResults(entry.testResults || []);
     setYellowFlags(entry.yellowFlags || []);
+    setGmfmScores(entry.gmfmScores || {});
     setShowHistory(false);
   };
 
@@ -977,6 +981,68 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
               {mchat.length>0&&(()=>{const m=calcMCHAT(mchat);return <div style={{marginTop:8,background:`${m.color}15`,border:`1px solid ${m.color}40`,borderRadius:8,padding:"8px 12px",fontSize:11,color:C.textSub}}>{m.count} itens: <strong style={{color:m.color}}>{m.level}</strong></div>})()}
             </CollapsibleSub>
 
+            <CollapsibleSub title="GMFM-66 — Medida da Função Motora Grossa" defaultOpen={false}>
+              <div style={{fontSize:10,color:C.textMuted,marginBottom:8}}>Pontue cada item: 0=Não inicia, 1=Inicia, 2=Completa parcialmente, 3=Completa</div>
+              {[
+                { dim:"A", label:"Deitar e Rolar", max:51, items:[
+                  "1. Supino, mantém cabeça na linha média (4s)","2. Supino, leva mãos ao peito","3. Supino, levanta cabeça 45°","4. Supino, flexão de quadril e joelho D","5. Supino, flexão de quadril e joelho E","6. Supino, alcança brinquedo com braço D","7. Supino, alcança brinquedo com braço E","8. Supino, rola para prono sobre lado D","9. Supino, rola para prono sobre lado E","10. Prono, levanta cabeça na vertical","11. Prono sobre antebraços, levanta cabeça na vertical","12. Prono sobre antebraços, apoio D e extensão E","13. Prono, rola para supino sobre lado D","14. Prono, rola para supino sobre lado E","15. Prono, gira 90° para a D usando membros","16. Prono, gira 90° para a E usando membros","17. Supino, gira 180° (supino→prono→supino)",
+                ]},
+                { dim:"B", label:"Sentar", max:60, items:[
+                  "18. Supino, mãos seguradas — puxa para sentar","19. Supino, rola para a D e senta","20. Supino, rola para a E e senta","21. Sentado no tapete, sustentado pelo tórax — cabeça ereta 3s","22. Sentado no tapete, sustentado pelo tórax — cabeça ereta 10s","23. Sentado, braço(s) apoiado(s) — mantém 5s","24. Sentado, sem apoio — mantém 3s","25. Sentado, brinquedo à frente — inclina e retorna","26. Sentado, toca brinquedo 45° atrás à D e retorna","27. Sentado, toca brinquedo 45° atrás à E e retorna","28. Sentado sobre lado D, mantém sem apoio 5s","29. Sentado sobre lado E, mantém sem apoio 5s","30. Sentado, abaixa para prono controlado","31. Sentado com pés à frente — atinge 4 apoios à D","32. Sentado com pés à frente — atinge 4 apoios à E","33. Sentado, gira 90° sem apoio","34. Sentado no banco, pés apoiados — mantém 10s","35. Em pé, senta-se em banco pequeno","36. No chão, senta-se em banco pequeno","37. No chão, senta-se em banco grande",
+                ]},
+                { dim:"C", label:"Engatinhar e Ajoelhar", max:42, items:[
+                  "38. Prono, arrasta-se 1,8m para frente","39. Em 4 apoios, mantém peso em mãos e joelhos 10s","40. Em 4 apoios, atinge sentado com apoio D","41. Em 4 apoios, atinge sentado com apoio E","42. Em 4 apoios, engatinha para frente 1,8m","43. Em 4 apoios, engatinha sobre obstáculo","44. Em 4 apoios, engatinha 4 degraus escada acima","45. Em 4 apoios, engatinha 4 degraus escada abaixo","46. Sentado no tapete, atinge ajoelhado alto sem apoio","47. Ajoelhado alto, mantém sem apoio 10s","48. Ajoelhado alto, 10 passos para D","49. Ajoelhado alto, 10 passos para E","50. Semi-ajoelhado D, mantém sem apoio 10s","51. Semi-ajoelhado E, mantém sem apoio 10s",
+                ]},
+                { dim:"D", label:"Em Pé", max:39, items:[
+                  "52. No chão, puxa-se para em pé em banco grande","53. Em pé, mantém sem apoio 3s","54. Em pé, segurando banco com 1 mão — levanta pé D 3s","55. Em pé, segurando banco com 1 mão — levanta pé E 3s","56. Em pé, mantém sem apoio 20s","57. Em pé, levanta pé D sem apoio 10s","58. Em pé, levanta pé E sem apoio 10s","59. Sentado em banco, põe-se em pé sem apoio","60. Ajoelhado alto, atinge em pé sem apoio sobre perna D","61. Ajoelhado alto, atinge em pé sem apoio sobre perna E","62. Em pé, abaixa ao chão controlado sem apoio","63. Em pé, agacha sem apoio e retorna","64. Em pé, pega objeto do chão e retorna",
+                ]},
+                { dim:"E", label:"Andar, Correr e Pular", max:72, items:[
+                  "65. De pé no banco, 5 passos para D segurando","66. De pé no banco, 5 passos para E segurando","67. Em pé, 10 passos para frente com 2 mãos seguradas","68. Em pé, 10 passos para frente com 1 mão segurando","69. Em pé, 10 passos para frente sem apoio","70. Em pé, 10 passos para frente — para — gira 180° — retorna","71. Em pé, 10 passos para trás","72. Em pé, 10 passos para frente carregando objeto grande","73. Em pé, 10 passos consecutivos entre linhas paralelas (20cm)","74. Em pé, 10 passos consecutivos sobre linha reta (2cm)","75. Em pé, passa por cima de obstáculo (altura canela) com pé D","76. Em pé, passa por cima de obstáculo (altura canela) com pé E","77. Em pé, corre 4,6m — para — retorna","78. Em pé, chuta bola com pé D","79. Em pé, chuta bola com pé E","80. Em pé, pula 30cm de altura com ambos os pés","81. Em pé, pula 30cm para frente com ambos os pés","82. Em pé, pula 10x sobre pé D em 30cm de distância","83. Em pé, pula 10x sobre pé E em 30cm de distância","84. Em pé, sobe 4 degraus segurando corrimão alternando pés","85. Em pé, sobe 4 degraus sem apoio alternando pés","86. Em pé, desce 4 degraus segurando corrimão alternando pés","87. Em pé, desce 4 degraus sem apoio alternando pés","88. Em pé no degrau (15cm), pula para baixo com ambos os pés",
+                ]},
+              ].map(dim => {
+                const dimScores = (gmfmScores || {})[dim.dim] || {};
+                const dimSum = Object.values(dimScores).reduce((a,b)=>a+(Number(b)||0),0);
+                const dimPct = dim.max > 0 ? Math.round((dimSum/dim.max)*100) : 0;
+                return (
+                  <div key={dim.dim} style={{marginBottom:8}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:`1px solid ${C.border}`}}>
+                      <span style={{fontSize:11,fontWeight:700,color:C.text}}>Dimensão {dim.dim}: {dim.label}</span>
+                      <span style={{fontSize:10,color:C.textMuted}}>{dimSum}/{dim.max} ({dimPct}%)</span>
+                    </div>
+                    {dim.items.map((item,idx) => {
+                      const itemId = `${dim.dim}${idx+1}`;
+                      const score = dimScores[itemId] ?? "";
+                      return (
+                        <div key={itemId} style={{display:"flex",alignItems:"center",gap:6,padding:"2px 0",borderBottom:`1px solid ${C.borderLight}`}}>
+                          <span style={{flex:1,fontSize:10,color:C.textSub}}>{item}</span>
+                          <select value={score} onChange={e=>{
+                            setGmfmScores(p=>({...p,[dim.dim]:{...p[dim.dim],[itemId]:Number(e.target.value)||""}}));
+                          }} style={sel({padding:"2px 6px",fontSize:9,width:36,textAlign:"center",borderRadius:6})}>
+                            <option value="">—</option>
+                            {[0,1,2,3].map(v=><option key={v} value={v}>{v}</option>)}
+                          </select>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+              {(()=>{
+                const total = Object.values(gmfmScores||{}).reduce((a,dim)=>a+Object.values(dim).reduce((s,v)=>s+(Number(v)||0),0),0);
+                const maxTotal = 51+60+42+39+72;
+                const pct = maxTotal>0?Math.round((total/maxTotal)*100):0;
+                const nivel = pct>=85?"Função motora grossa próxima do normal":pct>=60?"Função moderadamente comprometida":pct>=30?"Função significativamente comprometida":"Função gravemente comprometida";
+                if(total===0) return null;
+                return (
+                  <div style={{marginTop:8,background:C.blueBg,border:`1px solid ${C.blue}40`,borderRadius:10,padding:"10px 14px",textAlign:"center"}}>
+                    <div style={{fontSize:10,color:C.textMuted,fontWeight:700,textTransform:"uppercase"}}>GMFM-66</div>
+                    <div style={{fontSize:24,fontWeight:900,color:C.blue}}>{total}/{maxTotal} ({pct}%)</div>
+                    <div style={{fontSize:12,fontWeight:700,color:C.textSub,marginTop:2}}>{nivel}</div>
+                  </div>
+                );
+              })()}
+            </CollapsibleSub>
+
             <CollapsibleSub title="Força Muscular — MRC (0-5)">
               <div style={{fontSize:11,color:C.textMuted,marginBottom:8}}>Graduação simplificada pediátrica (12 grupos musculares).</div>
               {mrcRows.map((row,i)=>(
@@ -1121,7 +1187,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
           {/* 📊 Escalas Padronizadas */}
           <CollapsibleSection title="Escalas Padronizadas" icon="📊" expanded={expandedSections.includes("escalas")} onToggle={()=>toggleSection("escalas")}>
             <div style={{fontSize:12,color:C.textMuted,marginBottom:12,lineHeight:1.5}}>Selecione uma escala validada para aplicar ao paciente. Os resultados ficam salvos neste módulo.</div>
-            <ScaleSelector scaleNames={["GMFCS (Gross Motor Function Classification System)","AIMS (Alberta Infant Motor Scale)","M-CHAT (Modified Checklist for Autism in Toddlers)","PEDI (Pediatric Evaluation of Disability Inventory)","GMFM (Gross Motor Function Measure)","MACS (Manual Ability Classification System)","MABC-2 (Motor Assessment Battery for Children)","FAC (Functional Ambulation Categories)","Vignos Scale (Muscular Dystrophy)","Functional Independence Measure (MIF)","Barthel Index"]} onSave={handleScaleSave} savedResults={savedScales} />
+                         <ScaleSelector scaleNames={["PEDI","MACS","MABC-2","FAC","Vignos Scale","MIF","Barthel Index","DENVER II","Timed Up and Go Pediátrico"]} onSave={handleScaleSave} savedResults={savedScales} />
             {savedScales.length > 0 && (
               <div style={{marginTop:12}}>
                 <span style={{fontSize:9,fontWeight:700,color:C.green,textTransform:"uppercase",letterSpacing:"0.08em"}}>✓ Resultados Salvos: {savedScales.length}</span>

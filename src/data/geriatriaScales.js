@@ -46,6 +46,13 @@ export function calcTinetti(balanceScores, gaitScores) {
   return { total, balance: bal, gait: ga, level, color };
 }
 
+export function calcBBS(scores) {
+  const total = Object.values(scores).reduce((a, b) => a + (Number(b) || 0), 0);
+  const level = total <= 20 ? "Alto risco de queda" : total <= 40 ? "Médio risco de queda" : "Baixo risco de queda";
+  const color = total <= 20 ? R : total <= 40 ? A : G;
+  return { total, max: 56, level, color };
+}
+
 export function calcFragilidade(indicators) {
   const count = Object.values(indicators).filter(v => v).length;
   const level = count === 0 ? "Não frágil" : count <= 2 ? "Pré-frágil" : "Frágil";

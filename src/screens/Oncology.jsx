@@ -3,7 +3,7 @@ import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysi
 import CifAndHonorarios from "../components/CifAndHonorarios";
 import CifSection from "../components/CifSection";
 import { CIF } from "../data/cif";
-import { CollapsibleSection, CollapsibleSub, AudioField } from "../components";
+import { CollapsibleSection, CollapsibleSub, AudioField, Row, useMediaQuery } from "../components";
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import GeneralAssessment from "../components/GeneralAssessment";
@@ -196,6 +196,20 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
   const [adms, setAdms] = useState({ ombroFlexaoD:"", ombroFlexaoE:"", ombroAducaoD:"", ombroAducaoE:"", cotoveloFlexaoD:"", cotoveloFlexaoE:"", cotoveloExtensaoD:"", cotoveloExtensaoE:"" });
   const [forcaMuscular, setForcaMuscular] = useState({ deltoideD:"", deltoideE:"", bicepsD:"", bicepsE:"", tricepsD:"", tricepsE:"", quadricepsD:"", quadricepsE:"" });
 
+  const [metaOssea, setMetaOssea] = useState("");
+  const [metaLocalizacao, setMetaLocalizacao] = useState([]);
+  const [mirels, setMirels] = useState({});
+  const [plaquetas, setPlaquetas] = useState("");
+  const [neutrofilos, setNeutrofilos] = useState("");
+  const [hemoglobina, setHemoglobina] = useState("");
+  const [cardiotoxicidade, setCardiotoxicidade] = useState("");
+  const [cipn, setCipn] = useState("");
+  const [sins, setSins] = useState("");
+  const [precaucoes, setPrecaucoes] = useState([]);
+  const [faseOnco, setFaseOnco] = useState("");
+  const [perdaPonderal, setPerdaPonderal] = useState("");
+  const [mustOnco, setMustOnco] = useState("");
+
   const [eortc, setEortc] = useState({ physical:"", role:"", emotional:"", cognitive:"", social:"", fatigue:"", nauseaVomiting:"", pain:"", dyspnea:"", insomnia:"", appetiteLoss:"", constipation:"", diarrhea:"", global:"" });
   const [eortcResult, setEortcResult] = useState(null);
 
@@ -207,6 +221,7 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
 
   const [expandedSections, setExpandedSections] = useState([]);
   const toggleSection = (id) => { setExpandedSections(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]); };
+  const isMobile = useMediaQuery("(max-width:767px)");
   const sid = student?.id || student?.nome;
   const enhancer = useEnhancer("oncologia", sid, `onco_enhancer_${sid}`);
   const [savedScales, setSavedScales] = useState(() => { try { const d = localStorage.getItem(`onco_scales_${sid}`); return d ? JSON.parse(d) : []; } catch { return []; } });
@@ -240,6 +255,10 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
         setEsas(saved.esas||{}); setEsasResult(saved.esasResult||null); setPallia10(saved.pallia10||"");
         setEvolucaoOnco(saved.evolucaoOnco||"");
         setLocalDor(saved.localDor||[]);
+        setMetaOssea(saved.metaOssea||""); setMetaLocalizacao(saved.metaLocalizacao||[]); setMirels(saved.mirels||{});
+        setPlaquetas(saved.plaquetas||""); setNeutrofilos(saved.neutrofilos||""); setHemoglobina(saved.hemoglobina||"");
+        setCardiotoxicidade(saved.cardiotoxicidade||""); setCipn(saved.cipn||""); setSins(saved.sins||""); setPrecaucoes(saved.precaucoes||[]);
+        setFaseOnco(saved.faseOnco||""); setPerdaPonderal(saved.perdaPonderal||""); setMustOnco(saved.mustOnco||"");
         if (saved.pain) enhancer.setPain(saved.pain);
         if (saved.logs) enhancer.setLogs(saved.logs);
         if (saved.redFlags) enhancer.setRedFlags(saved.redFlags);
@@ -266,6 +285,7 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
       factFScore,escalaFadigaNumeric,impactoFadiga,ecog,kps,
       dorEVA,tipoDor,escalaDorNeuropatica,adms,forcaMuscular,
       eortc,eortcResult,esas,esasResult,pallia10,evolucaoOnco,localDor,
+      metaOssea,metaLocalizacao,mirels,plaquetas,neutrofilos,hemoglobina,cardiotoxicidade,cipn,sins,precaucoes,faseOnco,perdaPonderal,mustOnco,
       pain:enhancer.pain,logs:enhancer.logs,redFlags:enhancer.redFlags,aiRes:enhancer.aiRes,
       data:new Date().toISOString().slice(0,10),
     });
@@ -513,6 +533,53 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
 
             <CifSection cifSuggestions={cifSuggestionsOnco} autoCif={autoCifOnco} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
+            <CollapsibleSection title="Contraindicações e Precauções para Exercício" icon="⚠️" expanded={expandedSections.includes("contra")} onToggle={()=>toggleSection("contra")}>
+              <div style={{fontSize:10,color:C.textMuted,marginBottom:8}}>Preencha antes de prescrever qualquer programa de exercício. Em caso de contraindicação absoluta, o exercício deve ser suspenso ou modificado.</div>
+              <CollapsibleSub title="Metástases Ósseas e Risco de Fratura Patológica">
+                <Row cols={isMobile?"1fr":"1fr 1fr"} gap="8px 14px">
+                  <div><span style={lbl()}>Metástases ósseas conhecidas</span><SingleSelect options={["Sim","Não","Em investigação"]} value={metaOssea} onChange={setMetaOssea} activeColor={C.red} /></div>
+                  <div><span style={lbl()}>Localização</span><TagSelect options={["Coluna cervical","Coluna torácica","Coluna lombar","Pelve","Fêmur","Úmero","Costelas","Crânio","Esterno"]} value={metaLocalizacao} onChange={setMetaLocalizacao} activeColor={C.red} /></div>
+                </Row>
+                <div style={{marginTop:8}}><span style={lbl()}>Escore de Mirels (risco de fratura patológica)</span></div>
+                <div style={{fontSize:9,color:C.textMuted,marginBottom:6}}>≤7 baixo risco (exercício permitido), 8 moderado (precaução), ≥9 alto risco (evitar carga, indicar cirurgia profilática)</div>
+                <Row cols={isMobile?"1fr":"1fr 1fr 1fr 1fr"} gap="6px">
+                  {[{id:"mirels_sitio",label:"Sítio",vals:["MMSS (1)","MMII (2)","Peritrocantérica (3)"]},{id:"mirels_dor",label:"Dor",vals:["Leve (1)","Moderada (2)","Forte/mecânica (3)"]},{id:"mirels_tamanho",label:"Tamanho",vals:["<1/3 córtex (1)","1/3-2/3 (2)",">2/3 (3)"]},{id:"mirels_tipo",label:"Tipo",vals:["Blástica (1)","Mista (2)","Lítica (3)"]},].map(fld=>(<div key={fld.id}><span style={lbl({fontSize:8})}>{fld.label}</span><select value={mirels?.[fld.id]||""} onChange={e=>setMirels(p=>({...p,[fld.id]:e.target.value?Number(e.target.value):undefined}))} style={sel({padding:"3px 6px",fontSize:10,borderRadius:6})}><option value="">—</option>{[1,2,3].map(v=><option key={v} value={v}>{fld.vals[v-1]}</option>)}</select></div>))}
+                </Row>
+                {mirels&&Object.keys(mirels).length===4&&(()=>{const t=Object.values(mirels).reduce((a,b)=>a+b,0);return <div style={{marginTop:6,fontSize:11,fontWeight:700,color:t>=9?C.red:t>=8?C.amber:C.green}}>Mirels: {t}/12 — {t>=9?"Alto risco — evitar carga, considerar cirurgia":t>=8?"Moderado — exercício com precaução, sem carga axial":t<=7?"Baixo risco — exercício permitido":""}</div>})()}
+              </CollapsibleSub>
+              <CollapsibleSub title="Parâmetros Hematológicos" defaultOpen={false}>
+                <Row cols={isMobile?"1fr":"1fr 1fr 1fr"} gap="8px 14px">
+                  <div><span style={lbl()}>Plaquetas (x10³/µL)</span><input type="number" value={plaquetas} onChange={e=>setPlaquetas(e.target.value)} style={inp()} min={0} placeholder="Ex: 150" />
+                    {plaquetas&&Number(plaquetas)<50&&<div style={{fontSize:9,color:C.red,marginTop:2}}>⚠ Contraindicado exercício resistido/impacto</div>}
+                    {plaquetas&&Number(plaquetas)<20&&<div style={{fontSize:9,color:C.red,marginTop:2}}>⚠ Contraindicado todo exercício ativo</div>}
+                  </div>
+                  <div><span style={lbl()}>Neutrófilos (/µL)</span><input type="number" value={neutrofilos} onChange={e=>setNeutrofilos(e.target.value)} style={inp()} min={0} placeholder="Ex: 2500" />
+                    {neutrofilos&&Number(neutrofilos)<1000&&<div style={{fontSize:9,color:C.red,marginTop:2}}>⚠ Contraindicado exercício em grupo (risco infeccioso)</div>}
+                  </div>
+                  <div><span style={lbl()}>Hemoglobina (g/dL)</span><input type="number" value={hemoglobina} onChange={e=>setHemoglobina(e.target.value)} style={inp()} min={0} step={0.1} placeholder="Ex: 12" />
+                    {hemoglobina&&Number(hemoglobina)<8&&<div style={{fontSize:9,color:C.red,marginTop:2}}>⚠ Exercício apenas passivo/assistido</div>}
+                  </div>
+                </Row>
+              </CollapsibleSub>
+              <CollapsibleSub title="Risco Cardiovascular e Outros" defaultOpen={false}>
+                <Row cols={isMobile?"1fr":"1fr 1fr"} gap="8px 14px">
+                  <div><span style={lbl()}>Cardiotoxicidade (QT prévia: antraciclina/trastuzumabe)</span><SingleSelect options={["Não","Antraciclina","Trastuzumabe","Ambos","Outro"]} value={cardiotoxicidade} onChange={setCardiotoxicidade} activeColor={C.amber} /></div>
+                  <div><span style={lbl()}>Neuropatia periférica induzida por QT (CIPN)</span><SingleSelect options={["Ausente","Grau 1 (parestesia)","Grau 2 (limitação AVDs)","Grau 3 (incapacitante)"]} value={cipn} onChange={setCipn} activeColor={C.amber} /></div>
+                </Row>
+                <div style={{marginTop:8}}><span style={lbl()}>Instabilidade Espinhal (SINS)</span><SingleSelect options={["Estável (0-6)","Potencialmente instável (7-12)","Instável (13-18)"]} value={sins} onChange={setSins} activeColor={C.red} /></div>
+                <div style={{marginTop:8}}><span style={lbl()}>Outras precauções</span><TagSelect options={["Derrame pleural","Derrame pericárdico","Ascite","Linfedema grau II-III","Fístula ativa","Cateter venoso central","Sonda nasoenteral/gastrostomia","Colostomia/ileostomia","Traqueostomia","Oxigenoterapia domiciliar"]} value={precaucoes} onChange={setPrecaucoes} activeColor={C.amber} /></div>
+              </CollapsibleSub>
+              <CollapsibleSub title="Fase do Tratamento e Timeline" defaultOpen={false}>
+                <Row cols={isMobile?"1fr":"1fr 1fr 1fr"} gap="8px 14px">
+                  <div><span style={lbl()}>Fase atual do tratamento</span><SingleSelect options={["Pré-operatório (pré-habilitação)","Pós-operatório imediato (≤4 sem)","Durante QT/RT ativa","Pós-tratamento (vigilância)","Cuidados paliativos"]} value={faseOnco} onChange={setFaseOnco} activeColor={C.blue} /></div>
+                  <div><span style={lbl()}>% Perda ponderal (6 meses)</span><input type="number" value={perdaPonderal} onChange={e=>setPerdaPonderal(e.target.value)} style={inp()} min={0} max={100} step={0.1} placeholder="%" />
+                    {perdaPonderal&&Number(perdaPonderal)>10&&<div style={{fontSize:9,color:C.red,marginTop:2}}>⚠ Caquexia — suporte nutricional necessário</div>}
+                  </div>
+                  <div><span style={lbl()}>MUST (triagem nutricional)</span><input type="number" value={mustOnco} onChange={e=>setMustOnco(e.target.value)} style={inp()} min={0} max={6} placeholder="0-6" /></div>
+                </Row>
+              </CollapsibleSub>
+            </CollapsibleSection>
+
             <Section title="Performance Status" icon="🏃">
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
                 <div>
@@ -686,7 +753,7 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
             {/* 📊 Escalas Padronizadas */}
             <CollapsibleSection title="Escalas Padronizadas" icon="📊" expanded={expandedSections.includes("escalas")} onToggle={()=>toggleSection("escalas")}>
               <div style={{fontSize:12,color:C.textMuted,marginBottom:12,lineHeight:1.5}}>Selecione uma escala validada para aplicar ao paciente. Os resultados ficam salvos neste módulo.</div>
-              <ScaleSelector scaleNames={["ECOG Performance Status","Karnofsky Performance Status (KPS)","ESAS (Edmonton Symptom Assessment System)","DN4 (Douleur Neuropathique 4)","FACT-F (Functional Assessment of Cancer Therapy - Fatigue)","PALLIA-10"]} onSave={handleScaleSave} savedResults={savedScales} />
+                             <ScaleSelector scaleNames={["DN4","Brief Pain Inventory (BPI)","Distress Thermometer"]} onSave={handleScaleSave} savedResults={savedScales} />
               {savedScales.length > 0 && (
                 <div style={{marginTop:12}}>
                   <span style={{fontSize:9,fontWeight:700,color:C.green,textTransform:"uppercase",letterSpacing:"0.08em"}}>✓ Resultados Salvos: {savedScales.length}</span>

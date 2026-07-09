@@ -41,46 +41,49 @@ describe('calcMAS', () => {
 });
 
 describe('calcBBS', () => {
-  it('retorna Baixo risco para total >= 16', () => {
-    const s = { sentaPe: '4', peSemApoio: '4', transferencias: '4', alcanceFrente: '4', apoioUnipodal: '3' };
+  it('retorna Baixo risco para total >= 41 (14 itens)', () => {
+    const s = { bbs1:'4',bbs2:'4',bbs3:'4',bbs4:'4',bbs5:'4',bbs6:'4',bbs7:'3',bbs8:'3',bbs9:'3',bbs10:'3',bbs11:'2',bbs12:'2',bbs13:'1',bbs14:'1' };
     const r = calcBBS(s);
-    expect(r.total).toBe(19);
+    expect(r.total).toBe(42);
     expect(r.level).toBe('Baixo risco de queda');
+    expect(r.max).toBe(56);
   });
 
-  it('retorna Médio risco para 10-15', () => {
-    const s = { sentaPe: '3', peSemApoio: '3', transferencias: '3', alcanceFrente: '3', apoioUnipodal: '2' };
+  it('retorna Médio risco para 21-40 (14 itens)', () => {
+    const s = { bbs1:'3',bbs2:'3',bbs3:'3',bbs4:'3',bbs5:'3',bbs6:'2',bbs7:'2',bbs8:'2',bbs9:'2',bbs10:'2',bbs11:'1',bbs12:'1',bbs13:'1',bbs14:'1' };
     const r = calcBBS(s);
-    expect(r.total).toBe(14);
+    expect(r.total).toBe(29);
     expect(r.level).toBe('Médio risco de queda');
   });
 
-  it('retorna Alto risco para < 10', () => {
-    const s = { sentaPe: '2', peSemApoio: '2', transferencias: '1', alcanceFrente: '1', apoioUnipodal: '0' };
+  it('retorna Alto risco para < 21 (14 itens)', () => {
+    const s = { bbs1:'2',bbs2:'2',bbs3:'2',bbs4:'2',bbs5:'2',bbs6:'1',bbs7:'1',bbs8:'1',bbs9:'1',bbs10:'1',bbs11:'1',bbs12:'1',bbs13:'1',bbs14:'0' };
     const r = calcBBS(s);
-    expect(r.total).toBe(6);
+    expect(r.total).toBe(18);
     expect(r.level).toBe('Alto risco de queda');
   });
 });
 
 describe('calcMIF', () => {
-  it('retorna Independência modificada para >= 36', () => {
-    const s = { alimentacao: '6', higiene: '6', banho: '6', vestirSuperior: '6', vestirInferior: '6', usoBanheiro: '6' };
+  it('retorna Independência modificada para >= 90 (18 itens)', () => {
+    const s = { mif1:'5',mif2:'5',mif3:'5',mif4:'5',mif5:'5',mif6:'5',mif7:'5',mif8:'5',mif9:'5',mif10:'5',mif11:'5',mif12:'5',mif13:'5',mif14:'5',mif15:'5',mif16:'5',mif17:'5',mif18:'5' };
     const r = calcMIF(s);
-    expect(r.total).toBe(36);
+    expect(r.total).toBe(90);
     expect(r.level).toBe('Independência modificada');
+    expect(r.max).toBe(126);
   });
 
-  it('retorna Dependência total para < 12', () => {
-    const s = { alimentacao: '2', higiene: '2', banho: '2', vestirSuperior: '2', vestirInferior: '2', usoBanheiro: '1' };
-    const r = calcMIF(s);
-    expect(r.total).toBe(11);
+  it('retorna Dependência total para total 0 (sem itens)', () => {
+    const r = calcMIF({});
+    expect(r.total).toBe(0);
     expect(r.level).toBe('Dependência total');
   });
 
-  it('retorna max: 42', () => {
-    const s = { alimentacao: '7', higiene: '7', banho: '7', vestirSuperior: '7', vestirInferior: '7', usoBanheiro: '7' };
-    expect(calcMIF(s).max).toBe(42);
+  it('retorna Independência completa com todos 7 (126)', () => {
+    const s = { mif1:'7',mif2:'7',mif3:'7',mif4:'7',mif5:'7',mif6:'7',mif7:'7',mif8:'7',mif9:'7',mif10:'7',mif11:'7',mif12:'7',mif13:'7',mif14:'7',mif15:'7',mif16:'7',mif17:'7',mif18:'7' };
+    const r = calcMIF(s);
+    expect(r.total).toBe(126);
+    expect(r.level).toBe('Independência completa');
   });
 });
 

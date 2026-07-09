@@ -28,14 +28,14 @@ export function calcMAS(scores) {
 
 export function calcBBS(scores) {
   const total = Object.values(scores).reduce((a, b) => a + (Number(b) || 0), 0);
-  const level = total >= 16 ? "Baixo risco de queda" : total >= 10 ? "Médio risco de queda" : "Alto risco de queda";
-  const color = total >= 16 ? "#4ADE80" : total >= 10 ? "#FBBF24" : "#F87171";
-  return { total, level, color, max: 20 };
+  const level = total >= 41 ? "Baixo risco de queda" : total >= 21 ? "Médio risco de queda" : "Alto risco de queda";
+  const color = total >= 41 ? "#4ADE80" : total >= 21 ? "#FBBF24" : "#F87171";
+  return { total, level, color, max: 56 };
 }
 
 export function calcMIF(scores) {
   const total = Object.values(scores).reduce((a, b) => a + (Number(b) || 0), 0);
-  const level = total >= 36 ? "Independência modificada" : total >= 24 ? "Dependência moderada" : total >= 12 ? "Dependência grave" : "Dependência total";
-  const color = total >= 36 ? "#4ADE80" : total >= 24 ? "#FBBF24" : "#F87171";
-  return { total, level, max: 42, color };
+  const level = total >= 108 ? "Independência completa" : total >= 90 ? "Independência modificada" : total >= 72 ? "Supervisão" : total >= 54 ? "Dependência leve" : total >= 36 ? "Dependência moderada" : total >= 18 ? "Dependência máxima" : "Dependência total";
+  const color = total >= 108 ? "#4ADE80" : total >= 90 ? "#22C55E" : total >= 72 ? "#FBBF24" : total >= 54 ? "#A78BFA" : total >= 36 ? "#F97316" : total >= 18 ? "#F87171" : "#BE185D";
+  return { total, level, color, max: 126 };
 }

@@ -3,7 +3,7 @@ import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysi
 import CifAndHonorarios from "../components/CifAndHonorarios";
 import CifSection from "../components/CifSection";
 import { CIF } from "../data/cif";
-import { AudioField, CollapsibleSection, CollapsibleSub, SessionCounter, HonorariosCard } from "../components";
+import { AudioField, CollapsibleSection, CollapsibleSub, SessionCounter, HonorariosCard, Row, useMediaQuery } from "../components";
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import GeneralAssessment from "../components/GeneralAssessment";
@@ -201,9 +201,9 @@ export default function UroGynecology({ student, students, allPatients, currentM
   const [popQ, setPopQ] = useState({ ba:"", bp:"", c:"", d:"", gh:"", pb:"", tvl:"" });
   const [perineometria, setPerineometria] = useState("");
 
-  const [iciqSF, setIciqSF] = useState("");
-  const [pfdi20, setPfdi20] = useState("");
-  const [fsfi, setFsfi] = useState("");
+  const [iciqScores, setIciqScores] = useState({});
+  const [pfdiScores, setPfdiScores] = useState({});
+  const [fsfiScores, setFsfiScores] = useState({});
 
   const [evolucaoUro, setEvolucaoUro] = useState("");
 
@@ -259,9 +259,9 @@ export default function UroGynecology({ student, students, allPatients, currentM
         setPerfect(saved.perfect || { power:"", endurance:"", repetitions:"", fast:"" });
         setPopQ(saved.popQ || { ba:"", bp:"", c:"", d:"", gh:"", pb:"", tvl:"" });
         setPerineometria(saved.perineometria || "");
-        setIciqSF(saved.iciqSF || "");
-        setPfdi20(saved.pfdi20 || "");
-        setFsfi(saved.fsfi || "");
+        setIciqScores(saved.iciqScores || {});
+        setPfdiScores(saved.pfdiScores || {});
+        setFsfiScores(saved.fsfiScores || {});
         setEvolucaoUro(saved.evolucaoUro || "");
         setLocalDor(saved.localDor || []);
         setPelvicFloorMap(saved.pelvicFloorMap || []);
@@ -293,7 +293,7 @@ export default function UroGynecology({ student, students, allPatients, currentM
       dorMiccao, constipacao, dispareunia,
       diureseDia, diureseNoite, perdasDia, perdasNoite, ingestaoHidrica,
       oxford, perfect, popQ, perineometria,
-      iciqSF, pfdi20, fsfi,
+      iciqScores, pfdiScores, fsfiScores,
       evolucaoUro, localDor,
       pelvicFloorMap, bristolStool, erectionRigidity,
       pain: enhancer.pain, logs: enhancer.logs, redFlags: enhancer.redFlags, aiRes: enhancer.aiRes,
@@ -301,6 +301,7 @@ export default function UroGynecology({ student, students, allPatients, currentM
     });
   };
 
+  const isMobile = useMediaQuery("(max-width: 640px)");
   const oxfordResult = calcOxford(oxford);
   const perfectResult = calcPERFECT(perfect);
 
@@ -686,49 +687,35 @@ export default function UroGynecology({ student, students, allPatients, currentM
             </Section>
 
             <Section title="Questionários Validados" icon="📊">
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"12px 16px" }}>
-                <div>
-                  <span style={lbl()}>ICIQ-SF (0-21)</span>
-                  <input type="number" value={iciqSF} onChange={e => setIciqSF(e.target.value)} min={0} max={21}
-                    style={{ ...inp({ textAlign:"center", fontSize:16, fontWeight:700 })}}
-                    placeholder="0-21" />
-                  {iciqSF && (
-                    <div style={{ marginTop:6, fontSize:11, color:C.textMuted, textAlign:"center" }}>
-                      {Number(iciqSF) <= 5 ? <span style={{color:C.green}}>Impacto leve</span> :
-                       Number(iciqSF) <= 10 ? <span style={{color:C.amber}}>Impacto moderado</span> :
-                       Number(iciqSF) <= 15 ? <span style={{color:C.red}}>Impacto severo</span> :
-                       <span style={{color:C.red}}>Impacto muito severo</span>}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <span style={lbl()}>PFDI-20 (0-100)</span>
-                  <input type="number" value={pfdi20} onChange={e => setPfdi20(e.target.value)} min={0} max={100}
-                    style={{ ...inp({ textAlign:"center", fontSize:16, fontWeight:700 })}}
-                    placeholder="0-100" />
-                  {pfdi20 && (
-                    <div style={{ marginTop:6, fontSize:11, color:C.textMuted, textAlign:"center" }}>
-                      {Number(pfdi20) <= 30 ? <span style={{color:C.green}}>Sintomas leves</span> :
-                       Number(pfdi20) <= 60 ? <span style={{color:C.amber}}>Sintomas moderados</span> :
-                       <span style={{color:C.red}}>Sintomas severos</span>}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <span style={lbl()}>FSFI (0-36)</span>
-                  <input type="number" value={fsfi} onChange={e => setFsfi(e.target.value)} min={0} max={36}
-                    style={{ ...inp({ textAlign:"center", fontSize:16, fontWeight:700 })}}
-                    placeholder="0-36" />
-                  {fsfi && (
-                    <div style={{ marginTop:6, fontSize:11, color:C.textMuted, textAlign:"center" }}>
-                      {Number(fsfi) >= 26.55 ? <span style={{color:C.green}}>Função normal</span> :
-                       Number(fsfi) >= 20 ? <span style={{color:C.amber}}>Disfunção leve</span> :
-                       Number(fsfi) >= 10 ? <span style={{color:C.red}}>Disfunção moderada</span> :
-                       <span style={{color:C.red}}>Disfunção severa</span>}
-                    </div>
-                  )}
-                </div>
-              </div>
+              <CollapsibleSub title="ICIQ-SF — Questionário de Incontinência Urinária" defaultOpen={false}>
+                <div style={{fontSize:10,color:C.textMuted,marginBottom:8}}>International Consultation on Incontinence Questionnaire — Short Form.</div>
+                <div style={{marginBottom:8}}><span style={lbl()}>1. Com que frequência você perde urina?</span>
+                  <SingleSelect options={[{value:"0",label:"Nunca"},{value:"1",label:"1x/semana ou menos"},{value:"2",label:"2-3x/semana"},{value:"3",label:"1x/dia"},{value:"4",label:"Várias vezes/dia"},{value:"5",label:"Todo o tempo"}]} value={iciqScores?.q1||""} onChange={v=>setIciqScores(p=>({...p,q1:v}))} activeColor={C.amber} /></div>
+                <div style={{marginBottom:8}}><span style={lbl()}>2. Quanto de urina você perde habitualmente?</span>
+                  <SingleSelect options={[{value:"0",label:"Nenhuma"},{value:"2",label:"Pequena quantidade"},{value:"4",label:"Moderada quantidade"},{value:"6",label:"Grande quantidade"}]} value={iciqScores?.q2||""} onChange={v=>setIciqScores(p=>({...p,q2:v}))} activeColor={C.amber} /></div>
+                <div style={{marginBottom:8}}><span style={lbl()}>3. Quanto a perda de urina interfere na sua vida diária? (0-10)</span>
+                  <input type="range" min={0} max={10} value={iciqScores?.q3||0} onChange={e=>setIciqScores(p=>({...p,q3:Number(e.target.value)}))} style={{width:"100%",accentColor:C.amber}} />
+                  <span style={{fontSize:11,color:C.textSub}}>{iciqScores?.q3||0}/10</span></div>
+                <div style={{marginBottom:8}}><span style={lbl()}>4. Quando você perde urina?</span>
+                  <SingleSelect options={[{value:"0",label:"Nunca — não perco urina"},{value:"1",label:"Antes de chegar ao banheiro"},{value:"2",label:"Quando tusso ou espiro"},{value:"3",label:"Quando estou dormindo"},{value:"4",label:"Quando faço atividade física"},{value:"5",label:"Quando terminei de urinar e já estou vestido(a)"},{value:"6",label:"Sem razão óbvia"},{value:"7",label:"O tempo todo"}]} value={iciqScores?.q4||""} onChange={v=>setIciqScores(p=>({...p,q4:v}))} activeColor={C.amber} /></div>
+                {(()=>{const t=Number(iciqScores?.q1||0)+Number(iciqScores?.q2||0)+Number(iciqScores?.q3||0);return t>0?<div style={{marginTop:6,background:C.amberBg,border:`1px solid ${C.amber}40`,borderRadius:8,padding:"8px 12px",textAlign:"center",fontSize:12,fontWeight:700}}>ICIQ-SF: {t}/21 — {t<=7?"Impacto leve":t<=14?"Impacto moderado":t<=21?"Impacto grave":""}</div>:null})()}
+              </CollapsibleSub>
+              <CollapsibleSub title="PFDI-20 — Pelvic Floor Distress Inventory" defaultOpen={false}>
+                <div style={{fontSize:10,color:C.textMuted,marginBottom:8}}>20 itens em 3 domínios: POPDI-6 (prolapso), CRADI-8 (colorretal), UDI-6 (urinário). Cada item 0-4. Total 0-300.</div>
+                <Row cols={isMobile?"1fr":"1fr 1fr 1fr"} gap="8px 14px">
+                  <NumericField label="POPDI-6 (prolapso)" value={pfdiScores?.popdi||""} onChange={v=>setPfdiScores(p=>({...p,popdi:v}))} min={0} max={120} />
+                  <NumericField label="CRADI-8 (colorretal)" value={pfdiScores?.cradi||""} onChange={v=>setPfdiScores(p=>({...p,cradi:v}))} min={0} max={160} />
+                  <NumericField label="UDI-6 (urinário)" value={pfdiScores?.udi||""} onChange={v=>setPfdiScores(p=>({...p,udi:v}))} min={0} max={120} />
+                </Row>
+                {(()=>{const t=(Number(pfdiScores?.popdi||0)+Number(pfdiScores?.cradi||0)+Number(pfdiScores?.udi||0));return t>0?<div style={{marginTop:6,fontSize:11,fontWeight:700,color:C.textSub}}>PFDI-20 Total: {t}/300 ({Math.round(t/3)}%)</div>:null})()}
+              </CollapsibleSub>
+              <CollapsibleSub title="FSFI — Female Sexual Function Index" defaultOpen={false}>
+                <div style={{fontSize:10,color:C.textMuted,marginBottom:8}}>19 itens em 6 domínios. Cada item 0-5 (ou 1-5). Ponto de corte: ≤26.55 = disfunção sexual.</div>
+                <Row cols={isMobile?"1fr":"1fr 1fr 1fr"} gap="8px 14px">
+                  {[{id:"desejo",label:"Desejo (2 itens)",max:10},{id:"excitacao",label:"Excitação (4 itens)",max:20},{id:"lubrificacao",label:"Lubrificação (4 itens)",max:20},{id:"orgasmo",label:"Orgasmo (3 itens)",max:15},{id:"satisfacao",label:"Satisfação (3 itens)",max:15},{id:"dor",label:"Dor (3 itens)",max:15}].map(d=><div key={d.id}><NumericField label={d.label} value={fsfiScores?.[d.id]||""} onChange={v=>setFsfiScores(p=>({...p,[d.id]:v}))} min={0} max={d.max} step={0.1} /></div>)}
+                </Row>
+                {(()=>{const t=Object.values(fsfiScores||{}).reduce((a,b)=>a+(Number(b)||0),0);return t>0?<div style={{marginTop:6,fontSize:11,fontWeight:700,color:t<=26.55?C.red:C.green}}>FSFI Total: {t.toFixed(1)}/36 — {t<=26.55?"↓ Disfunção sexual":"✓ Função sexual preservada"}</div>:null})()}
+              </CollapsibleSub>
             </Section>
 
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
@@ -737,7 +724,7 @@ export default function UroGynecology({ student, students, allPatients, currentM
             {/* 📊 Escalas Padronizadas */}
             <CollapsibleSection title="Escalas Padronizadas" icon="📊" expanded={expandedSections.includes("escalas")} onToggle={()=>toggleSection("escalas")}>
               <div style={{fontSize:12,color:C.textMuted,marginBottom:12,lineHeight:1.5}}>Selecione uma escala validada para aplicar ao paciente. Os resultados ficam salvos neste módulo.</div>
-              <ScaleSelector scaleNames={["Oxford Grading System (Assoalho Pélvico)","ICIQ-SF (International Consultation on Incontinence)","ICIQ-OAB (Overactive Bladder)","PFIQ-7 (Pelvic Floor Impact Questionnaire)"]} onSave={handleScaleSave} savedResults={savedScales} />
+                             <ScaleSelector scaleNames={["ICIQ-OAB","PFIQ-7","PISQ-12","UDI-6","OAB-q"]} onSave={handleScaleSave} savedResults={savedScales} />
               {savedScales.length > 0 && (
                 <div style={{marginTop:12}}>
                   <span style={{fontSize:9,fontWeight:700,color:C.green,textTransform:"uppercase",letterSpacing:"0.08em"}}>✓ Resultados Salvos: {savedScales.length}</span>
@@ -776,11 +763,11 @@ export default function UroGynecology({ student, students, allPatients, currentM
                 style={{ ...inp({ resize:"vertical", lineHeight:1.6 }) }}
                 placeholder="Descreva a evolução desde a última sessão, resposta às intervenções, adesão ao programa domiciliar..." />
             </div>
-            {(oxford || perfect.power || iciqSF) && (
+            {(oxford || perfect.power || Object.keys(iciqScores||{}).length>0) && (
               <div style={{ background:C.cardAlt, borderRadius:10, padding:"14px 16px", marginBottom:14 }}>
                 <div style={{ fontSize:10, fontWeight:800, color:C.amber, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Última avaliação</div>
                 <div style={{ fontSize:13, color:C.textSub, lineHeight:1.7 }}>
-                  <strong>Oxford:</strong> {oxfordResult.level} · <strong>PERFECT:</strong> {perfectResult.total} ({perfectResult.level}) · <strong>ICIQ-SF:</strong> {iciqSF || "—"}/21 · <strong>PFDI-20:</strong> {pfdi20 || "—"}/100 · <strong>FSFI:</strong> {fsfi || "—"}/36
+                  <strong>Oxford:</strong> {oxfordResult.level} · <strong>PERFECT:</strong> {perfectResult.total} ({perfectResult.level}) · <strong>ICIQ-SF:</strong> {(()=>{const t=Number(iciqScores?.q1||0)+Number(iciqScores?.q2||0)+Number(iciqScores?.q3||0);return t>0?t:"—"})()}/21 · <strong>PFDI-20:</strong> {(()=>{const t=(Number(pfdiScores?.popdi||0)+Number(pfdiScores?.cradi||0)+Number(pfdiScores?.udi||0));return t>0?t:"—"})()}/300 · <strong>FSFI:</strong> {(()=>{const t=Object.values(fsfiScores||{}).reduce((a,b)=>a+(Number(b)||0),0);return t>0?t.toFixed(1):"—"})()}/36
                 </div>
               </div>
             )}
@@ -793,7 +780,7 @@ export default function UroGynecology({ student, students, allPatients, currentM
             )}
             <SessionLogSection logs={enhancer.logs} addLog={enhancer.addLog} colors={uroColors} sessionLabel="Evolução" specialty="uroginecologia" defaultExpanded={true} pain={enhancer.pain} setPain={enhancer.setPain} />
             <AIAnalysisSection aiRes={enhancer.aiRes} runAI={enhancer.runAI}
-              summaryText={`Paciente: ${student?.nome || "—"}\nQueixa: ${queixaUro}\nG/P: ${gesta}/${para}\nCirurgias: ${cirurgiasPelvicas.join(", ")}\nPerda urina: ${perdaUrina.join(", ")}\nUrgência: ${urgenciaMiccional.join(", ")}\nOxford: ${oxfordResult.grade}\nPERFECT: ${perfectResult.total}\nICIQ-SF: ${iciqSF || "—"}/21\nPFDI-20: ${pfdi20 || "—"}/100\nFSFI: ${fsfi || "—"}/36\nEVA Dor: ${enhancer.pain.evaRep}/10\nEvolução: ${evolucaoUro}`}
+              summaryText={`Paciente: ${student?.nome || "—"}\nQueixa: ${queixaUro}\nG/P: ${gesta}/${para}\nCirurgias: ${cirurgiasPelvicas.join(", ")}\nPerda urina: ${perdaUrina.join(", ")}\nUrgência: ${urgenciaMiccional.join(", ")}\nOxford: ${oxfordResult.grade}\nPERFECT: ${perfectResult.total}\nICIQ-SF: ${(()=>{const t=Number(iciqScores?.q1||0)+Number(iciqScores?.q2||0)+Number(iciqScores?.q3||0);return t>0?t:"—"})()}/21\nPFDI-20: ${(()=>{const t=(Number(pfdiScores?.popdi||0)+Number(pfdiScores?.cradi||0)+Number(pfdiScores?.udi||0));return t>0?t:"—"})()}/300\nFSFI: ${(()=>{const t=Object.values(fsfiScores||{}).reduce((a,b)=>a+(Number(b)||0),0);return t>0?t.toFixed(1):"—"})()}/36\nEVA Dor: ${enhancer.pain.evaRep}/10\nEvolução: ${evolucaoUro}`}
               colors={uroColors} />
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:4 }}>
               <button onClick={handleSave} style={primaryBtn({ padding:"11px 26px", fontSize:14 })}>💾 Salvar Tudo</button>

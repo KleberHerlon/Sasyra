@@ -88,19 +88,40 @@ const MAS_QUESTIONS = [
   { id:"flexoresQuadrilE",label:"Flexores de quadril E",lado:"E" },
 ];
 const BBS_QUESTIONS = [
-  { id:"sentaPe",label:"Sentado para em pé (0-4)" },
-  { id:"peSemApoio",label:"Em pé sem apoio (0-4)" },
-  { id:"transferencias",label:"Transferências (0-4)" },
-  { id:"alcanceFrente",label:"Alcance à frente (0-4)" },
-  { id:"apoioUnipodal",label:"Apoio unipodal (0-4)" },
+  { id:"bbs1",  label:"Sentado para em pé" },
+  { id:"bbs2",  label:"Em pé sem apoio" },
+  { id:"bbs3",  label:"Sentado sem apoio" },
+  { id:"bbs4",  label:"Em pé para sentado" },
+  { id:"bbs5",  label:"Transferências" },
+  { id:"bbs6",  label:"Em pé com olhos fechados" },
+  { id:"bbs7",  label:"Em pé com pés juntos" },
+  { id:"bbs8",  label:"Alcançar à frente com braço estendido" },
+  { id:"bbs9",  label:"Pegar objeto do chão" },
+  { id:"bbs10", label:"Virar-se para olhar atrás" },
+  { id:"bbs11", label:"Girar 360 graus" },
+  { id:"bbs12", label:"Apoio alternado em banco" },
+  { id:"bbs13", label:"Em pé com um pé à frente (tandem)" },
+  { id:"bbs14", label:"Em pé sobre uma perna (apoio unipodal)" },
 ];
 const MIF_QUESTIONS = [
-  { id:"alimentacao",label:"Alimentação (0-7)" },
-  { id:"higiene",label:"Higiene pessoal (0-7)" },
-  { id:"banho",label:"Banho (0-7)" },
-  { id:"vestirSuperior",label:"Vestir-se superior (0-7)" },
-  { id:"vestirInferior",label:"Vestir-se inferior (0-7)" },
-  { id:"usoBanheiro",label:"Uso do banheiro (0-7)" },
+  { id:"mif1",  label:"Alimentação" },
+  { id:"mif2",  label:"Higiene pessoal" },
+  { id:"mif3",  label:"Banho" },
+  { id:"mif4",  label:"Vestir-se — parte superior" },
+  { id:"mif5",  label:"Vestir-se — parte inferior" },
+  { id:"mif6",  label:"Uso do vaso sanitário" },
+  { id:"mif7",  label:"Controle da bexiga" },
+  { id:"mif8",  label:"Controle do intestino" },
+  { id:"mif9",  label:"Transferência: leito/cadeira/cadeira de rodas" },
+  { id:"mif10", label:"Transferência: vaso sanitário" },
+  { id:"mif11", label:"Transferência: banheira/chuveiro" },
+  { id:"mif12", label:"Locomoção: marcha/cadeira de rodas" },
+  { id:"mif13", label:"Escadas" },
+  { id:"mif14", label:"Compreensão" },
+  { id:"mif15", label:"Expressão" },
+  { id:"mif16", label:"Interação social" },
+  { id:"mif17", label:"Resolução de problemas" },
+  { id:"mif18", label:"Memória" },
 ];
 const MAS_OPTIONS = [
   { value:"0",label:"0 - Sem aumento de tônus" },
@@ -111,20 +132,19 @@ const MAS_OPTIONS = [
 ];
 const BBS_OPTIONS = [
   { value:"0",label:"0 - Incapaz" },
-  { value:"1",label:"1 - Precisa de ajuda" },
-  { value:"2",label:"2 - Com supervisão" },
-  { value:"3",label:"3 - Com leve dificuldade" },
+  { value:"1",label:"1 - Ajuda substancial" },
+  { value:"2",label:"2 - Ajuda moderada" },
+  { value:"3",label:"3 - Ajuda mínima" },
   { value:"4",label:"4 - Independente" },
 ];
 const MIF_OPTIONS = [
-  { value:"0",label:"0 - Dependente total" },
   { value:"1",label:"1 - Dependência total" },
-  { value:"2",label:"2 - Dependência máxima" },
-  { value:"3",label:"3 - Dependência moderada" },
-  { value:"4",label:"4 - Dependência mínima" },
+  { value:"2",label:"2 - Assistência máxima" },
+  { value:"3",label:"3 - Assistência moderada" },
+  { value:"4",label:"4 - Assistência mínima" },
   { value:"5",label:"5 - Supervisão" },
-  { value:"6",label:"6 - Com adaptação" },
-  { value:"7",label:"7 - Independente" },
+  { value:"6",label:"6 - Independência modificada" },
+  { value:"7",label:"7 - Independência completa" },
 ];
 
 const PROCEDIMENTOS_CATEGORIES_NEURO = [
@@ -170,7 +190,7 @@ const CIF_AUTO_KEYS = [
   {code:"b7350",label:"Tônus muscular alterado",map:(d)=>d.tono&&d.tono!=="Normal"?2:0},
   {code:"b770",label:"Alteração da marcha",map:(d)=>d.tipoMarcha?.length>0?2:0},
   {code:"b7300",label:"Força muscular reduzida",map:(d)=>Object.values(d.forcaNeuro||{}).filter(v=>v!==0&&v!==5).length>0?2:0},
-  {code:"d450",label:"Andar",map:(d)=>d.bbsResult?.total<16?3:d.bbsResult?.total<20?1:0},
+  {code:"d450",label:"Andar",map:(d)=>d.bbsResult?.total<=20?3:d.bbsResult?.total<41?1:0},
   {code:"d540",label:"Vestir-se",map:(d)=>d.mifResult?.total<36?2:0},
   {code:"d420",label:"Transferir-se",map:(d)=>d.avdsNeuro?.includes("Transferências")?2:0},
   {code:"d510",label:"Lavar-se",map:(d)=>d.avdsNeuro?.includes("Banho")?2:0},
@@ -1151,7 +1171,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
               ))}
               {bbsResult && <div style={{marginTop:8,background:C.purpleBg,border:`1px solid ${C.purple}40`,borderRadius:10,padding:"12px",textAlign:"center"}}>
                 <div style={{fontSize:10,color:C.textMuted,fontWeight:700,textTransform:"uppercase"}}>BBS</div>
-                <div style={{fontSize:28,fontWeight:900,color:bbsResult.color}}>{bbsResult.total}/20</div>
+                <div style={{fontSize:28,fontWeight:900,color:bbsResult.color}}>{bbsResult.total}/{bbsResult.max}</div>
                 <div style={{fontSize:13,fontWeight:700,color:bbsResult.color}}>{bbsResult.level}</div>
               </div>}
             </CollapsibleSub>
@@ -1302,7 +1322,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
           {/* 📊 Escalas Padronizadas */}
           <CollapsibleSection title="Escalas Padronizadas" icon="📊" expanded={expandedSections.includes("escalas")} onToggle={()=>toggleSection("escalas")}>
             <div style={{fontSize:12,color:C.textMuted,marginBottom:12,lineHeight:1.5}}>Selecione uma escala validada para aplicar ao paciente. Os resultados ficam salvos neste módulo.</div>
-            <ScaleSelector scaleNames={["Fugl-Meyer","NIH Stroke Scale (NIHSS)","SCIM (Spinal Cord Independence Measure)","Expanded Disability Status Scale (EDSS)","Timed Up and Go (TUG)","Barthel Index","Functional Independence Measure (MIF)","Berg Balance Scale (BBS)","Modified Ashworth Scale (MAS)"]}
+             <ScaleSelector scaleNames={["Fugl-Meyer Assessment","NIH Stroke Scale (NIHSS)","SCIM III","EDSS","Barthel Index","Glasgow Coma Scale (GCS)","Trunk Impairment Scale (TIS)"]}
               onSave={handleScaleSave} savedResults={savedScales} />
             {savedScales.length > 0 && (
               <div style={{marginTop:12}}>
