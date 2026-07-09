@@ -8,10 +8,10 @@ const EHS_STAGES = [
 ];
 
 const TYPE_ZONES = [
-  { y: 0.6,  h: 23 },     // E0
-  { y: 24.7, h: 23 },     // E1
-  { y: 48.8, h: 23 },     // E2
-  { y: 72.9, h: 26.5 },   // E3
+  { y: 0.6,  h: 23.2 },   // E0
+  { y: 25,   h: 23.2 },   // E1
+  { y: 49.4, h: 23.2 },   // E2
+  { y: 73.8, h: 25.6 },   // E3
 ];
 
 export default function ErectionRigidityScale({ value, onChange, colors }) {
