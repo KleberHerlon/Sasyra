@@ -147,7 +147,7 @@ export default function ScaleModal({ scale, open, onClose, onSave, initial }) {
 
         <div style={{ background:"var(--card)", borderRadius:10, padding:"12px 16px", marginBottom:18 }}>
           <div style={{ fontSize:11, color:"var(--textMuted)", marginBottom:8 }}>
-            {scale.shortName}: {result.raw !== undefined ? `${result.raw}/${scale.questions.length * scale.maxPerSection} pts (${pct}%)` : `${pct}%`}
+            {scale.shortName}: {result.raw !== undefined ? `${result.raw}/${result.max ?? (scale.questions.length * scale.maxPerSection)} pts (${pct}%)` : `${pct}%`}
           </div>
           <div style={{ height:8, background:"var(--border)", borderRadius:4, overflow:"hidden" }}>
             <div style={{ height:"100%", width:`${pct}%`, background:barColor, borderRadius:4, transition:"width 0.3s" }} />
