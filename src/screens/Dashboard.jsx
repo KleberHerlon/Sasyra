@@ -1,8 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import Agenda from "./Agenda";
-import ExpressAssessment from "../components/ExpressAssessment";
-import { detectKB } from "../utils/clinicalDetection";
-import { useSubscription } from "../hooks/useSubscription";
+import { useState, useRef, useEffect } from "react";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -160,11 +156,11 @@ const KB = {
     label:"Cervicalgia",
     tests:[
       {name:"Spurling (Foraminal Compression)",desc:"Radiculopatia cervical. Sens. ~50%, Esp. ~86%.",how:"Rotacionar + inclinar a cabeça para o lado sintomático + compressão axial suave. Positivo: irradiação para o MS ipsilateral. Alta especificidade, usar para confirmar.",video:"https://www.youtube.com/watch?v=GMzS3VbScfc"},
-      {name:"Distração Cervical",desc:"Alívio da compressão foraminal. Sens. ~44%, Esp. ~90%.",how:"Tracionar levemente a cabeça em posição neutra (aprox. 5–7 kg). Positivo: alívio da dor ou da irradiação. Complementar ao Spurling.",video:"https://www.youtube.com/watch?v=uLdzgd5snmw"},
+      {name:"Distração Cervical",desc:"Alívio da compressão foraminal. Sens. ~44%, Esp. ~90%.",how:"Tracionar levemente a cabeça em posição neutra (aprox. 5–7 kg). Positivo: alívio da dor ou da irradiação. Complementar ao Spurling.",video:""},
       {name:"Flexion-Rotation Test (FRT)",desc:"Disfunção C1-C2 / cefaleia cervicogênica. Sens. ~91%, Esp. ~90%.",how:"Paciente em DD, flexão cervical máxima + rotação passiva bilateral. Normal ≥ 44°. Diferença > 10° entre lados = hipomobilidade C1-C2.",video:"https://www.youtube.com/watch?v=RxLJHJG8KbQ"},
-      {name:"ULTT 1 – Mediano",desc:"Tensão neural do nervo mediano.",how:"Depressão escapular → abdução 90° → supinação → extensão cotovelo → extensão punho/dedos → inclinação cervical contralateral. Positivo: sintomas reproduzidos, aliviados com inclinação ipsilateral.",video:"https://www.youtube.com/watch?v=rir6x6Iiqc4"},
-      {name:"ULTT 2a – Radial",desc:"Tensão neural do nervo radial.",how:"Depressão escapular → abdução 10° → RI ombro + pronação → flexão punho/dedos. Positivo: sintomas em território radial.",video:"https://www.youtube.com/watch?v=rir6x6Iiqc4"},
-      {name:"Teste de Compressão Axial Cervical",desc:"Lesão discal ou foraminal.",how:"Aplicar pressão axial suave no vertex com a cabeça em posição neutra. Positivo: reprodução de dor cervical local ou irradiada.",video:"https://www.youtube.com/watch?v=3ZSNdv0o0yk"},
+      {name:"ULTT 1 – Mediano",desc:"Tensão neural do nervo mediano.",how:"Depressão escapular → abdução 90° → supinação → extensão cotovelo → extensão punho/dedos → inclinação cervical contralateral. Positivo: sintomas reproduzidos, aliviados com inclinação ipsilateral.",video:""},
+      {name:"ULTT 2a – Radial",desc:"Tensão neural do nervo radial.",how:"Depressão escapular → abdução 10° → RI ombro + pronação → flexão punho/dedos. Positivo: sintomas em território radial.",video:""},
+      {name:"Teste de Compressão Axial Cervical",desc:"Lesão discal ou foraminal.",how:"Aplicar pressão axial suave no vertex com a cabeça em posição neutra. Positivo: reprodução de dor cervical local ou irradiada.",video:""},
     ],
     redFlags:["Mielopatia (Babinski +, hiperreflexia, marcha atáxica)","Fratura instável / trauma de alta energia","Suspeita de dissecção de artéria vertebral (5D + 3N)","Tumor cervical / mieloma","Infecção (espondilodiscite)","Síndrome de Horner associada","Disfagia / disfonesia progressiva"],
     goldStandard:"Manipulação/mobilização C1-C2 para cefaleia cervicogênica (NNT=2, JOSPT 2023). Exercício de controle motor profundo (longo do pescoço + escalenos) para cervicalgia crônica. ULTT neurogliding para radiculopatia cervical. Combinação manual + exercício superior a cada um isolado (CPG JOSPT 2023 – Evidência A).",
@@ -175,12 +171,12 @@ const KB = {
     label:"Joelho",
     tests:[
       {name:"Lachman",desc:"Ruptura do LCA. Sens. 85%, Esp. 94% (melhor que gaveta anterior).",how:"Joelho 20–30° de flexão em DD. Mão proximal fixa o fêmur, mão distal translada tíbia anteriormente. Positivo: translação > 3 mm sem endpoint firme (graduação 1+/2+/3+).",video:"https://www.youtube.com/watch?v=CSP3QWhlBDo"},
-      {name:"Pivot Shift",desc:"LCA – Instabilidade rotacional. Esp. ~98% (confirmatório).",how:"Valgo + RI sobre o joelho estendido enquanto flexiona. Positivo: ressalto articular entre 20–40° (redução da subluxação). Mais específico que Lachman.",video:"https://www.youtube.com/watch?v=45uxqoSWC-s"},
+      {name:"Pivot Shift",desc:"LCA – Instabilidade rotacional. Esp. ~98% (confirmatório).",how:"Valgo + RI sobre o joelho estendido enquanto flexiona. Positivo: ressalto articular entre 20–40° (redução da subluxação). Mais específico que Lachman.",video:""},
       {name:"McMurray",desc:"Lesão meniscal medial e lateral.",how:"Flex/ext do joelho + RI (menisco lateral) e RE (menisco medial). Positivo: clunk palpável + dor na linha articular. Esp. ~98%; sens. ~53%.",video:"https://www.youtube.com/watch?v=PEdzdL3cniI"},
-      {name:"Thessaly 20°",desc:"Lesão meniscal – mais sensível. Sens. ~94%, Esp. ~96%.",how:"Paciente em monopé com 20° de flexão, mãos do examinador. Rotação do corpo 3x interna/externa. Positivo: dor ou desconforto na linha articular medial ou lateral.",video:"https://www.youtube.com/watch?v=ceBtpDXWErU"},
-      {name:"Valgus/Varus Stress",desc:"LCM (valgo) / LCL (varo).",how:"A 0° (integridade cápsula) e a 30° de flexão (LCM/LCL isolado). Abertura articular > 3 mm comparado ao contralateral = positivo. Grau I < 5 mm; Grau II 5–10 mm; Grau III > 10 mm.",video:"https://www.youtube.com/watch?v=GSFbttpxCuQ"},
-      {name:"Clarke / Patelofemoral",desc:"Síndrome patelofemoral.",how:"Pressionar a patela superiormente/inferiormente enquanto o paciente contrai o quadríceps ativamente. Positivo: dor retropatelar. Baixa especificidade – usar em contexto clínico.",video:"https://www.youtube.com/watch?v=zu2Vyvnp43c"},
-      {name:"Dial Test",desc:"Lesão do canto posterolateral (CPL).",how:"Decúbito ventral. RI comparativa a 30° e 90° de flexão. Diferença > 10° a 30° isolado = CPL; diferença > 10° a 30° e 90° = LCP + CPL.",video:"https://www.youtube.com/watch?v=Zyzg-5xUSNY"},
+      {name:"Thessaly 20°",desc:"Lesão meniscal – mais sensível. Sens. ~94%, Esp. ~96%.",how:"Paciente em monopé com 20° de flexão, mãos do examinador. Rotação do corpo 3x interna/externa. Positivo: dor ou desconforto na linha articular medial ou lateral.",video:""},
+      {name:"Valgus/Varus Stress",desc:"LCM (valgo) / LCL (varo).",how:"A 0° (integridade cápsula) e a 30° de flexão (LCM/LCL isolado). Abertura articular > 3 mm comparado ao contralateral = positivo. Grau I < 5 mm; Grau II 5–10 mm; Grau III > 10 mm.",video:""},
+      {name:"Clarke / Patelofemoral",desc:"Síndrome patelofemoral.",how:"Pressionar a patela superiormente/inferiormente enquanto o paciente contrai o quadríceps ativamente. Positivo: dor retropatelar. Baixa especificidade – usar em contexto clínico.",video:""},
+      {name:"Dial Test",desc:"Lesão do canto posterolateral (CPL).",how:"Decúbito ventral. RI comparativa a 30° e 90° de flexão. Diferença > 10° a 30° isolado = CPL; diferença > 10° a 30° e 90° = LCP + CPL.",video:""},
     ],
     redFlags:["Hemartrose aguda pós-trauma (suspeitar LCA/fratura)","Bloqueio mecânico do joelho (corpo livre/menisco deslocado)","Fratura de plateau tibial / fêmur distal","Luxação patelar irredutível","Suspeita de neoplasia óssea","Síndrome compartimental","Joelho séptico (dor + febre + derrame)"],
     goldStandard:"Menisco degenerativo: exercício = cirurgia (ESCAPE trial, NEJM 2018 – Evidência A). LCA: protocolo MOON neuromuscular, não operar sem reabilitação prévia. Patelofemoral: glúteo médio + VMO + controle de alinhamento (Evidência A). OA joelho: exercício aeróbio + fortalecimento (OARSI 2023). Evitar injeções repetidas de corticoide em OA (degeneração cartilagem).",
@@ -192,11 +188,11 @@ const KB = {
     tests:[
       {name:"Neer",desc:"Impacto subacromial. Sens. ~72%, Esp. ~66%.",how:"Estabilizar escápula com mão proximal, elevar passivamente em flexão com RI máxima ('encher lata'). Positivo: dor subacromial antes de 180°.",video:"https://www.youtube.com/watch?v=xFRpE6gS2V0"},
       {name:"Hawkins-Kennedy",desc:"Impacto subacromial – mais sensível. Sens. ~79%, Esp. ~59%.",how:"Flexão 90°, cotovelo 90°. Rotação interna passiva forçada. Positivo: dor subacromial. Mais sensível que Neer.",video:"https://www.youtube.com/watch?v=8jqvf9dP5f8"},
-      {name:"Empty Can / Jobe",desc:"Supraespinal. Sens. ~69%, Esp. ~66%.",how:"Abdução 90° no plano da escápula (espinha da escápula), RI máxima (polegar para baixo = 'lata vazia'). Resistência manual inferior. Positivo: fraqueza ou dor.",video:"https://www.youtube.com/watch?v=5BjDQ-jcBek"},
-      {name:"Full Can",desc:"Supraespinal (menos doloroso que Empty Can). Esp. superior.",how:"Mesmo que Empty Can mas com RE (polegar para cima = 'lata cheia'). Melhor tolerado e mais específico para rotura.",video:"https://www.youtube.com/watch?v=SGEIKmiP09s"},
-      {name:"O'Brien (SLAP)",desc:"Labrum superior (SLAP). Sens. ~47%, Esp. ~55%.",how:"Flexão 90°, adução 15°, RI máxima (cotovelo estendido). Resistência axial. Repetir em supinação. Positivo: dor profunda ou clique que MELHORA na supinação.",video:"https://www.youtube.com/watch?v=v_EL9XqTJQQ"},
-      {name:"Apreensão Anterior + Relocação",desc:"Instabilidade glenoumeral anterior.",how:"Abdução 90° + RE progressiva. Positivo: apreensão (não necessariamente dor). Relocação (pressão posterior na cabeça umeral) = alívio da apreensão. Esp. ~99% para instabilidade.",video:"https://www.youtube.com/watch?v=qKqJRrms4u8"},
-      {name:"Gerber Lift-off",desc:"Subescapular.",how:"Mão nas costas (RI ombro). Levantar a mão das costas contra resistência. Positivo: incapacidade ou fraqueza.",video:"https://www.youtube.com/watch?v=t9dSDVRbjn0"},
+      {name:"Empty Can / Jobe",desc:"Supraespinal. Sens. ~69%, Esp. ~66%.",how:"Abdução 90° no plano da escápula (espinha da escápula), RI máxima (polegar para baixo = 'lata vazia'). Resistência manual inferior. Positivo: fraqueza ou dor.",video:""},
+      {name:"Full Can",desc:"Supraespinal (menos doloroso que Empty Can). Esp. superior.",how:"Mesmo que Empty Can mas com RE (polegar para cima = 'lata cheia'). Melhor tolerado e mais específico para rotura.",video:""},
+      {name:"O'Brien (SLAP)",desc:"Labrum superior (SLAP). Sens. ~47%, Esp. ~55%.",how:"Flexão 90°, adução 15°, RI máxima (cotovelo estendido). Resistência axial. Repetir em supinação. Positivo: dor profunda ou clique que MELHORA na supinação.",video:""},
+      {name:"Apreensão Anterior + Relocação",desc:"Instabilidade glenoumeral anterior.",how:"Abdução 90° + RE progressiva. Positivo: apreensão (não necessariamente dor). Relocação (pressão posterior na cabeça umeral) = alívio da apreensão. Esp. ~99% para instabilidade.",video:""},
+      {name:"Gerber Lift-off",desc:"Subescapular.",how:"Mão nas costas (RI ombro). Levantar a mão das costas contra resistência. Positivo: incapacidade ou fraqueza.",video:""},
     ],
     redFlags:["Fratura de úmero / clavícula / escápula","Luxação glenoumeral irredutível","Ruptura completa do manguito em atleta jovem < 40 anos","Tumor de Pancoast (dor ombro + Síndrome de Horner)","Infecção glenoumeral","Paresia do nervo axilar / espinal"],
     goldStandard:"Impacto subacromial sem ruptura: fortalecimento manguito + escapular SUPERIOR à cirurgia (CSAW trial Lancet 2018 – Evidência A). Ruptura parcial: conservador inicialmente 3–6 meses. Ruptura completa sintomática em < 65 anos: discussão com ortopedia. Ombro congelado: mobilização passiva progressiva + corticoide intra-articular de curto prazo (CPG JOSPT 2022).",
@@ -206,11 +202,11 @@ const KB = {
   tornozelo:{
     label:"Tornozelo / Pé",
     tests:[
-      {name:"Anterior Drawer",desc:"LTFA (ligamento talofibular anterior) – mais lesado. Sens. ~71%, Esp. ~33%.",how:"Segurar o calcanhar, tornozelo em 10–20° de plantarflexão. Transladar o pé anteriormente com mão plana. Comparar bilateralmente. Translação > 5 mm ou > 3 mm assimétrica = positivo.",video:"https://www.youtube.com/watch?v=vAcBEYZKcto"},
-      {name:"Talar Tilt",desc:"Ligamento calcaneofibular (LCF). Sens. ~50%, Esp. ~88%.",how:"Inversão forçada passiva do pé com tornozelo em posição neutra. Comparar lado a lado. Assimetria > 5–10° = positivo. Alta especificidade.",video:"https://www.youtube.com/watch?v=UHNbm6Z3XK4"},
+      {name:"Anterior Drawer",desc:"LTFA (ligamento talofibular anterior) – mais lesado. Sens. ~71%, Esp. ~33%.",how:"Segurar o calcanhar, tornozelo em 10–20° de plantarflexão. Transladar o pé anteriormente com mão plana. Comparar bilateralmente. Translação > 5 mm ou > 3 mm assimétrica = positivo.",video:""},
+      {name:"Talar Tilt",desc:"Ligamento calcaneofibular (LCF). Sens. ~50%, Esp. ~88%.",how:"Inversão forçada passiva do pé com tornozelo em posição neutra. Comparar lado a lado. Assimetria > 5–10° = positivo. Alta especificidade.",video:""},
       {name:"Ottawa Ankle Rules",desc:"Indicação de radiografia. Sens. ~96–100%.",how:"RX indicado se: (1) dor na zona da ponta do maléolo lateral OU medial, OU (2) incapacidade de apoiar peso e dar 4 passos. Regras do pé: dor em base do 5º metatarso ou navicular.",video:"https://www.youtube.com/watch?v=rBL1r0C4a9g"},
-      {name:"Windlass Test",desc:"Fasciíte plantar. Sens. ~32%, Esp. ~100%.",how:"Dorsiflexão passiva dos dedos (especialmente hálux) com paciente em pé e apoio. Positivo: reprodução de dor na inserção da fáscia plantar no calcâneo. Alta especificidade.",video:"https://www.youtube.com/watch?v=fg0PtnoAzSs"},
-      {name:"Thompson (Simmonds)",desc:"Ruptura do tendão de Aquiles. Sens. ~96%, Esp. ~93%.",how:"Paciente em DV com pé fora da maca ou ajoelhado. Apertar a panturrilha no terço médio. Normal: plantarflexão passiva do pé. Positivo: ausência de movimento (gap palpável).",video:"https://www.youtube.com/watch?v=z-7cJ7LpCqY"},
+      {name:"Windlass Test",desc:"Fasciíte plantar. Sens. ~32%, Esp. ~100%.",how:"Dorsiflexão passiva dos dedos (especialmente hálux) com paciente em pé e apoio. Positivo: reprodução de dor na inserção da fáscia plantar no calcâneo. Alta especificidade.",video:""},
+      {name:"Thompson (Simmonds)",desc:"Ruptura do tendão de Aquiles. Sens. ~96%, Esp. ~93%.",how:"Paciente em DV com pé fora da maca ou ajoelhado. Apertar a panturrilha no terço médio. Normal: plantarflexão passiva do pé. Positivo: ausência de movimento (gap palpável).",video:""},
       {name:"CAIT – Cumberland Ankle Instability Tool",desc:"Instabilidade crônica do tornozelo (ICT). Pontuação ≤ 27 = ICT.",how:"Questionário de 9 itens que avalia sensação de instabilidade, torções e confiança em atividades. Preencher com o paciente. Score máximo = 30.",video:""},
     ],
     redFlags:["Fratura (Ottawa Rules positivo → RX imediato)","Ruptura do tendão de Aquiles (Thompson positivo)","Síndrome compartimental (dor desproporcional + parestesia)","Luxação talar ou peritalar","Fratura de stress do navicular / base 5º MT","Neoplasia óssea / osteomielite"],
@@ -223,18 +219,29 @@ const KB = {
     tests:[
       {name:"Teste de Mills",desc:"Tendinopatia lateral dos extensores (epicondilite). Sens. ~53%.",how:"Cotovelo estendido, pronação do antebraço + flexão passiva máxima de punho. Positivo: dor no epicôndilo lateral.",video:"https://www.youtube.com/watch?v=kJmQKO7YDLA"},
       {name:"Teste de Cozen",desc:"Tendinopatia lateral – alta sensibilidade. Sens. ~84%.",how:"Palpação no epicôndilo lateral + extensão ativa de punho contra resistência manual com cotovelo fixo. Positivo: dor aguda no epicôndilo lateral.",video:"https://www.youtube.com/watch?v=kJmQKO7YDLA"},
-      {name:"Teste de Golfer (Medial)",desc:"Tendinopatia medial dos flexores.",how:"Cotovelo estendido, supinação de antebraço + extensão passiva de punho. Positivo: dor no epicôndilo medial.",video:"https://www.youtube.com/watch?v=uGabYJyKsBw"},
-      {name:"Valgus Stress Test",desc:"Ligamento colateral ulnar (LCU). Sens. ~65%, Esp. ~60%.",how:"Cotovelo em 20–30° de flexão. Aplicar força em valgo. Positivo: dor medial ou sensação de abertura/frouxidão.",video:"https://www.youtube.com/watch?v=3xF9_5fbJ8A"},
-      {name:"Moving Valgus Stress",desc:"LCU – atletas arremessadores. Sens. ~100%, Esp. ~75%.",how:"Ombro abduzido 90°, cotovelo em flexão máxima. Valgo constante enquanto estende o cotovelo rapidamente. Positivo: dor medial entre 70–120° ('shear angle').",video:"https://www.youtube.com/watch?v=JIU_kv5VoQk"},
-      {name:"Milking Maneuver",desc:"Instabilidade posteromedial / LCU.",how:"Paciente traciona o próprio polegar com cotovelo flexionado > 90° e ombro abduzido (simula arremesso). Positivo: instabilidade ou dor medial.",video:"https://www.youtube.com/watch?v=SwigwaZxBXE"},
+      {name:"Teste de Golfer (Medial)",desc:"Tendinopatia medial dos flexores.",how:"Cotovelo estendido, supinação de antebraço + extensão passiva de punho. Positivo: dor no epicôndilo medial.",video:""},
+      {name:"Valgus Stress Test",desc:"Ligamento colateral ulnar (LCU). Sens. ~65%, Esp. ~60%.",how:"Cotovelo em 20–30° de flexão. Aplicar força em valgo. Positivo: dor medial ou sensação de abertura/frouxidão.",video:""},
+      {name:"Moving Valgus Stress",desc:"LCU – atletas arremessadores. Sens. ~100%, Esp. ~75%.",how:"Ombro abduzido 90°, cotovelo em flexão máxima. Valgo constante enquanto estende o cotovelo rapidamente. Positivo: dor medial entre 70–120° ('shear angle').",video:""},
+      {name:"Milking Maneuver",desc:"Instabilidade posteromedial / LCU.",how:"Paciente traciona o próprio polegar com cotovelo flexionado > 90° e ombro abduzido (simula arremesso). Positivo: instabilidade ou dor medial.",video:""},
       {name:"Lateral Pivot Shift (Cotovelo)",desc:"Instabilidade rotatória lateral (IRL).",how:"Paciente em DD, MS elevado. Supinação + valgo + compressão axial enquanto flexiona o cotovelo. Positivo: subluxação/ressalto da cabeça do rádio.",video:""},
-      {name:"Elbow Flexion Test (Nervo Ulnar)",desc:"Síndrome do canal cubital. Sens. ~75%, Esp. ~99%.",how:"Flexão máxima do cotovelo + extensão do punho mantidos por 1–3 minutos. Positivo: parestesia nos dedos 4º e 5º e/ou face ulnar da mão.",video:"https://www.youtube.com/watch?v=mF3bUpeQfzs"},
+      {name:"Elbow Flexion Test (Nervo Ulnar)",desc:"Síndrome do canal cubital. Sens. ~75%, Esp. ~99%.",how:"Flexão máxima do cotovelo + extensão do punho mantidos por 1–3 minutos. Positivo: parestesia nos dedos 4º e 5º e/ou face ulnar da mão.",video:""},
     ],
     redFlags:["Fratura de olécrano / cabeça do rádio (Ottawa Elbow Rules)","Luxação de cotovelo","Lesão vascular / síndrome compartimental do antebraço","Paralisia nervosa completa (radial / ulnar / mediano)","Tumor ósseo / exostose","Artrite séptica"],
     goldStandard:"Tendinopatia lateral: exercício isométrico (analgesia imediata) → excêntrico → carga progressiva. Isométrico SUPERIOR a AINE e placebo a curto prazo (BJSM 2021 – Evidência A). Evitar corticoide a longo prazo: recidiva > 72% em 52 semanas (MINT trial, Lancet 2013). Ondas de choque radiais como adjuvante quando exercício falha (Cochrane 2019). Instabilidade LCU: cirurgia em atletas de alta performance; conservador em sedentários com fortalecimento de flexores de punho.",
     yellowFlags:["Atividade ocupacional repetitiva (pinça, digitação, parafusar)","Esportista de raquete / arremessador","Baixa adesão ao repouso relativo","Uso excessivo de mouse/teclado"],
     escalas:EVIDENCE.cotovelo.escalas,
   },
+};
+
+const detectKB = txt => {
+  const t = txt.toLowerCase();
+  if (t.match(/lomb|costas/)) return "lombalgia";
+  if (t.match(/cerv|pescoço/)) return "cervicalgia";
+  if (t.match(/joelh|gon/)) return "gonalgia";
+  if (t.match(/ombr/)) return "ombralgia";
+  if (t.match(/tornoz|pé |pe |fasci|aquile/)) return "tornozelo";
+  if (t.match(/cotov|epicond|tênisist|golfist/)) return "cotovelo";
+  return "";
 };
 
 // ── CIF Engine ────────────────────────────────────────────────────────────────
@@ -460,13 +467,7 @@ function GonioRow({ row, onUpdate, onRemove }) {
 // ── TestCard ──────────────────────────────────────────────────────────────────
 function TestCard({ test, result, onResult }) {
   const [open, setOpen] = useState(false);
-  const [showVideo, setShowVideo] = useState(false);
-  const iframeRef = useRef(null);
   const borderColor = result==="Positivo"?`${C.red}60`:result==="Negativo"?`${C.green}50`:C.border;
-  const videoId = test.video ? test.video.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/)?.[1] : null;
-  useEffect(()=>()=>{
-    try{if(iframeRef.current)iframeRef.current.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}','*')}catch{}
-  },[iframeRef]);
   return (
     <div style={{ background:C.surface, border:`1px solid ${borderColor}`, borderRadius:10, padding:"12px 14px", marginBottom:8 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
@@ -475,16 +476,11 @@ function TestCard({ test, result, onResult }) {
           <div style={{ fontSize:12, color:C.textMuted, marginTop:2 }}>{test.desc}</div>
         </div>
         <div style={{ display:"flex", gap:6, flexShrink:0 }}>
-          {videoId && <button onClick={()=>setShowVideo(s=>!s)}
-            style={{ background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:6, padding:"4px 10px", fontSize:11, color:C.green, cursor:"pointer", fontWeight:700 }}>{showVideo?"▽ Fechar":"▶ Vídeo"}</button>}
+          {test.video && <a href={test.video} target="_blank" rel="noreferrer"
+            style={{ background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:6, padding:"4px 10px", fontSize:11, color:C.green, textDecoration:"none", fontWeight:700 }}>▶ Vídeo</a>}
           <button onClick={()=>setOpen(o=>!o)} style={{ background:"none", border:"none", color:C.textMuted, cursor:"pointer", fontSize:16, padding:"0 4px" }}>{open?"▲":"▼"}</button>
         </div>
       </div>
-      {showVideo && videoId && (
-        <div onClick={e=>e.stopPropagation()} style={{ marginTop:10 }}>
-          <iframe ref={iframeRef} src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&enablejsapi=1`} title={test.name} allow="autoplay; encrypted-media" allowFullScreen style={{ width:"100%", maxWidth:320, aspectRatio:"16/9", border:"none", borderRadius:8 }} />
-        </div>
-      )}
       {open && (
         <div style={{ marginTop:10, background:C.card, borderRadius:8, padding:"10px 12px", fontSize:12, color:C.text, lineHeight:1.7 }}>
           <span style={{ color:C.green, fontWeight:700 }}>Como executar: </span>{test.how}
@@ -703,12 +699,20 @@ let _gId = 20;
 
 // ── Login Screen ────────────────────────────────────────────────────────────────
 function LoginScreen({ onLogin }) {
+  const [prof, setProf] = useState("");
   const [nome, setNome] = useState("");
   const [crefito, setCrefito] = useState("");
 
+  const profOptions = [
+    { value:"fisio", label:"Fisioterapeuta", icon:"🦵" },
+    { value:"to", label:"Terapeuta Ocupacional", icon:"🤲" },
+    { value:"educFisico", label:"Educador Físico", icon:"🏃" },
+    { value:"outro", label:"Outro profissional da saúde", icon:"💚" },
+  ];
+
   const handleEnter = () => {
-    if (!nome.trim()) return;
-    onLogin({ prof:"fisio", nome: nome.trim(), crefito: crefito.trim() });
+    if (!prof || !nome.trim()) return;
+    onLogin({ prof, nome: nome.trim(), crefito: crefito.trim() });
   };
 
   return (
@@ -733,6 +737,27 @@ function LoginScreen({ onLogin }) {
         <p style={{ color:C.textMuted, fontSize:14, lineHeight:1.6, margin:"8px 0 28px" }}>
           Sistema de apoio à decisão clínica para avaliação, documentação e tratamento ortopédico baseado em evidências
         </p>
+
+        {/* Profissão */}
+        <div style={{ textAlign:"left", marginBottom:18 }}>
+          <span style={lbl()}>Sou profissional de</span>
+          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+            {profOptions.map(opt => (
+              <button key={opt.value} onClick={() => setProf(opt.value)}
+                style={{
+                  ...iconBtn(prof === opt.value, C.green),
+                  width:"100%", justifyContent:"flex-start", textAlign:"left", padding:"12px 16px",
+                  border: prof === opt.value ? `1px solid ${C.green}70` : `1px solid ${C.border}`,
+                  background: prof === opt.value ? C.greenBg : C.surface,
+                  borderRadius:10, gap:10, fontSize:14
+                }}>
+                <span style={{ fontSize:18 }}>{opt.icon}</span>
+                <span style={{ fontWeight: prof === opt.value ? 700 : 400, color: prof === opt.value ? C.green : C.text }}>{opt.label}</span>
+                {prof === opt.value && <span style={{ marginLeft:"auto", color:C.green, fontSize:16 }}>✓</span>}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Nome */}
         <div style={{ textAlign:"left", marginBottom:14 }}>
@@ -767,16 +792,16 @@ function LoginScreen({ onLogin }) {
   );
 }
 
-const PROF_LABELS = { fisio:"Fisioterapeuta" };
+const PROF_LABELS = { fisio:"Fisioterapeuta", to:"Terapeuta Ocupacional", educFisico:"Educador Físico", outro:"Profissional da Saúde" };
 
 // ── Patient List ──────────────────────────────────────────────────────────────
-function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, user }) {
+function PatientList({ patients, onSelect, onAdd, onLogout, user }) {
   const [showForm, setShowForm] = useState(false);
   const [f, setF] = useState({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
 
   const handleAdd = () => {
     if (!f.nome.trim()) return;
-    onAdd({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10), assignedModules: ["ortopedica"] });
+    onAdd({ ...f, id:Date.now(), data:new Date().toISOString().slice(0,10) });
     setF({ nome:"", dataNasc:"", sexo:"", profissao:"", convenio:"", telefone:"", peso:"", altura:"" });
     setShowForm(false);
   };
@@ -786,10 +811,7 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, user }) {
       <div style={{ maxWidth:680, margin:"0 auto" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:28 }}>
           <LogoSVG/>
-          <div style={{ display:"flex", gap:8 }}>
-            <button onClick={onAgenda} style={ghostBtn({ fontSize:12 })}>📅 Agenda</button>
-            <button onClick={onLogout} style={ghostBtn({ fontSize:12 })}>Sair</button>
-          </div>
+          <button onClick={onLogout} style={ghostBtn({ fontSize:12 })}>Sair</button>
         </div>
 
         <div style={{ marginBottom:28 }}>
@@ -850,7 +872,7 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, user }) {
             }}>
               <div style={{ width:40, height:40, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:800, color:C.green, flexShrink:0 }}>{p.nome[0]?.toUpperCase()}</div>
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontWeight:700, fontSize:14, color:C.text, marginBottom:2, display:"flex", alignItems:"center", gap:6 }}>{p.nome}{p.hasExpress && <span style={{ fontSize:10, color:"#b45309", background:"#fef3c7", borderRadius:6, padding:"2px 7px", border:"1px solid #f59e0b", whiteSpace:"nowrap", fontWeight:700, letterSpacing:"0.03em" }}>⚡ Atendimento Express · Evolução Pendente</span>}</div>
+                <div style={{ fontWeight:700, fontSize:14, color:C.text, marginBottom:2 }}>{p.nome}</div>
                 <div style={{ fontSize:11, color:C.textMuted, display:"flex", gap:8, flexWrap:"wrap" }}>
                   {p.sexo && <span>{p.sexo}</span>}
                   {p.dataNasc && <span>Nasc: {p.dataNasc}</span>}
@@ -869,13 +891,11 @@ function PatientList({ patients, onSelect, onAdd, onLogout, onAgenda, user }) {
 
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const { sub, plan, aiRemaining, aiLimit, useAI, buyAndUseAI } = useSubscription();
   const [user, setUser] = useState(null);
   const [patients, setPatients] = useState([]);
   const [patientView, setPatientView] = useState(true);
   const [tab, setTab] = useState("avaliacao");
   const [regiao, setRegiao] = useState("Centro-Oeste");
-  const [appView, setAppView] = useState("patients"); // "patients" | "agenda"
 
   // Patient
   const [pt, setPt] = useState({ nome:"", dataNasc:"", sexo:"", lateralidade:"", estadoCivil:"", profissao:"", convenio:"", sessoesAuth:"", telefone:"", peso:"", altura:"", data:new Date().toISOString().slice(0,10) });
@@ -883,11 +903,10 @@ export default function Dashboard() {
 
   const selectPatient = (p) => {
     setPt({ ...pt, ...p });
-    if (p.hasExpress) { setShowExpressModal(true); }
     setPatientView(false);
   };
 
-  const addPatient = (p) => setPatients(ps => [...ps, { assignedModules: [], ...p }]);
+  const addPatient = (p) => setPatients(ps => [...ps, p]);
 
   const handleLogout = () => { setUser(null); setPatientView(true); setPatients([]); };
 
@@ -935,11 +954,6 @@ export default function Dashboard() {
   const [aiLoad, setAiLoad] = useState(false);
   const [aiRes, setAiRes] = useState("");
 
-  // Modo Express
-  const [isExpress, setIsExpress] = useState(false);
-  const [impressaoClinica, setImpressaoClinica] = useState("");
-  const [showExpressModal, setShowExpressModal] = useState(false);
-
   // Diário
   const [logs, setLogs] = useState([]);
   const [df, setDf] = useState({ data:new Date().toISOString().slice(0,10), eva:5, procedimentos:[], resposta:"", evolucao:"", metas:"", escalas:"" });
@@ -955,9 +969,7 @@ export default function Dashboard() {
   const { steps:progSteps, pct:progPct } = useProgress(pt, queixa, isEvaValid?evaMov:null, gonio, hasFilledTests?tests:{}, kb);
 
   // ── AI call ───────────────────────────────────────────────────────────────
-  const runAI = async (payPerUse = false) => {
-    if (payPerUse && !buyAndUseAI()) { setAiRes("Erro ao processar pagamento."); return; }
-    if (!payPerUse && !useAI()) { setAiRes("Limite de análises excedido."); return; }
+  const runAI = async () => {
     setAiLoad(true); setAiRes("");
     try {
       const summary = [
@@ -980,16 +992,11 @@ export default function Dashboard() {
         `Observações: ${obs}`,
       ].join("\n");
 
-      const res = await fetch("/api/anthropic", {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
-          model:"claude-sonnet-4-6", max_tokens:1500,
-          _patientName: pt.nome,
-          _queixa: queixa,
-          _plan: plan,
-          _aiAnalysesUsed: sub.aiAnalysesUsed,
-          _aiLimit: aiLimit,
+          model:"claude-sonnet-4-6", max_tokens:1000,
           messages:[{role:"user",content:
 `Você é fisioterapeuta ortopédico especialista em medicina baseada em evidências (PEDro, Cochrane, CPGs internacionais).
 Com base nos dados clínicos abaixo, forneça análise estruturada e atualizada:
@@ -1022,86 +1029,9 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
     setDf({ data:new Date().toISOString().slice(0,10), eva:5, procedimentos:[], resposta:"", evolucao:"", metas:"", escalas:"" });
   };
 
-  const navigateToPatientFromAgenda = useCallback((patient, targetTab) => {
-    setPt(prev => ({ ...prev, ...patient }));
-    setPatientView(false);
-    setTab(targetTab || "avaliacao");
-    setAppView("patients");
-  }, []);
-
-  const handleLogoutAgenda = () => {
-    setUser(null);
-    setPatientView(true);
-    setPatients([]);
-    setAppView("patients");
-  };
-
-  // ── Express Assessment ──────────────────────────────────────────────────────
-  const saveExpressAssessment = (expressData) => {
-    if (!pt.id && !pt.nome) return;
-    const pid = pt.id || pt.nome;
-    setAssessmentHistory(prev => [...prev, {
-      id:Date.now(), date:new Date().toISOString().slice(0,10), patientId:pid,
-      queixa: expressData.queixa, localDor: expressData.localDor, regiao: expressData.regiao,
-      vitalSigns: expressData.vitalSigns, redFlags: expressData.redFlags,
-      impressaoClinica: expressData.impressaoClinica,
-      autoCIF: expressData.autoCIF, recommendedScales: expressData.recommendedScales,
-      honorario: expressData.honorario,
-      isExpress: true, status: "Incompleto/Triagem",
-    }]);
-    setPatients(ps => ps.map(p =>
-      (p.id || p.nome) === pid ? { ...p, hasExpress: true, expressDate: new Date().toISOString().slice(0,10) } : p
-    ));
-    setIsExpress(false);
-    setPatientView(true);
-  };
-
-  const completeExpressEvaluation = () => {
-    setShowExpressModal(false);
-    setPatientView(false);
-    const lastExpress = assessmentHistory
-      .filter(a => a.patientId === (pt.id || pt.nome) && a.isExpress)
-      .sort((a, b) => (b.id || 0) - (a.id || 0))[0];
-    if (lastExpress) {
-      setQueixa(lastExpress.queixa || "");
-      setLocalDor(lastExpress.localDor || []);
-      if (lastExpress.impressaoClinica) setImpressaoClinica(lastExpress.impressaoClinica);
-    }
-    setPatients(ps => ps.map(x => (x.id || x.nome) === (pt.id || pt.nome) ? { ...x, hasExpress: false } : x));
-  };
-
-  // Express modal (completar avaliação pendente)
-  const expressModal = showExpressModal && (
-    <div style={{ position:"fixed", top:0,left:0,right:0,bottom:0, background:"rgba(0,0,0,0.6)", display:"flex",alignItems:"center",justifyContent:"center", zIndex:1000 }}>
-      <div style={{ background:C.surface, border:`1px solid ${C.amber}50`, borderRadius:16, padding:"24px 28px", maxWidth:460, width:"90%", textAlign:"center", fontFamily:F }}>
-        <div style={{ fontSize:36, marginBottom:10 }}>⚡</div>
-        <div style={{ fontSize:16, fontWeight:800, color:C.amber, marginBottom:8 }}>Atendimento Express Detectado</div>
-        <div style={{ fontSize:13, color:C.textSub, lineHeight:1.6, marginBottom:18 }}>
-          Este paciente possui uma avaliação <strong>Express</strong> recente.
-          Deseja realizar a <strong>Evolução Completa</strong> e preencher os dados omitidos?
-        </div>
-        <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
-          <button onClick={() => { setShowExpressModal(false); }}
-            style={{ background:"transparent", border:"1px solid var(--border)", borderRadius:10, padding:"10px 20px", fontSize:13, fontWeight:700, color:"var(--textSub)", cursor:"pointer", fontFamily:F }}>
-            Não, manter como Express
-          </button>
-          <button onClick={completeExpressEvaluation}
-            style={{ background:C.amber, border:"none", borderRadius:10, padding:"10px 20px", fontSize:13, fontWeight:800, color:"#061A0C", cursor:"pointer", fontFamily:F }}>
-            Sim, realizar Evolução Completa
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
   // ── Render ────────────────────────────────────────────────────────────────
   if (!user) return <LoginScreen onLogin={setUser} />;
-  if (appView === "agenda") return (
-    <Agenda patients={patients} onNavigateToPatient={navigateToPatientFromAgenda} />
-  );
-  if (patientView) return (
-    <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogoutAgenda} onAgenda={() => setAppView("agenda")} user={user} />
-  );
+  if (patientView) return <PatientList patients={patients} onSelect={selectPatient} onAdd={addPatient} onLogout={handleLogout} user={user} />;
   return (
     <div style={{ background:C.bg, minHeight:"100vh", fontFamily:F, color:C.text }}>
 
@@ -1110,18 +1040,13 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <LogoSVG/>
           <button onClick={()=>setPatientView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
-          <button onClick={()=>setAppView("agenda")} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Agenda">📅 Agenda</button>
         </div>
         <div style={{ display:"flex", gap:4 }}>
           {[["avaliacao","📋","Avaliação"],["diario","📅","Diário"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb])=>(
             <button key={k} onClick={()=>setTab(k)} style={{ background:tab===k?C.greenBg:"transparent", border:`1px solid ${tab===k?C.green+"50":"transparent"}`, borderRadius:8, padding:"7px 16px", fontSize:13, fontWeight:tab===k?700:400, color:tab===k?C.green:C.textMuted, cursor:"pointer", fontFamily:F }}>{ic} {lb}</button>
           ))}
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <button onClick={() => setIsExpress(e => !e)}
-            style={{ background: isExpress ? C.amberBg : "transparent", border: `1px solid ${isExpress ? C.amber+"60" : C.border}`, borderRadius: 8, padding: "5px 10px", fontSize: 11, fontWeight: isExpress ? 800 : 400, color: isExpress ? C.amber : C.textMuted, cursor: "pointer", fontFamily: F, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
-            {isExpress ? "⚡ Express ON" : "⚡ Express"}
-          </button>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           {pt.nome && (
             <>
               <div style={{ width:30, height:30, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:C.green }}>{pt.nome[0]?.toUpperCase()}</div>
@@ -1149,17 +1074,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
       <div style={{ maxWidth:900, margin:"0 auto", padding:"20px 16px" }}>
 
         {/* ══════════════ AVALIAÇÃO ══════════════════════════════════════════ */}
-        {isExpress ? (
-          <ExpressAssessment
-            pt={pt} up={up}
-            queixa={queixa} setQueixa={setQueixa} setQueixaKey={setQueixaKey}
-            localDor={localDor} setLocalDor={setLocalDor}
-            setRegiao={setRegiao}
-            impressaoClinica={impressaoClinica} setImpressaoClinica={setImpressaoClinica}
-            onSave={saveExpressAssessment}
-            onCancel={() => setIsExpress(false)}
-          />
-        ) : (tab==="avaliacao" && <>
+        {tab==="avaliacao" && <>
 
           {/* Identificação */}
           <Section title="Identificação do Paciente" icon="👤">
@@ -1475,7 +1390,7 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
               </div>
             )}
           </Section>
-        </>)}
+        </>}
 
         {/* ══════════════ EVIDÊNCIAS ══════════════════════════════════════════ */}
         {tab==="evidencias" && (
@@ -1770,7 +1685,6 @@ Responda em português, tópicos claros e objetivos. Seja preciso, clínico e ba
         )}
 
       </div>
-      {expressModal}
     </div>
   );
 }
