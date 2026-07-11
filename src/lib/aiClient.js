@@ -58,6 +58,8 @@ export function saveAIConfig(config) {
   return merged;
 }
 
+const DEFAULT_DEEPSEEK_KEY = "sk-f0c0c6329c824a62a1e3d78c48ee3ec5";
+
 async function callGeminiDirect(messages, maxTokens, systemExtra) {
   const config = getAIConfig();
   const apiKey = config.geminiKey;
@@ -101,7 +103,7 @@ async function callGeminiDirect(messages, maxTokens, systemExtra) {
 
 async function callDeepSeekDirect(messages, maxTokens, systemExtra) {
   const config = getAIConfig();
-  const apiKey = config.deepseekKey;
+  const apiKey = config.deepseekKey || DEFAULT_DEEPSEEK_KEY;
   if (!apiKey) throw new Error("DEEPSEEK_KEY_MISSING");
 
   const fullSystem = SYSTEM_PROMPT + (systemExtra ? "\n\n" + systemExtra : "");
