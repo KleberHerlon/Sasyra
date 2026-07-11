@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { GonioRow, MRCRow, JOINTS, MVMT, MUSCLES } from "../components";
 import { AI_LIMITS, AI_OVERAGE } from "../data/plans";
+import { runAIAnalysis } from "../lib/aiClient";
 
 const STYLE = {
   evaColor: (v) => v <= 3 ? "#22c55e" : v <= 6 ? "#eab308" : "#ef4444",
@@ -146,33 +147,27 @@ export function useEnhancer(moduleName, studentId, storageKey) {
 
     setAiRes("Carregando...");
     try {
-      const res = await fetch("/api/anthropic", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify({
-          model: "deepseek-chat", max_tokens: 2800,
-          _patientName: studentId,
-          _queixa: pain.localDor.join(", "),
-          _plan: plan,
-          _aiAnalysesUsed: aiAnalysesUsed + 1,
-          _aiLimit: aiLimit,
-          system: `Você é um profissional de ${moduleName} especialista em medicina baseada em evidências. Responda em português.`,
-          messages: [{ role: "user", content: `Com base nos dados clínicos abaixo, gere uma análise completa seguindo a estrutura solicitada no system prompt.
+      const result = await runAIAnalysis({
+        model: "deepseek-chat",
+        max_tokens: 2800,
+        _patientName: studentId,
+        _queixa: pain.localDor.join(", "),
+        _plan: plan,
+        _aiAnalysesUsed: aiAnalysesUsed + 1,
+        _aiLimit: aiLimit,
+        system: `Você é um profissional de ${moduleName} especialista em medicina baseada em evidências. Responda em português.`,
+        messages: [{ role: "user", content: `Com base nos dados clínicos abaixo, gere uma análise completa seguindo a estrutura solicitada no system prompt.
 
 DADOS DO PACIENTE:
 ${summaryText}` }],
-        }),
-      });
-      const d = await res.json();
-      const text = d.content?.map(c => c.text || "").join("\n") || "Sem resposta.";
+      }, controller.signal);
       if (!controller.signal.aborted) {
-        setAiRes(text);
+        setAiRes(result.text);
       }
     } catch (err) {
       if (err.name === "AbortError") return;
       if (!controller.signal.aborted) {
-        setAiRes("Erro ao consultar IA.");
+        setAiRes("Erro ao consultar IA.\n\n" + (err.message || "Verifique sua conexão e configuração de API."));
       }
     }
   };

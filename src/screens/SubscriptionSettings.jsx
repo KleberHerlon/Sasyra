@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSubscription } from "../hooks/useSubscription";
 import { useTokens } from "../hooks/useTokens";
 import { PLANS, PLAN_ORDER, PLAN_LABELS, AI_LIMITS, AI_OVERAGE } from "../data/plans";
+import { saveAIConfig } from "../lib/aiClient";
 
 const C = {
   bg:          "var(--bg)",
@@ -37,8 +38,21 @@ export default function SubscriptionSettings({ onNavigate }) {
   const { summary: tokenSummary, loading: tokenLoading, fetchSummary } = useTokens();
 
   useEffect(() => { fetchSummary(); }, []);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("sasyra_ai_config");
+      if (raw) {
+        const c = JSON.parse(raw);
+        setDkKey(c.deepseekKey || "");
+        setGmKey(c.geminiKey || "");
+      }
+    } catch {}
+  }, []);
   const [newUser, setNewUser] = useState({ nome: "", crefito: "", email: "" });
   const [showChangePlan, setShowChangePlan] = useState(false);
+  const [dkKey, setDkKey] = useState("");
+  const [gmKey, setGmKey] = useState("");
+  const [keySaveMsg, setKeySaveMsg] = useState("");
 
   const nextBilling = new Date(sub.nextBilling).toLocaleDateString("pt-BR");
   const startDate = new Date(sub.startDate).toLocaleDateString("pt-BR");
@@ -254,6 +268,44 @@ export default function SubscriptionSettings({ onNavigate }) {
               </div>
             </>
           )}
+        </div>
+
+        {/* API Key Configuration */}
+        <div style={cardStyle()}>
+          <div style={{ fontSize:10, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:12 }}>
+            🔑 Chaves de API — IA Direta
+          </div>
+          <div style={{ fontSize:11, color:C.textMuted, marginBottom:16, lineHeight:1.5 }}>
+            Configure suas chaves para usar IA diretamente do navegador (funciona no site publicado sem proxy). As chaves ficam salvas apenas no seu dispositivo.
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:C.text, marginBottom:4 }}>DeepSeek (pago, ~R$ 0,0016/análise)</div>
+              <div style={{ display:"flex", gap:8 }}>
+                <input type="password" value={dkKey} onChange={e => setDkKey(e.target.value)} placeholder="sk-..." style={{ ...inp({ flex:1, fontSize:12 }) }} />
+              </div>
+              <div style={{ fontSize:9, color:C.textDim, marginTop:3 }}>
+                <a href="https://platform.deepseek.com/" target="_blank" rel="noopener" style={{ color:C.green }}>Obter chave DeepSeek</a>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:C.text, marginBottom:4 }}>Gemini (gratuito)</div>
+              <div style={{ display:"flex", gap:8 }}>
+                <input type="password" value={gmKey} onChange={e => setGmKey(e.target.value)} placeholder="AIza..." style={{ ...inp({ flex:1, fontSize:12 }) }} />
+              </div>
+              <div style={{ fontSize:9, color:C.textDim, marginTop:3 }}>
+                <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style={{ color:C.green }}>Obter chave Gemini (grátis)</a>
+              </div>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:4 }}>
+              <button onClick={() => {
+                saveAIConfig({ deepseekKey: dkKey, geminiKey: gmKey });
+                setKeySaveMsg("Chaves salvas com sucesso!");
+                setTimeout(() => setKeySaveMsg(""), 2500);
+              }} style={{ ...primaryBtn({ fontSize:12, padding:"7px 16px" }) }}>Salvar Chaves</button>
+              {keySaveMsg && <span style={{ fontSize:11, color:C.green, fontWeight:600 }}>{keySaveMsg}</span>}
+            </div>
+          </div>
         </div>
 
         {/* Invoice History */}
