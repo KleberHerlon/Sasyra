@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, Suspense, startTransition } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense, startTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { EvaSlider, TagSelect, SingleSelect, AudioField, useProgress, Section, Row, Field, SubHeading, useMediaQuery, GonioRow, MRCRow, MUSCLES, JOINTS, MVMT, getRef, isOutOfRange, PaywallModal } from "./components";
 import LanguageSwitcher from "./components/LanguageSwitcher";
@@ -88,6 +88,128 @@ const cardStyle = (extra={}) => ({ background:C.card, border:`1px solid ${C.bord
 const primaryBtn = (extra={}) => ({ background:C.green, color:"#061A0C", border:"none", borderRadius:8, padding:"10px 20px", fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:F, display:"inline-flex", alignItems:"center", gap:6, ...extra });
 const ghostBtn = (extra={}) => ({ background:"transparent", color:C.green, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 16px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:F, display:"inline-flex", alignItems:"center", gap:6, ...extra });
 const iconBtn = (active=false, activeColor=C.green, extra={}) => ({ background: active ? `${activeColor}18` : C.surface, border:`1px solid ${active ? activeColor+"50" : C.border}`, color: active ? activeColor : C.textMuted, borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight: active ? 700 : 400, cursor:"pointer", fontFamily:F, transition:"all 0.12s", ...extra });
+
+// ── Signature Pad ──────────────────────────────────────────────────────────────
+function SignaturePad({ storageKey, label, value, onChange }) {
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [isTyped, setIsTyped] = useState(false);
+  const [typedName, setTypedName] = useState("");
+
+  useEffect(() => {
+    if (!value && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }, [value]);
+
+  const startDraw = (e) => {
+    setIsDrawing(true);
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+    const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.strokeStyle = "#1a202c";
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = "round";
+  };
+
+  const draw = (e) => {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+    const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const stopDraw = () => {
+    if (!isDrawing) return;
+    setIsDrawing(false);
+    const dataUrl = canvasRef.current?.toDataURL();
+    if (dataUrl && dataUrl !== "data:,") onChange(dataUrl);
+  };
+
+  const clear = () => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    setIsTyped(false);
+    setTypedName("");
+    onChange(null);
+  };
+
+  const toggleTyped = () => {
+    setIsTyped(!isTyped);
+    if (!isTyped) {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+  };
+
+  const saveTyped = () => {
+    if (!typedName.trim()) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = "italic 18px 'Dancing Script','Brush Script MT',cursive";
+    ctx.fillStyle = "#1a202c";
+    ctx.textAlign = "center";
+    ctx.fillText(typedName.trim(), canvas.width / 2, canvas.height / 2 + 6);
+    const dataUrl = canvas.toDataURL();
+    onChange(dataUrl);
+  };
+
+  if (value) {
+    return (
+      <div style={{ position:"relative" }}>
+        <img src={value} alt={label} style={{ width:"100%", height:"auto", maxHeight:70, border:"1px solid #E2E8F0", borderRadius:6 }} />
+        <button onClick={clear} style={{ position:"absolute", top:2, right:2, background:"#EF4444", color:"#fff", border:"none", borderRadius:4, fontSize:9, cursor:"pointer", padding:"1px 5px" }}>×</button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ fontSize:10, color:"#7C8FA6", marginBottom:4 }}>{label}</div>
+      <div style={{ display:"flex", gap:6, marginBottom:6 }}>
+        <button type="button" onClick={toggleTyped} style={{
+          background: isTyped ? "#0F6E56" : "transparent", color: isTyped ? "#fff" : "#7C8FA6",
+          border: `1px solid ${isTyped ? "#0F6E56" : "#E2E8F0"}`, borderRadius:6,
+          fontSize:10, padding:"4px 10px", cursor:"pointer", fontFamily:F
+        }}>✏️ Digitar</button>
+        <button type="button" onClick={clear} style={{
+          background:"transparent", color:"#94A3B8", border:"1px solid #E2E8F0",
+          borderRadius:6, fontSize:10, padding:"4px 10px", cursor:"pointer", fontFamily:F
+        }}>🗑️ Limpar</button>
+      </div>
+      {isTyped ? (
+        <div style={{ display:"flex", gap:6 }}>
+          <input value={typedName} onChange={e => setTypedName(e.target.value)}
+            style={{ ...inp({ fontSize:12, flex:1 }) }} placeholder="Nome completo" />
+          <button onClick={saveTyped} style={{ ...primaryBtn({ fontSize:10, padding:"5px 10px" }) }}>OK</button>
+        </div>
+      ) : (
+        <canvas ref={canvasRef} width={250} height={70}
+          onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
+          onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={stopDraw}
+          style={{ border:"1px dashed #CBD5E1", borderRadius:6, cursor:"crosshair", background:"#fff", width:"100%", maxWidth:250 }} />
+      )}
+    </div>
+  );
+}
 // ── BMI ───────────────────────────────────────────────────────────────────────
 const PROCEDIMENTOS_CATEGORIES = [
   { category: "Eletroterapia", items: ["TENS", "FES", "Ultrassom terapêutico", "Laser de baixa potência", "Magnetoterapia"] },
@@ -1708,6 +1830,16 @@ export default function Sasyra() {
   const [aiLoad, setAiLoad] = useState(false);
   const [aiRes, setAiRes] = useState("");
 
+  // Assinaturas
+  const loadSignatures = () => {
+    try { const d = localStorage.getItem("sasyra_signatures"); return d ? JSON.parse(d) : {}; } catch { return {}; }
+  };
+  const [signatures, setSignatures] = useState(() => loadSignatures());
+  const saveSignatures = (next) => {
+    setSignatures(next);
+    localStorage.setItem("sasyra_signatures", JSON.stringify(next));
+  };
+
   // Modo Express
   const [isExpress, setIsExpress] = useState(false);
   const [impressaoClinica, setImpressaoClinica] = useState("");
@@ -2904,6 +3036,43 @@ NÃO cite nem recomende cirurgias, medicamentos, infiltrações ou qualquer proc
                   )}
                   {yellowFlagsState.length>=3 && <> Recomenda-se avaliação psicológica para manejo de fatores psicossociais.</>}
                   {imc && (Number(imc.value)>=30) && <> Recomenda-se avaliação nutricional para manejo de obesidade.</>}
+                </div>
+              </div>
+
+              {/* ── Rodapé / Assinaturas ─────────────────────────────────────────────────── */}
+              <div style={{ borderTop:"2px solid #E2E8F0", marginTop:24, paddingTop:18 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:"#0F6E56", marginBottom:16, textTransform:"uppercase", letterSpacing:"0.08em" }}>✍️ Assinaturas</div>
+                <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:20 }}>
+                  <div style={{ background:"#F8FAFC", borderRadius:10, padding:14, border:"1px solid #E2E8F0" }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:"#374151", marginBottom:4 }}>Fisioterapeuta Responsável</div>
+                    <div style={{ fontSize:12, color:"#1a202c" }}><strong>{user.nome || "—"}</strong></div>
+                    <div style={{ fontSize:10, color:"#7C8FA6", marginBottom:8 }}>{PROF_LABELS[user.prof] || "Fisioterapeuta"}{user.crefito ? ` · CREFITO ${user.crefito}` : ""}</div>
+                    <SignaturePad
+                      storageKey={`sig_fisio_${pt.id || pt.nome}`}
+                      label="Assinatura do profissional"
+                      value={signatures[`fisio_${pt.id || pt.nome}`]}
+                      onChange={(dataUrl) => saveSignatures({...signatures, [`fisio_${pt.id || pt.nome}`]: dataUrl})}
+                    />
+                    <div style={{ fontSize:9, color:"#94A3B8", marginTop:6 }}>Data: {new Date().toLocaleDateString("pt-BR")}</div>
+                  </div>
+                  <div style={{ background:"#F8FAFC", borderRadius:10, padding:14, border:"1px solid #E2E8F0" }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:"#374151", marginBottom:4 }}>Paciente</div>
+                    <div style={{ fontSize:12, color:"#1a202c" }}><strong>{pt.nome || "—"}</strong></div>
+                    <div style={{ fontSize:10, color:"#7C8FA6", marginBottom:8 }}>
+                      {pt.dataNasc ? `Nasc: ${pt.dataNasc}` : ""}{pt.convenio ? ` · ${pt.convenio}` : ""}
+                    </div>
+                    <SignaturePad
+                      storageKey={`sig_paciente_${pt.id || pt.nome}`}
+                      label="Assinatura do paciente"
+                      value={signatures[`paciente_${pt.id || pt.nome}`]}
+                      onChange={(dataUrl) => saveSignatures({...signatures, [`paciente_${pt.id || pt.nome}`]: dataUrl})}
+                    />
+                    <div style={{ fontSize:9, color:"#94A3B8", marginTop:6 }}>
+                      <a href="https://assinador.serpro.gov.br/" target="_blank" rel="noopener" style={{ color:"#0F6E56", fontWeight:600 }}>
+                        🔗 Assinar digitalmente via gov.br
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
 
