@@ -59,10 +59,11 @@ export function saveAIConfig(config) {
 }
 
 const DEFAULT_DEEPSEEK_KEY = "sk-f0c0c6329c824a62a1e3d78c48ee3ec5";
+const DEFAULT_GEMINI_KEY = "AQ.Ab8RN6JI0lNSjO-zvXf1Z55X05SNwhMC1FzISVM6iUnds8faRQ";
 
 async function callGeminiDirect(messages, maxTokens, systemExtra) {
   const config = getAIConfig();
-  const apiKey = config.geminiKey;
+  const apiKey = config.geminiKey || DEFAULT_GEMINI_KEY;
   if (!apiKey) throw new Error("GEMINI_KEY_MISSING");
 
   const fullSystem = SYSTEM_PROMPT + (systemExtra ? "\n\n" + systemExtra : "");
@@ -184,35 +185,24 @@ export async function runAIAnalysis(payload, signal) {
     console.warn("Proxy indisponível, tentando APIs diretas:", proxyErr.message);
   }
 
-  const config = getAIConfig();
-
-  if (config.deepseekKey) {
-    try {
-      return await callDeepSeekDirect(m, maxTokens, systemExtra);
-    } catch (dsErr) {
-      if (dsErr.name === "AbortError") throw dsErr;
-      if (dsErr.message === "DEEPSEEK_KEY_MISSING") {}
-      else console.warn("DeepSeek direto falhou:", dsErr.message);
-    }
+  try {
+    return await callDeepSeekDirect(m, maxTokens, systemExtra);
+  } catch (dsErr) {
+    if (dsErr.name === "AbortError") throw dsErr;
+    if (dsErr.message === "DEEPSEEK_KEY_MISSING") {}
+    else console.warn("DeepSeek direto falhou:", dsErr.message);
   }
 
-  if (config.geminiKey) {
-    try {
-      return await callGeminiDirect(m, maxTokens, systemExtra);
-    } catch (gmErr) {
-      if (gmErr.name === "AbortError") throw gmErr;
-      if (gmErr.message === "GEMINI_KEY_MISSING") {}
-      else console.warn("Gemini direto falhou:", gmErr.message);
-    }
+  try {
+    return await callGeminiDirect(m, maxTokens, systemExtra);
+  } catch (gmErr) {
+    if (gmErr.name === "AbortError") throw gmErr;
+    if (gmErr.message === "GEMINI_KEY_MISSING") {}
+    else console.warn("Gemini direto falhou:", gmErr.message);
   }
 
   throw new Error(
-    "Nenhum provedor de IA disponível.\n\n" +
-    "Em ambiente local: execute 'npm run server' para ativar o proxy.\n" +
-    "No site publicado: configure uma chave de API nas Configurações.\n\n" +
-    "Opções gratuitas:\n" +
-    "- Gemini (Google): https://aistudio.google.com/apikey\n\n" +
-    "Opções pagas (mais barato):\n" +
-    "- DeepSeek: https://platform.deepseek.com/"
+    "Todos os provedores de IA falharam. Verifique sua conexão com a internet.\n\n" +
+    "Se o erro persistir, o serviço pode estar temporariamente indisponível."
   );
 }
