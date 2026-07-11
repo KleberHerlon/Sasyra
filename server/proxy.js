@@ -1,12 +1,14 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: join(__dirname, ".env") });
+
 import express from "express";
 import cors from "cors";
 import { existsSync } from "fs";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
 import { saveAnalysis, listAnalyses, getTokenSummary } from "./memoryStore.js";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3001;
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN?.split(",") || ["http://localhost:5173"];
 
