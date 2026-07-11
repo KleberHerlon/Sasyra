@@ -4,6 +4,11 @@ import { useClinicalScan } from "./hooks/useClinicalScan";
 import { useSemanticScanner } from "./hooks/useSemanticScanner";
 import { detectLocalDor, extractClinicalEntities } from "./utils/clinicalDetection";
 
+function loadConvenioValores() {
+  try { const d = localStorage.getItem("sasyra_convenio_valores"); return d ? JSON.parse(d) : {}; } catch { return {}; }
+}
+function saveConvenioValores(v) { localStorage.setItem("sasyra_convenio_valores", JSON.stringify(v)); }
+
 const C = {
   bg: "var(--bg)", surface: "var(--surface)", card: "var(--card)", cardAlt: "var(--cardAlt)",
   border: "var(--border)", borderLight: "var(--borderLight)", green: "var(--green)", greenDim: "var(--greenDim)",
@@ -190,6 +195,37 @@ export default function Assessment({
               </Field>
             )}
           </Row>
+          {pt.convenio && pt.convenio !== "Particular" && (() => {
+            const cv = loadConvenioValores();
+            const key = pt.id || pt.nome;
+            const saved = cv[key] || {};
+            const setVal = (v) => {
+              const all = loadConvenioValores();
+              all[key] = { ...(all[key] || {}), valor: v ? parseFloat(v) : null };
+              saveConvenioValores(all);
+            };
+            const setDt = (v) => {
+              const all = loadConvenioValores();
+              all[key] = { ...(all[key] || {}), dataPrevista: v };
+              saveConvenioValores(all);
+            };
+            return (
+              <div style={{ marginTop: 10 }}>
+                <Row cols="1fr 1fr" mobileCols="1fr">
+                  <Field l="Valor a Receber (R$)">
+                    <input type="number" min="0" step="0.01" defaultValue={saved.valor || ""}
+                      onChange={e => setVal(e.target.value)}
+                      style={inp()} placeholder="Ex: 120,00" />
+                  </Field>
+                  <Field l="Data Prevista de Recebimento">
+                    <input type="date" defaultValue={saved.dataPrevista || ""}
+                      onChange={e => setDt(e.target.value)}
+                      style={inp()} />
+                  </Field>
+                </Row>
+              </div>
+            );
+          })()}
           <HonorariosCard convenio={pt.convenio} regiao={regiao} sessoesAuth={pt.sessoesAuth} />
         </CollapsibleSub>
 

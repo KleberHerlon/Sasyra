@@ -10,6 +10,14 @@
 // ════════════════════════════════════════════════════════════
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+
+function getClientId() {
+  if (GOOGLE_CLIENT_ID) return GOOGLE_CLIENT_ID;
+  try {
+    const config = JSON.parse(localStorage.getItem("sasyra_ai_config") || "{}");
+    return config.googleClientId || "";
+  } catch { return ""; }
+}
 const SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
 // Estado do token (persistido em localStorage)
@@ -21,13 +29,13 @@ function setToken(t) { localStorage.setItem("sasyra_google_token", JSON.stringif
 function clearToken() { localStorage.removeItem("sasyra_google_token"); }
 
 export function isGoogleCalendarConfigured() {
-  return !!GOOGLE_CLIENT_ID;
+  return !!getClientId();
 }
 
 export function getGoogleAuthUrl() {
   const redirect = `${window.location.origin}/oauth-callback.html`;
   const params = new URLSearchParams({
-    client_id: GOOGLE_CLIENT_ID,
+    client_id: getClientId(),
     redirect_uri: redirect,
     response_type: "token",
     scope: SCOPES,

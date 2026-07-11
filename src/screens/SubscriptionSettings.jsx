@@ -45,6 +45,7 @@ export default function SubscriptionSettings({ onNavigate }) {
         const c = JSON.parse(raw);
         setDkKey(c.deepseekKey || "");
         setGmKey(c.geminiKey || "");
+        setGcKey(c.googleClientId || "");
       }
     } catch {}
   }, []);
@@ -52,6 +53,7 @@ export default function SubscriptionSettings({ onNavigate }) {
   const [showChangePlan, setShowChangePlan] = useState(false);
   const [dkKey, setDkKey] = useState("");
   const [gmKey, setGmKey] = useState("");
+  const [gcKey, setGcKey] = useState("");
   const [keySaveMsg, setKeySaveMsg] = useState("");
 
   const nextBilling = new Date(sub.nextBilling).toLocaleDateString("pt-BR");
@@ -297,9 +299,18 @@ export default function SubscriptionSettings({ onNavigate }) {
                 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style={{ color:C.green }}>Obter chave Gemini (grátis)</a>
               </div>
             </div>
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:C.text, marginBottom:4 }}>Google Calendar — Client ID OAuth</div>
+              <div style={{ display:"flex", gap:8 }}>
+                <input type="password" value={gcKey} onChange={e => setGcKey(e.target.value)} placeholder="XXXX.apps.googleusercontent.com" style={{ ...inp({ flex:1, fontSize:12 }) }} />
+              </div>
+              <div style={{ fontSize:9, color:C.textDim, marginTop:3 }}>
+                <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" style={{ color:C.green }}>Criar credencial OAuth 2.0</a> · Redirect: {typeof window !== "undefined" ? window.location.origin + "/Sasyra/oauth-callback.html" : ""}
+              </div>
+            </div>
             <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:4 }}>
               <button onClick={() => {
-                saveAIConfig({ deepseekKey: dkKey, geminiKey: gmKey });
+                saveAIConfig({ deepseekKey: dkKey, geminiKey: gmKey, googleClientId: gcKey });
                 setKeySaveMsg("Chaves salvas com sucesso!");
                 setTimeout(() => setKeySaveMsg(""), 2500);
               }} style={{ ...primaryBtn({ fontSize:12, padding:"7px 16px" }) }}>Salvar Chaves</button>

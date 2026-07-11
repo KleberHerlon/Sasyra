@@ -25,6 +25,11 @@ const CREFITO_REGIOES = {
 };
 
 const DESPESA_CATEGORIAS = ["Aluguel", "Materiais", "Marketing", "Contas", "Equipamentos", "Transporte", "Assinaturas", "Impostos", "Salários", "Outros"];
+const RECORRENCIA_OPTS = [
+  { value: "none", label: "Sem recorrência" },
+  { value: "mensal", label: "Mensal" },
+  { value: "semanal", label: "Semanal" },
+];
 
 const inp = (extra = {}) => ({ width: "100%", boxSizing: "border-box", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 13, padding: "9px 12px", outline: "none", fontFamily: F, ...extra });
 const sel = (extra = {}) => ({ ...inp(), cursor: "pointer", ...extra });
@@ -74,6 +79,10 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
   const [showModal, setShowModal] = useState(null);
   const [editDespesa, setEditDespesa] = useState(null);
 
+  const convenioValores = useMemo(() => {
+    try { const d = localStorage.getItem("sasyra_convenio_valores"); return d ? JSON.parse(d) : {}; } catch { return {}; }
+  }, []);
+
   const period = showYear ? month.slice(0, 4) : month;
   const patients = useMemo(() => {
     try { const d = localStorage.getItem("sasyra_patients"); return d ? JSON.parse(d) : []; } catch { return []; }
@@ -88,7 +97,48 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
   }, [allLogs, period]);
 
   const despesasNoPeriodo = useMemo(() => {
-    return despesas.filter(d => d.data && d.data.startsWith(period));
+    const base = despesas.filter(d => d.data && d.data.startsWith(period));
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const addedIds = new Set(base.map(d => d.id));
+    const autoEntries = [];
+
+    despesas.forEach(d => {
+      if (!d.recorrencia || d.recorrencia === "none") return;
+      if (!d.data) return;
+      if (period !== currentMonth) return;
+
+      const baseDate = new Date(d.data + "T00:00:00");
+      let genDate;
+
+      if (d.recorrencia === "mensal") {
+        genDate = new Date(currentMonth + "-01");
+        if (baseDate.getDate() > 28) genDate.setDate(Math.min(baseDate.getDate(), new Date(genDate.getFullYear(), genDate.getMonth() + 1, 0).getDate()));
+        else genDate.setDate(baseDate.getDate());
+      } else if (d.recorrencia === "semanal") {
+        const daysSince = Math.floor((new Date() - baseDate) / (1000 * 60 * 60 * 24));
+        const weeksSince = Math.floor(daysSince / 7);
+        genDate = new Date(baseDate);
+        genDate.setDate(genDate.getDate() + weeksSince * 7);
+      } else {
+        return;
+      }
+
+      const genKey = `auto_${d.id}_${genDate.toISOString().slice(0, 10)}`;
+      const alreadyExists = base.some(b => b.autoKey === genKey) || addedIds.has(genKey);
+      if (!alreadyExists) {
+        addedIds.add(genKey);
+        autoEntries.push({
+          ...d,
+          id: genKey,
+          data: genDate.toISOString().slice(0, 10),
+          autoKey: genKey,
+          isAuto: true,
+          parentId: d.id,
+        });
+      }
+    });
+
+    return [...base, ...autoEntries].sort((a, b) => b.data.localeCompare(a.data));
   }, [despesas, period]);
 
   const calcSessionValue = (convenio, patientId) => {
@@ -101,15 +151,20 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
     const map = {};
     logsInPeriod.forEach(log => {
       const pid = log.patientId;
-      if (!map[pid]) map[pid] = { patientId: pid, nome: "", convenio: "", sessions: 0, logIds: [] };
+      if (!map[pid]) map[pid] = { patientId: pid, nome: "", convenio: "", sessions: 0, logIds: [], valorConvenio: null, dataPrevistaConvenio: null };
       const p = patients.find(pt => pt.id === pid || pt.nome === pid);
       if (p) { map[pid].nome = p.nome; map[pid].convenio = p.convenio || ""; }
       else map[pid].nome = typeof pid === "string" ? pid : `ID ${pid}`;
       map[pid].sessions++;
       map[pid].logIds.push(log.id);
     });
+    Object.values(map).forEach(m => {
+      const cv = convenioValores[m.patientId] || convenioValores[m.nome] || {};
+      if (cv.valor) m.valorConvenio = cv.valor;
+      if (cv.dataPrevista) m.dataPrevistaConvenio = cv.dataPrevista;
+    });
     return Object.values(map).sort((a, b) => b.sessions - a.sessions);
-  }, [logsInPeriod, patients]);
+  }, [logsInPeriod, patients, convenioValores]);
 
   const totalSessoes = logsInPeriod.length;
   const totalFaturado = useMemo(() =>
@@ -129,6 +184,10 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
     [pagamentos, allLogs, period, patients, valoresPaciente]
   );
   const totalAReceber = totalFaturado - totalRecebido;
+  const totalConvenioAReceber = useMemo(() =>
+    patientSummary.reduce((acc, p) => acc + (p.valorConvenio || 0), 0),
+    [patientSummary]
+  );
   const totalDespesas = despesasNoPeriodo.reduce((acc, d) => acc + Number(d.valor || 0), 0);
   const saldoLiquido = totalRecebido - totalDespesas;
 
@@ -269,6 +328,11 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
               <StatCard icon="💸" label="Despesas" value={totalDespesas} color={C.red} bg={C.redBg} />
               <StatCard icon="🏦" label="Saldo Líquido" value={saldoLiquido} color={saldoLiquido >= 0 ? C.green : C.red} bg={saldoLiquido >= 0 ? C.greenBg : C.redBg} />
             </div>
+            {totalConvenioAReceber > 0 && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8, marginBottom: 10 }}>
+                <StatCard icon="🏥" label="Repasse de Convênios (previsto)" value={totalConvenioAReceber} color={C.blue} bg={C.blueBg} />
+              </div>
+            )}
 
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px" }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>📋 Resumo do período</div>
@@ -326,6 +390,11 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: 700, fontSize: 13, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.nome}</div>
                         <div style={{ fontSize: 10, color: C.textMuted }}>{p.convenio || "—"} · {p.sessions} sessões</div>
+                        {p.valorConvenio && (
+                          <div style={{ fontSize: 10, color: C.blue, fontWeight: 600, marginTop: 2 }}>
+                            🏥 Repasse: R$ {Number(p.valorConvenio).toFixed(2)}{p.dataPrevistaConvenio ? ` · Prev: ${new Date(p.dataPrevistaConvenio+"T00:00:00").toLocaleDateString("pt-BR")}` : ""}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
@@ -412,7 +481,7 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
         {tab === "despesas" && (
           <>
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-              <button onClick={() => setEditDespesa({ data: new Date().toISOString().slice(0, 10), descricao: "", categoria: "Outros", valor: "" })}
+              <button onClick={() => setEditDespesa({ data: new Date().toISOString().slice(0, 10), descricao: "", categoria: "Outros", valor: "", recorrencia: "none" })}
                 style={primaryBtn({ padding: "6px 16px", fontSize: 12 })}>
                 + Nova Despesa
               </button>
@@ -438,7 +507,7 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
                       style={inp({ fontSize: 12 })} placeholder="0,00" />
                   </div>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
                   <div>
                     <span style={lbl()}>Data</span>
                     <input type="date" value={editDespesa.data} onChange={e => setEditDespesa({ ...editDespesa, data: e.target.value })} style={inp({ fontSize: 12 })} />
@@ -447,6 +516,12 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
                     <span style={lbl()}>Categoria</span>
                     <select value={editDespesa.categoria} onChange={e => setEditDespesa({ ...editDespesa, categoria: e.target.value })} style={sel({ fontSize: 12 })}>
                       {DESPESA_CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <span style={lbl()}>Recorrência</span>
+                    <select value={editDespesa.recorrencia || "none"} onChange={e => setEditDespesa({ ...editDespesa, recorrencia: e.target.value })} style={sel({ fontSize: 12 })}>
+                      {RECORRENCIA_OPTS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                     </select>
                   </div>
                 </div>
@@ -471,8 +546,10 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
             {despesasNoPeriodo.map(d => (
               <div key={d.id} style={{
                 display: "flex", alignItems: "center", gap: 10,
-                background: C.card, border: `1px solid ${C.border}`, borderRadius: 10,
+                background: d.isAuto ? C.blueBg : C.card,
+                border: `1px solid ${d.isAuto ? C.blue + "40" : C.border}`, borderRadius: 10,
                 padding: "10px 12px", marginBottom: 6,
+                opacity: d.isAuto ? 0.85 : 1,
               }}>
                 <div style={{
                   width: 4, height: 32, borderRadius: 2,
@@ -480,15 +557,23 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
                   flexShrink: 0,
                 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{d.descricao}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>
+                    {d.descricao}
+                    {d.isAuto && <span style={{ fontSize: 9, color: C.blue, marginLeft: 6, fontWeight: 500 }}>⟳ automático</span>}
+                  </div>
                   <div style={{ fontSize: 10, color: C.textMuted, display: "flex", gap: 8 }}>
                     <span>{d.data}</span>
                     <span>{d.categoria}</span>
+                    {d.recorrencia && d.recorrencia !== "none" && <span style={{ color: C.blue, fontWeight: 600 }}>{d.recorrencia === "mensal" ? "🔁 Mensal" : "🔁 Semanal"}</span>}
                   </div>
                 </div>
                 <div style={{ fontSize: 15, fontWeight: 900, color: C.red }}>R$ {Number(d.valor).toFixed(2)}</div>
-                <button onClick={() => setEditDespesa(d)} style={{ background: "none", border: "none", color: C.textMuted, fontSize: 14, cursor: "pointer", padding: 4 }}>✏️</button>
-                <button onClick={() => handleDelDespesa(d.id)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 14, cursor: "pointer", padding: 4 }}>×</button>
+                {!d.isAuto && (
+                  <>
+                    <button onClick={() => setEditDespesa(d)} style={{ background: "none", border: "none", color: C.textMuted, fontSize: 14, cursor: "pointer", padding: 4 }}>✏️</button>
+                    <button onClick={() => handleDelDespesa(d.id)} style={{ background: "none", border: "none", color: C.textDim, fontSize: 14, cursor: "pointer", padding: 4 }}>×</button>
+                  </>
+                )}
               </div>
             ))}
           </>
@@ -498,7 +583,7 @@ export default function Financeiro({ onNavigateToPatient, onNavigate }) {
           Dados salvos automaticamente · <button onClick={exportCSV} style={{ background: "none", border: "none", color: C.blue, cursor: "pointer", fontSize: 10, textDecoration: "underline", padding: 0 }}>📥 Exportar CSV</button>
           {tab === "pacientes" && <><br />Clique no valor em <strong style={{ color: C.purple }}>roxo</strong> para personalizar o valor por sessão do paciente. Clique em uma sessão para estornar.</>}
           {tab === "comissao" && <><br />A comissão é calculada automaticamente com base nos recebimentos. Use a aba "Pacientes" para marcar recebimentos.</>}
-          {tab === "despesas" && <><br />Despesas fixas (aluguel, contas) podem ser registradas mensalmente. Categorias ajudam na organização fiscal.</>}
+          {tab === "despesas" && <><br />Despesas com recorrência (mensal/semanal) são geradas automaticamente. Itens automáticos aparecem em azul.</>}
         </div>
       </div>
 
