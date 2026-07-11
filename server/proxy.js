@@ -67,11 +67,114 @@ function checkQuota(_plan, _aiAnalysesUsed, _aiLimit) {
   return { allowed: true, overage: true, reason: "over_quota_charge" };
 }
 
+function getProvider() {
+  const deepseekKey = process.env.DEEPSEEK_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (deepseekKey && deepseekKey !== "sk-placeholder") return { provider: "deepseek", key: deepseekKey };
+  if (geminiKey && geminiKey !== "sk-placeholder") return { provider: "gemini", key: geminiKey };
+  return { provider: null, key: null };
+}
+
+async function callDeepSeek(model, messages, maxTokens, patientInfo) {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+
+  const systemExtra = patientInfo.system
+    ? (Array.isArray(patientInfo.system) ? patientInfo.system.join("\n") : patientInfo.system)
+    : "";
+
+  const fullSystem = SYSTEM_PROMPT + (systemExtra ? "\n\n" + systemExtra : "");
+
+  const body = {
+    model: model || "deepseek-chat",
+    max_tokens: maxTokens,
+    messages: [
+      { role: "system", content: fullSystem },
+      ...(messages || [])
+    ],
+    temperature: 0.3,
+  };
+
+  const res = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(`DeepSeek erro ${res.status}: ${JSON.stringify(data)}`);
+  }
+
+  return {
+    text: data.choices?.[0]?.message?.content || "",
+    inputTokens: data.usage?.prompt_tokens || 0,
+    outputTokens: data.usage?.completion_tokens || 0,
+    model: body.model,
+  };
+}
+
+async function callGemini(model, messages, maxTokens, patientInfo) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  const geminiModel = model?.startsWith("gemini") ? model : "gemini-2.0-flash";
+
+  const systemExtra = patientInfo.system
+    ? (Array.isArray(patientInfo.system) ? patientInfo.system.join("\n") : patientInfo.system)
+    : "";
+
+  const fullSystem = SYSTEM_PROMPT + (systemExtra ? "\n\n" + systemExtra : "");
+
+  const contents = (messages || []).map(m => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: typeof m.content === "string" ? m.content : JSON.stringify(m.content) }],
+  }));
+
+  const body = {
+    systemInstruction: { parts: [{ text: fullSystem }] },
+    contents,
+    generationConfig: {
+      maxOutputTokens: maxTokens,
+      temperature: 0.3,
+    },
+  };
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(`Gemini erro ${res.status}: ${JSON.stringify(data)}`);
+  }
+
+  const text = data.candidates?.[0]?.content?.parts?.map(p => p.text).join("") || "";
+
+  return {
+    text,
+    inputTokens: data.usageMetadata?.promptTokenCount || 0,
+    outputTokens: data.usageMetadata?.candidatesTokenCount || 0,
+    model: geminiModel,
+  };
+}
+
 app.post("/api/anthropic", async (req, res) => {
   try {
-    const apiKey = process.env.DEEPSEEK_API_KEY;
-    if (!apiKey || apiKey === "sk-placeholder") {
-      return res.status(500).json({ error: "DEEPSEEK_API_KEY não configurada no servidor. Obtenha sua chave em https://platform.deepseek.com/" });
+    const provider = getProvider();
+
+    if (!provider.provider) {
+      return res.status(500).json({
+        error: "Nenhuma chave de IA configurada. Defina DEEPSEEK_API_KEY ou GEMINI_API_KEY no server/.env.\n\n" +
+               "DeepSeek (pago, barato): https://platform.deepseek.com/\n" +
+               "Gemini (gratuito): https://aistudio.google.com/apikey",
+      });
     }
 
     const { _plan, _aiAnalysesUsed, _aiLimit, _patientName, _queixa } = req.body;
@@ -82,68 +185,45 @@ app.post("/api/anthropic", async (req, res) => {
     }
 
     const maxTokens = Math.min(req.body.max_tokens || 2000, 4000);
-
-    const systemMessages = req.body.system
-      ? [{ role: "system", content: SYSTEM_PROMPT + "\n\n" + (Array.isArray(req.body.system) ? req.body.system.join("\n") : req.body.system) }]
-      : [{ role: "system", content: SYSTEM_PROMPT }];
-
-    const userMessages = (req.body.messages || []).map(m => ({
+    const model = req.body.model || (provider.provider === "gemini" ? "gemini-2.0-flash" : "deepseek-chat");
+    const messages = (req.body.messages || []).map(m => ({
       role: m.role === "assistant" ? "assistant" : "user",
       content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
     }));
 
-    const messages = [...systemMessages, ...userMessages];
-
-    const body = {
-      model: req.body.model || "deepseek-chat",
-      max_tokens: maxTokens,
-      messages,
-      temperature: 0.3,
-    };
-
-    const deepseekRes = await fetch("https://api.deepseek.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    const data = await deepseekRes.json();
-
-    if (deepseekRes.ok && data.usage) {
-      const lastMsg = req.body.messages?.[req.body.messages.length - 1];
-      const promptText = typeof lastMsg?.content === "string" ? lastMsg.content : "";
-      const responseText = data.choices?.[0]?.message?.content || "";
-      saveAnalysis({
-        patientName: _patientName,
-        queixa: _queixa,
-        prompt: promptText,
-        response: responseText,
-        inputTokens: data.usage.prompt_tokens,
-        outputTokens: data.usage.completion_tokens,
-        model: body.model,
-        cachedInputTokens: 0,
-      });
+    let result;
+    if (provider.provider === "deepseek") {
+      result = await callDeepSeek(model, messages, maxTokens, req.body);
+    } else {
+      result = await callGemini(model, messages, maxTokens, req.body);
     }
 
+    const lastMsg = req.body.messages?.[req.body.messages.length - 1];
+    const promptText = typeof lastMsg?.content === "string" ? lastMsg.content : "";
+    saveAnalysis({
+      patientName: _patientName,
+      queixa: _queixa,
+      prompt: promptText,
+      response: result.text,
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens,
+      model: result.model,
+    });
+
     const responseData = {
-      content: data.choices?.[0]?.message?.content
-        ? [{ text: data.choices[0].message.content }]
-        : [],
-      model: data.model || body.model,
-      usage: data.usage ? {
-        input_tokens: data.usage.prompt_tokens,
-        output_tokens: data.usage.completion_tokens,
-      } : null,
-      stop_reason: data.choices?.[0]?.finish_reason || null,
+      content: result.text ? [{ text: result.text }] : [],
+      model: result.model,
+      usage: {
+        input_tokens: result.inputTokens,
+        output_tokens: result.outputTokens,
+      },
+      stop_reason: "stop",
     };
 
-    res.status(deepseekRes.ok ? 200 : deepseekRes.status).json(responseData);
+    res.status(200).json(responseData);
   } catch (err) {
     console.error("Proxy error:", err);
-    res.status(502).json({ error: "Erro ao comunicar com DeepSeek API." });
+    res.status(502).json({ error: err.message || "Erro ao comunicar com API de IA." });
   }
 });
 
@@ -166,7 +246,12 @@ app.get("/api/tokens", (_req, res) => {
 });
 
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", keyConfigured: !!(process.env.DEEPSEEK_API_KEY && process.env.DEEPSEEK_API_KEY !== "sk-placeholder") });
+  const provider = getProvider();
+  res.json({
+    status: "ok",
+    provider: provider.provider || "none",
+    keyConfigured: !!provider.provider,
+  });
 });
 
 const distPath = join(__dirname, "..", "dist");
@@ -178,5 +263,6 @@ if (existsSync(distPath)) {
 }
 
 app.listen(PORT, () => {
-  console.log(`Sasyra proxy rodando em http://localhost:${PORT}`);
+  const provider = getProvider();
+  console.log(`Sasyra proxy rodando em http://localhost:${PORT} (provedor: ${provider.provider || "nenhum configurado"})`);
 });
