@@ -26,8 +26,8 @@ export function useTokens() {
   useEffect(() => { fetchSummary(); }, []);
 
   const estimatedCost = useCallback((inputTokens, outputTokens) => {
-    const INPUT_COST_PER_M = 3.00;
-    const OUTPUT_COST_PER_M = 15.00;
+    const INPUT_COST_PER_M = 0.27;
+    const OUTPUT_COST_PER_M = 1.10;
     return (inputTokens / 1_000_000 * INPUT_COST_PER_M) + (outputTokens / 1_000_000 * OUTPUT_COST_PER_M);
   }, []);
 

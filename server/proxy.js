@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { readFileSync, existsSync } from "fs";
+import { existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { saveAnalysis, listAnalyses, getTokenSummary } from "./memoryStore.js";
@@ -15,10 +15,7 @@ const app = express();
 app.use(cors({ origin: ALLOWED_ORIGIN, credentials: true }));
 app.use(express.json({ limit: "200kb" }));
 
-// ── Shared system prompt block (eligible for prompt caching) ────────────────
-const SYSTEM_PROMPT_BLOCK = {
-  type: "text",
-  text: `Você é um profissional de saúde especialista em medicina baseada em evidências (PEDro, Cochrane, CPGs internacionais).
+const SYSTEM_PROMPT = `Você é um profissional de saúde especialista em medicina baseada em evidências (PEDro, Cochrane, CPGs internacionais).
 Responda estritamente em Português do Brasil (pt-BR).
 
 REGRAS CLÍNICAS:
@@ -26,8 +23,8 @@ REGRAS CLÍNICAS:
 - Quando citar estudos, informe: Autor (Ano). "Título". Periódico. Nível de evidência: X
 - Priorize revisões sistemáticas e meta-análises (OCEBM 1A)
 - Classifique nível de evidência: 1A (revisão sistemática de RCTs), 1B (RCT individual), 2A (revisão de coortes), 2B (coorte individual), etc.
-- **REGRRA FUNDAMENTAL: Todas as referências citadas DEVEM ser de intervenções EXCLUSIVAMENTE fisioterapêuticas** — como cinesioterapia/exercício terapêutico, terapia manual, eletrotermofototerapia, hidroterapia, acupuntura seca, bandagem funcional, educação em dor, reeducação postural, etc.
-- **NÃO cite nem recomende** cirurgias, medicamentos, infiltrações, bloqueios anestésicos, opioides, anti-inflamatórios, procedimentos invasivos, dietas restritivas ou qualquer intervenção fora do escopo da Fisioterapia.
+- REGRA FUNDAMENTAL: Todas as referências citadas DEVEM ser de intervenções EXCLUSIVAMENTE fisioterapêuticas — como cinesioterapia/exercício terapêutico, terapia manual, eletrotermofototerapia, hidroterapia, acupuntura seca, bandagem funcional, educação em dor, reeducação postural, etc.
+- NÃO cite nem recomende cirurgias, medicamentos, infiltrações, bloqueios anestésicos, opioides, anti-inflamatórios, procedimentos invasivos, dietas restritivas ou qualquer intervenção fora do escopo da Fisioterapia.
 - Se houver menção a tratamento médico (cirúrgico ou farmacológico), deve ser apenas como "recomendar encaminhamento ao médico" sem detalhamento.
 
 ESTRUTURA CIF:
@@ -61,24 +58,20 @@ Na Hipótese Diagnóstica Funcional, inclua:
 
 FORMATO DE CITAÇÃO:
 - Autor (Ano). "Título". Periódico. Nível de evidência: X
-- Ex: Smith et al. (2023). "Efeitos da terapia manual". J Orthop Sports Phys Ther. Nível de evidência: 1B`,
-  cache_control: { type: "ephemeral" },
-};
+- Ex: Smith et al. (2023). "Efeitos da terapia manual". J Orthop Sports Phys Ther. Nível de evidência: 1B`;
 
-// ── Quota check helper ─────────────────────────────────────────────────────
-function checkQuota(plan, aiAnalysesUsed, aiLimit) {
-  if (!plan || plan === "avulso") return { allowed: true, overage: true, reason: "pay_per_use" };
-  if (aiLimit <= 0) return { allowed: true, overage: true, reason: "no_included" };
-  if (aiAnalysesUsed < aiLimit) return { allowed: true, overage: false, reason: "within_quota" };
+function checkQuota(_plan, _aiAnalysesUsed, _aiLimit) {
+  if (!_plan || _plan === "avulso") return { allowed: true, overage: true, reason: "pay_per_use" };
+  if (_aiLimit <= 0) return { allowed: true, overage: true, reason: "no_included" };
+  if (_aiAnalysesUsed < _aiLimit) return { allowed: true, overage: false, reason: "within_quota" };
   return { allowed: true, overage: true, reason: "over_quota_charge" };
 }
 
-// ── AI PROXY ────────────────────────────────────────────────────────────────
 app.post("/api/anthropic", async (req, res) => {
   try {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey || apiKey === "sk-ant-placeholder") {
-      return res.status(500).json({ error: "ANTHROPIC_API_KEY não configurada no servidor." });
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    if (!apiKey || apiKey === "sk-placeholder") {
+      return res.status(500).json({ error: "DEEPSEEK_API_KEY não configurada no servidor. Obtenha sua chave em https://platform.deepseek.com/" });
     }
 
     const { _plan, _aiAnalysesUsed, _aiLimit, _patientName, _queixa } = req.body;
@@ -88,48 +81,69 @@ app.post("/api/anthropic", async (req, res) => {
       return res.status(403).json({ error: "Cota de análises excedida. Adquira mais créditos." });
     }
 
-    const maxTokens = Math.min(req.body.max_tokens || 1000, 1800);
+    const maxTokens = Math.min(req.body.max_tokens || 2000, 4000);
+
+    const systemMessages = req.body.system
+      ? [{ role: "system", content: SYSTEM_PROMPT + "\n\n" + (Array.isArray(req.body.system) ? req.body.system.join("\n") : req.body.system) }]
+      : [{ role: "system", content: SYSTEM_PROMPT }];
+
+    const userMessages = (req.body.messages || []).map(m => ({
+      role: m.role === "assistant" ? "assistant" : "user",
+      content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+    }));
+
+    const messages = [...systemMessages, ...userMessages];
 
     const body = {
-      model: req.body.model || "claude-sonnet-4-6",
+      model: req.body.model || "deepseek-chat",
       max_tokens: maxTokens,
-      system: [SYSTEM_PROMPT_BLOCK, ...(Array.isArray(req.body.system) ? req.body.system : req.body.system ? [{ type: "text", text: req.body.system }] : [])],
-      messages: req.body.messages || [],
+      messages,
+      temperature: 0.3,
     };
 
-    const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+    const deepseekRes = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "anthropic-beta": "prompt-caching-2025-02-19",
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(body),
     });
 
-    const data = await anthropicRes.json();
+    const data = await deepseekRes.json();
 
-    if (anthropicRes.ok && data.usage) {
+    if (deepseekRes.ok && data.usage) {
       const lastMsg = req.body.messages?.[req.body.messages.length - 1];
       const promptText = typeof lastMsg?.content === "string" ? lastMsg.content : "";
-      const responseText = data.content?.map(c => c.text || "").join("\n") || "";
+      const responseText = data.choices?.[0]?.message?.content || "";
       saveAnalysis({
         patientName: _patientName,
         queixa: _queixa,
         prompt: promptText,
         response: responseText,
-        inputTokens: data.usage.input_tokens,
-        outputTokens: data.usage.output_tokens,
+        inputTokens: data.usage.prompt_tokens,
+        outputTokens: data.usage.completion_tokens,
         model: body.model,
-        cachedInputTokens: data.usage.cache_creation_input_tokens || data.usage.cache_read_input_tokens || 0,
+        cachedInputTokens: 0,
       });
     }
 
-    res.status(anthropicRes.status).json(data);
+    const responseData = {
+      content: data.choices?.[0]?.message?.content
+        ? [{ text: data.choices[0].message.content }]
+        : [],
+      model: data.model || body.model,
+      usage: data.usage ? {
+        input_tokens: data.usage.prompt_tokens,
+        output_tokens: data.usage.completion_tokens,
+      } : null,
+      stop_reason: data.choices?.[0]?.finish_reason || null,
+    };
+
+    res.status(deepseekRes.ok ? 200 : deepseekRes.status).json(responseData);
   } catch (err) {
     console.error("Proxy error:", err);
-    res.status(502).json({ error: "Erro ao comunicar com Anthropic API." });
+    res.status(502).json({ error: "Erro ao comunicar com DeepSeek API." });
   }
 });
 
@@ -152,7 +166,7 @@ app.get("/api/tokens", (_req, res) => {
 });
 
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", keyConfigured: process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY !== "sk-ant-placeholder" });
+  res.json({ status: "ok", keyConfigured: !!(process.env.DEEPSEEK_API_KEY && process.env.DEEPSEEK_API_KEY !== "sk-placeholder") });
 });
 
 const distPath = join(__dirname, "..", "dist");
