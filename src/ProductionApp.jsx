@@ -8,6 +8,7 @@ import { useSubscription } from "./hooks/useSubscription";
 import { useSupabasePatients, useSupabaseAssessments, useSupabaseLogs } from "./hooks/useSupabaseData";
 import { detectKB, detectMultipleKB, detectLocalDor } from "./utils/clinicalDetection";
 import { FISIO_SUB_MODULES, FISIO_MODULE_MAP } from "./data/modules";
+import { runAIAnalysis } from "./lib/aiClient";
 import { filterPatientsByModule, MODULE_LABELS } from "./data/moduleAssignment";
 import AssignModulesModal from "./components/AssignModulesModal";
 
@@ -1863,15 +1864,12 @@ export default function Sasyra() {
         `Observações: ${obs}`,
       ].join("\n");
 
-      const res = await fetch("/api/anthropic", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          model:"deepseek-chat", max_tokens:2800,
-          _patientName: pt.nome,
-          _queixa: queixa,
-          system:"A saída deve ser gerada estritamente em Português do Brasil (pt-BR). Use terminologia clínica humanizada adotada no Brasil. É terminantemente proibido responder em inglês ou português de Portugal.",
-          messages:[{role:"user",content:
+      const result = await runAIAnalysis({
+        model:"deepseek-chat", max_tokens:2800,
+        _patientName: pt.nome,
+        _queixa: queixa,
+        system:"A saída deve ser gerada estritamente em Português do Brasil (pt-BR). Use terminologia clínica humanizada adotada no Brasil.",
+        messages:[{role:"user",content:
 `Você é fisioterapeuta ortopédico especialista em medicina baseada em evidências (PEDro, Cochrane, CPGs internacionais).
 Com base nos dados clínicos abaixo, forneça análise completa e estruturada:
 
@@ -1916,12 +1914,12 @@ Seja preciso, clínico e baseado em evidências. Cada intervenção DEVE ter cit
 
 ⚠ REGRA FUNDAMENTAL: Cite APENAS referências de intervenções FISIOTERAPÊUTICAS — cinesioterapia, terapia manual, eletrotermofototerapia, hidroterapia, agulhamento seco, bandagem, educação em dor, etc.
 NÃO cite nem recomende cirurgias, medicamentos, infiltrações ou qualquer procedimento fora do escopo da Fisioterapia.`
-          }]
-        })
+        }]
       });
-      const d = await res.json();
-      setAiRes(d.content?.map(c=>c.text||"").join("\n")||"Sem resposta.");
-    } catch { setAiRes("Erro ao consultar IA. Verifique a conexão."); }
+      setAiRes(result.text);
+    } catch(err) {
+      setAiRes("Erro ao consultar IA.\n\n" + (err.message || "Verifique a conexão e configuração de API."));
+    }
     setAiLoad(false);
   };
 
