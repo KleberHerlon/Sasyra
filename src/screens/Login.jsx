@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import LogoSVG from '../components/LogoSVG';
 import './Login.css';
 
 export default function Login() {
@@ -31,11 +32,7 @@ export default function Login() {
       <main className="login-main">
         {/* Header / Logo */}
         <div className="login-header animate-float">
-          <div className="logo-box">
-            <span className="material-symbols-outlined logo-icon">clinical_notes</span>
-          </div>
-          <h1 className="app-title">SASYRA</h1>
-          <p className="app-subtitle">Assistente Clínico</p>
+          <LogoSVG />
         </div>
 
         {/* Glassmorphism Card */}

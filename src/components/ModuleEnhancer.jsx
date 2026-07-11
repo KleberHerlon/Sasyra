@@ -151,7 +151,7 @@ export function useEnhancer(moduleName, studentId, storageKey) {
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
         body: JSON.stringify({
-          model: "claude-sonnet-4-6", max_tokens: 2800,
+          model: "deepseek-chat", max_tokens: 2800,
           _patientName: studentId,
           _queixa: pain.localDor.join(", "),
           _plan: plan,

@@ -33,7 +33,7 @@ export function saveAnalysis({ patientName, queixa, prompt, response, inputToken
     inputTokens: inputTokens || 0,
     outputTokens: outputTokens || 0,
     cachedInputTokens: cachedInputTokens || 0,
-    model: model || "claude-sonnet-4-6",
+    model: model || "deepseek-chat",
   };
   store.analyses.push(entry);
   if (store.analyses.length > 500) store.analyses = store.analyses.slice(-500);
