@@ -1,8 +1,8 @@
 const CACHE_NAME = "sasyra-v1";
 const ASSETS = [
-  "/",
-  "/index.html",
-  "/manifest.json",
+  "/Sasyra/",
+  "/Sasyra/index.html",
+  "/Sasyra/manifest.json",
 ];
 
 self.addEventListener("install", (event) => {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ehsImage from "/ehs-erection-scale.png";
 
 const EHS_STAGES = [
   { grade: 0, label: "E0 — Sem ereção", desc: "Pênis flácido, sem aumento de volume ou rigidez", detail: "Disfunção erétil grave" },
@@ -39,7 +40,7 @@ export default function ErectionRigidityScale({ value, onChange, colors }) {
         {/* Imagem à esquerda */}
         <div style={{ position: "relative", background: "#fff", borderRadius: 8, border: `1px solid ${border}`, overflow: "hidden", width: 110, flexShrink: 0 }}>
           <img
-            src="/ehs-erection-scale.png"
+            src={ehsImage}
             alt="Escala de Rigidez da Ereção"
             style={{ width: "100%", height: "auto", display: "block" }}
           />

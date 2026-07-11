@@ -1,4 +1,5 @@
 import { useState } from "react";
+import bristolImage from "/bristol-stool-scale.png";
 
 const BRISTOL_TYPES = [
   { type: 1, label: "Tipo 1", desc: "Caroços duros separados", detail: "Constipação grave" },
@@ -46,7 +47,7 @@ export default function BristolStoolScale({ value, onChange, colors }) {
         {/* Imagem interativa com zonas clicáveis sobrepostas */}
         <div style={{ position: "relative", background: "#fff", borderRadius: 8, border: `1px solid ${border}`, overflow: "hidden", width: 100, flexShrink: 0 }}>
           <img
-            src="/bristol-stool-scale.png"
+            src={bristolImage}
             alt="Escala de Bristol"
             style={{ width: "100%", height: "auto", display: "block" }}
           />
