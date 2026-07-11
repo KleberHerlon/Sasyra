@@ -609,6 +609,7 @@ export function SessionLogSection({ logs, addLog, colors, sessionLabel = "Sessã
 export function AIAnalysisSection({ aiRes, runAI, summaryText, patientName, moduleLabel, colors }) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
 
   const handleRun = async () => {
     setLoading(true);
@@ -623,12 +624,14 @@ export function AIAnalysisSection({ aiRes, runAI, summaryText, patientName, modu
     });
   };
 
+  const reportHTML = (aiRes || "").replace(/\n/g, "<br/>");
+
   const handlePrintAi = () => {
     const w = window.open("", "_blank");
     w.document.write(`
       <html><head><title>Análise IA — SASYRA</title>
-      <style>body{font-family:Inter,sans-serif;padding:40px;color:#1a202c;line-height:1.8;font-size:14px;max-width:800px;margin:0 auto}
-      pre{white-space:pre-wrap;margin:0;font-family:Inter,sans-serif}h1{color:#0e141b;font-size:20px;border-bottom:2px solid #0f6e56;padding-bottom:8px}
+      <style>body{font-family:'Inter','Segoe UI',sans-serif;padding:40px;color:#1a202c;line-height:1.8;font-size:14px;max-width:800px;margin:0 auto}
+      pre{white-space:pre-wrap;margin:0;font-family:'Inter','Segoe UI',sans-serif}h1{color:#0e141b;font-size:20px;border-bottom:2px solid #0f6e56;padding-bottom:8px}
       .header{color:#7c8fa6;font-size:12px;margin:8px 0 24px}
       .footer{text-align:center;color:#7c8fa6;font-size:11px;margin-top:40px;padding-top:16px;border-top:1px solid #e2e8f0}
       @media print{body{padding:20px}}</style></head><body>
@@ -640,6 +643,72 @@ export function AIAnalysisSection({ aiRes, runAI, summaryText, patientName, modu
     `);
     w.document.close();
     setTimeout(() => w.print(), 500);
+  };
+
+  const handleDownloadAi = () => {
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><title>Análise IA — SASYRA</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter','Segoe UI',sans-serif;color:#1a202c;line-height:1.8;font-size:14px}
+  .page{max-width:800px;margin:0 auto;padding:40px}
+  .letterhead{border-bottom:3px solid #0f6e56;padding-bottom:20px;margin-bottom:30px;display:flex;justify-content:space-between;align-items:flex-end}
+  .letterhead .logo{font-size:24px;font-weight:900;color:#0f6e56;letter-spacing:-0.5px}
+  .letterhead .logo span{color:#7c8fa6;font-size:11px;display:block;letter-spacing:3px;font-weight:700;text-transform:uppercase;margin-top:2px}
+  .letterhead .doc-info{text-align:right;font-size:11px;color:#7c8fa6}
+  .patient-bar{background:#f0fdf4;border-radius:8px;padding:12px 16px;margin-bottom:24px;display:flex;gap:24px;flex-wrap:wrap;font-size:12px}
+  .patient-bar strong{color:#0f6e56}
+  .content{white-space:pre-wrap;font-size:13px;line-height:1.9}
+  .content h1,.content h2,.content h3{color:#0f6e56;margin:20px 0 10px}
+  .content strong{color:#0e141b}
+  .footer{text-align:center;color:#7c8fa6;font-size:10px;margin-top:40px;padding-top:16px;border-top:1px solid #e2e8f0}
+  @media print{.page{padding:20px}}
+</style></head>
+<body>
+<div class="page">
+  <div class="letterhead">
+    <div class="logo">
+      SASYRA
+      <span>Reabilitação e Evidência</span>
+    </div>
+    <div class="doc-info">
+      ANÁLISE CLÍNICA POR IA<br/>
+      ${moduleLabel || "Clínico"}<br/>
+      ${new Date().toLocaleDateString("pt-BR", {day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})}
+    </div>
+  </div>
+
+  <div class="patient-bar">
+    <div><strong>Paciente:</strong> ${patientName || "—"}</div>
+    <div><strong>Módulo:</strong> ${moduleLabel || "Clínico"}</div>
+    <div><strong>Data:</strong> ${new Date().toLocaleDateString("pt-BR")}</div>
+  </div>
+
+  <div class="content">
+    ${aiRes ? aiRes.split("\n").map(line => line.trim()).join("<br/>") : "Nenhuma análise disponível."}
+  </div>
+
+  <div class="footer">
+    <strong>SASYRA</strong> — Sistema de Assistência e Análise em Saúde<br/>
+    Documento gerado automaticamente com inteligência artificial baseada em evidências científicas (PEDro, Cochrane, CPGs).<br/>
+    Este documento é complementar à avaliação clínica e não substitui o julgamento profissional.<br/>
+    Gerado em ${new Date().toLocaleString("pt-BR")}
+  </div>
+</div>
+</body></html>`;
+
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `SASYRA_Analise_IA_${patientName || "paciente"}_${new Date().toISOString().slice(0,10)}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setDownloaded(true);
+    setTimeout(() => setDownloaded(false), 2000);
   };
 
   const handleShare = async () => {
@@ -669,28 +738,36 @@ export function AIAnalysisSection({ aiRes, runAI, summaryText, patientName, modu
         {loading ? "⏳ Analisando..." : "🔍 Gerar análise"}
       </button>
       {aiRes && (
-        <div style={{ marginTop: 16, background: colors.surface, border: `1px solid ${(colors.accent || colors.green)}30`, borderRadius: 10, padding: 16 }}>
-          <div style={{ fontSize: 9, fontWeight: 800, color: colors.accent || colors.green, letterSpacing: "0.1em", marginBottom: 10, textTransform: "uppercase" }}>
-            ANÁLISE CLÍNICA — SASYRA IA
+        <div style={{ marginTop: 16, background: "#fff", border: `1px solid ${(colors.accent || colors.green)}40`, borderRadius: 12, overflow: "hidden" }}>
+          <div style={{ background: `linear-gradient(135deg, ${colors.accent || "#0f6e56"}15, ${colors.accent || "#0f6e56"}08)`, borderBottom: `1px solid ${(colors.accent || colors.green)}30`, padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap:"wrap", gap:8 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: colors.accent || "#0f6e56", letterSpacing: "-0.3px" }}>SASYRA</div>
+              <div style={{ fontSize: 8, fontWeight: 700, color: colors.textMuted, letterSpacing: "2px", textTransform: "uppercase" }}>Análise Clínica Baseada em Evidências</div>
+            </div>
+            <div style={{ textAlign: "right", fontSize: 10, color: colors.textMuted }}>
+              {patientName || "—"}<br/>{new Date().toLocaleDateString("pt-BR")}
+            </div>
           </div>
-          {aiRes === "Carregando..." ? (
-            <div style={{ fontSize: 12, color: colors.textMuted }}>Carregando...</div>
-          ) : (
-            <pre style={{ fontSize: 12, color: colors.text, whiteSpace: "pre-wrap", margin: 0, lineHeight: 1.7, fontFamily: colors.font || "'Inter',sans-serif" }}>{aiRes}</pre>
-          )}
-          <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-            <button type="button" onClick={handlePrintAi}
-              style={{ background: colors.text, color: colors.card, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif" }}>
-              🖨️ Imprimir
-            </button>
-            <button type="button" onClick={handleCopy}
-              style={{ background: "transparent", color: colors.accent || colors.green, border: `1px solid ${(colors.accent || colors.green)}50`, borderRadius: 8, padding: "7px 14px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif" }}>
-              {copied ? "✓ Copiado!" : "📋 Copiar"}
-            </button>
-            <button type="button" onClick={handleShare}
-              style={{ background: "transparent", color: colors.accent || colors.green, border: `1px solid ${(colors.accent || colors.green)}50`, borderRadius: 8, padding: "7px 14px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif" }}>
-              📤 Compartilhar
-            </button>
+          <div style={{ padding: 18 }}>
+            {aiRes === "Carregando..." ? (
+              <div style={{ fontSize: 12, color: colors.textMuted }}>Carregando...</div>
+            ) : (
+              <pre style={{ fontSize: 12, color: colors.text, whiteSpace: "pre-wrap", margin: 0, lineHeight: 1.7, fontFamily: colors.font || "'Inter','Segoe UI',sans-serif" }}>{aiRes}</pre>
+            )}
+            <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap", borderTop: `1px solid ${colors.borderLight || "#e2e8f0"}`, paddingTop: 12 }}>
+              <button type="button" onClick={handleDownloadAi}
+                style={{ background: colors.accent || colors.green, color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif" }}>
+                {downloaded ? "✓ Baixado!" : "📥 Baixar Análise"}
+              </button>
+              <button type="button" onClick={handlePrintAi}
+                style={{ background: colors.text, color: colors.card, border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif" }}>
+                🖨️ Imprimir
+              </button>
+              <button type="button" onClick={handleCopy}
+                style={{ background: "transparent", color: colors.accent || colors.green, border: `1px solid ${(colors.accent || colors.green)}50`, borderRadius: 8, padding: "8px 16px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: colors.font || "'Inter',sans-serif" }}>
+                {copied ? "✓ Copiado!" : "📋 Copiar"}
+              </button>
+            </div>
           </div>
         </div>
       )}

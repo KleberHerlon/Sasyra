@@ -2828,9 +2828,43 @@ NÃO cite nem recomende cirurgias, medicamentos, infiltrações ou qualquer proc
 
               {/* ── Plano de tratamento (AI) ───────────────────────────────── */}
               {aiRes && (
-                <div style={{ marginBottom:18 }}>
-                  <div style={{ fontWeight:800, color:"#0F6E56", fontSize:12, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8, borderBottom:"1px solid #E2E8F0", paddingBottom:6 }}>Plano de Tratamento — Análise Baseada em Evidências</div>
-                  <div style={{ fontSize:12, whiteSpace:"pre-wrap", background:"#F8FAFC", borderRadius:8, padding:14, lineHeight:1.8, color:"#1a202c" }}>{aiRes}</div>
+                <div style={{ marginBottom:18, background:"#fff", borderRadius:12, border:"1px solid #0F6E5640", overflow:"hidden" }}>
+                  <div style={{ background:"linear-gradient(135deg, #0F6E5615, #0F6E5608)", borderBottom:"1px solid #0F6E5630", padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8 }}>
+                    <div>
+                      <div style={{ fontSize:14, fontWeight:800, color:"#0F6E56", letterSpacing:"-0.3px" }}>SASYRA</div>
+                      <div style={{ fontSize:8, fontWeight:700, color:"#7C8FA6", letterSpacing:"2px", textTransform:"uppercase" }}>Análise Clínica Baseada em Evidências</div>
+                    </div>
+                    <div style={{ textAlign:"right", fontSize:10, color:"#7C8FA6" }}>
+                      {pt.nome || "—"}<br/>{new Date().toLocaleDateString("pt-BR")}
+                    </div>
+                  </div>
+                  <div style={{ padding:"14px 16px" }}>
+                    <div style={{ fontSize:12, whiteSpace:"pre-wrap", lineHeight:1.8, color:"#1a202c", fontFamily:"'Inter','Segoe UI',sans-serif" }}>{aiRes}</div>
+                    <div style={{ display:"flex", gap:8, marginTop:12, flexWrap:"wrap", borderTop:"1px solid #E2E8F0", paddingTop:10 }}>
+                      <button type="button" onClick={() => {
+                        const html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>SASYRA — Análise IA</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,sans-serif;color:#1a202c;line-height:1.8;font-size:14px}.page{max-width:800px;margin:0 auto;padding:40px}.lh{border-bottom:3px solid #0f6e56;padding-bottom:20px;margin-bottom:30px;display:flex;justify-content:space-between;align-items:flex-end}.lh .logo{font-size:24px;font-weight:900;color:#0f6e56}.lh .logo span{color:#7c8fa6;font-size:11px;display:block;letter-spacing:3px;font-weight:700;text-transform:uppercase;margin-top:2px}.lh .di{text-align:right;font-size:11px;color:#7c8fa6}.pb{background:#f0fdf4;border-radius:8px;padding:12px 16px;margin-bottom:24px;display:flex;gap:24px;flex-wrap:wrap;font-size:12px}.pb strong{color:#0f6e56}.ct{white-space:pre-wrap;font-size:13px;line-height:1.9}.ft{text-align:center;color:#7c8fa6;font-size:10px;margin-top:40px;padding-top:16px;border-top:1px solid #e2e8f0}</style></head><body><div class="page"><div class="lh"><div class="logo">SASYRA<span>Reabilitação e Evidência</span></div><div class="di">ANÁLISE CLÍNICA POR IA<br/>Ortopedia / Fisioterapia<br/>' + new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}) + '</div></div><div class="pb"><div><strong>Paciente:</strong> ' + (pt.nome || "—") + '</div><div><strong>Módulo:</strong> Ortopedia</div><div><strong>Data:</strong> ' + new Date().toLocaleDateString("pt-BR") + '</div></div><div class="ct">' + aiRes.split("\\n").map(l=>l.trim()).join("<br/>") + '</div><div class="ft"><strong>SASYRA</strong> — Sistema de Assistência e Análise em Saúde<br/>Documento gerado com inteligência artificial baseada em evidências (PEDro, Cochrane, CPGs).<br/>Gerado em ' + new Date().toLocaleString("pt-BR") + '</div></div></body></html>';
+                        const blob = new Blob([html], {type:"text/html;charset=utf-8"});
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = "SASYRA_Analise_IA_" + (pt.nome || "paciente") + "_" + new Date().toISOString().slice(0,10) + ".html";
+                        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                      }} style={{ background:"#0F6E56", color:"#fff", border:"none", borderRadius:8, padding:"8px 16px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Inter',sans-serif" }}>
+                        📥 Baixar Análise
+                      </button>
+                      <button type="button" onClick={() => {
+                        const w = window.open("","_blank");
+                        w.document.write('<html><head><title>SASYRA — Análise IA</title><style>body{font-family:Inter,sans-serif;padding:40px;color:#1a202c;line-height:1.8;font-size:14px;max-width:800px;margin:0 auto}pre{white-space:pre-wrap;margin:0;font-family:Inter,sans-serif}h1{color:#0e141b;font-size:20px;border-bottom:2px solid #0f6e56;padding-bottom:8px}.hdr{color:#7c8fa6;font-size:12px;margin:8px 0 24px}.ftr{text-align:center;color:#7c8fa6;font-size:11px;margin-top:40px;padding-top:16px;border-top:1px solid #e2e8f0}@media print{body{padding:20px}}</style></head><body><h1>SASYRA — Análise Clínica</h1><div class="hdr">Paciente: ' + (pt.nome || "—") + ' | Ortopedia | ' + new Date().toLocaleDateString("pt-BR") + '</div><pre>' + aiRes + '</pre><div class="ftr">SASYRA — Sistema de Assistência e Análise em Saúde<br/>Documento gerado em ' + new Date().toLocaleString("pt-BR") + '</div></body></html>');
+                        w.document.close(); setTimeout(()=>w.print(),500);
+                      }} style={{ background:"#1a202c", color:"#fff", border:"none", borderRadius:8, padding:"8px 16px", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Inter',sans-serif" }}>
+                        🖨️ Imprimir
+                      </button>
+                      <button type="button" onClick={() => navigator.clipboard.writeText(aiRes)} style={{ background:"transparent", color:"#0F6E56", border:"1px solid #0F6E5650", borderRadius:8, padding:"8px 16px", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Inter',sans-serif" }}>
+                        📋 Copiar
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
 
