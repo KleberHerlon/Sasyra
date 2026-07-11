@@ -3,6 +3,13 @@
 React 19 + Vite 8 SPA for clinical physiotherapy/physical-education assessment.
 pt-BR product (default locale), i18n ready. PWA installable.
 
+## Branch & deploy workflow (PRODUÇÃO)
+
+- **`main`** = PRODUÇÃO. Deploy automático para GitHub Pages (`https://kleberherlon.github.io/Sasyra/`) via GitHub Actions a cada push.
+- **`develop`** = ambiente de testes. **Todas as alterações devem ser feitas aqui.** Nunca commite direto na `main`.
+- Fluxo: `develop` → testar local (`npm run dev` + `npm test`) → abrir PR `develop` → `main` → aprovar → merge → deploy automático.
+- `main` está protegida: exige 1 aprovação de PR, sem push direto.
+
 ## Commands
 
 - `npm run dev` — Vite dev server on :5173. Proxies `/api` → `http://localhost:3001` (see `vite.config.js`).
