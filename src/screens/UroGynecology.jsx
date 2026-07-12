@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useEnhancer, PainSection, RedFlagsSection, SessionLogSection, AIAnalysisSection, ReportSection } from "../components/ModuleEnhancer";
 import CifAndHonorarios from "../components/CifAndHonorarios";
+import PatientIdentification from "../components/PatientIdentification";
 import CifSection from "../components/CifSection";
 import { CIF } from "../data/cif";
 import { AudioField, CollapsibleSection, CollapsibleSub, SessionCounter, HonorariosCard, Row, useMediaQuery } from "../components";
@@ -740,14 +741,7 @@ export default function UroGynecology({ student, students, allPatients, currentM
               )}
             </CollapsibleSection>
 
-            <CollapsibleSection title="Dados Administrativos e Financeiros" icon="💰" expanded={expandedSections.includes("admin")} onToggle={()=>toggleSection("admin")}>
-              <CollapsibleSub title="Honorários e CIFs">
-                <HonorariosCard convenio={student?.convenio} regiao={regiao} sessoesAuth={student?.sessoesAuth} />
-              </CollapsibleSub>
-              <CollapsibleSub title="Sessões Autorizadas">
-                <SessionCounter value={student?.sessoesAuth || ""} onChange={v => onUpdateStudent?.("sessoesAuth", v)} />
-              </CollapsibleSub>
-            </CollapsibleSection>
+            <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} />
           </>
         )}
 

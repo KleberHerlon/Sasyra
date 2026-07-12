@@ -11,6 +11,7 @@ import GeneralAssessment from "../components/GeneralAssessment";
 import { calcMAS, calcBBS, calcMIF, calcGlasgow, calcTIS } from "../data/neuroScales";
 import LogoSVG from "../components/LogoSVG";
 import StopwatchField from "../components/StopwatchField";
+import PatientIdentification from "../components/PatientIdentification";
 import DermatomeMap from "../components/DermatomeMap";
 import ReflexMatrix from "../components/ReflexMatrix";
 
@@ -890,27 +891,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
             </div>
           </Section>
 
-          {/* 👤 Identificação do Paciente */}
-          <CollapsibleSection title="Identificação do Paciente" icon="👤" expanded={expandedSections.includes("identificacao")} onToggle={()=>toggleSection("identificacao")}>
-            <Row cols={isMobile?"1fr":"1fr 1fr 1fr"} gap="12px 16px">
-              <div style={{gridColumn:isMobile?"1":"span 2"}}>
-                <span style={lbl()}>Nome completo</span>
-                <input type="text" value={student?.nome||""} style={inp()} readOnly />
-              </div>
-              <div><span style={lbl()}>Data da avaliação</span><input type="date" style={inp()} defaultValue={new Date().toISOString().slice(0,10)} /></div>
-            </Row>
-            <Row cols={isMobile?"1fr":"1fr 1fr"} gap="12px 16px">
-              <div><span style={lbl()}>Data de nascimento</span><input type="date" value={student?.dataNasc||""} style={inp()} readOnly /></div>
-              <div><span style={lbl()}>Sexo</span><input type="text" value={student?.sexo||""} style={inp()} readOnly /></div>
-            </Row>
-            <CollapsibleSub title="Dados Administrativos e Financeiros">
-              <Row cols={isMobile?"1fr":"1fr 1fr"} gap="12px 16px">
-                <div><span style={lbl()}>Convênio</span><select value={student?.convenio||""} style={sel()}>{["","Particular","Unimed","Bradesco Saúde","Amil","SulAmérica","Hapvida","NotreDame","IPSEMG","SUS / NASF","Outro"].map(o=><option key={o} value={o}>{o||"Selecionar…"}</option>)}</select></div>
-                {student?.convenio==="Particular"&&<div><span style={lbl()}>Região CREFITO</span><select value={regiao} onChange={e=>setRegiao(e.target.value)} style={sel()}>{["",...Object.keys(CREFITO_REGIOES)].map(o=><option key={o} value={o}>{o||"Selecionar…"}</option>)}</select></div>}
-              </Row>
-              {student?.convenio==="Particular"&&regiao&&<HonorariosCard convenio="Particular" regiao={regiao} sessoesAuth={student?.sessoesAuth||0} />}
-            </CollapsibleSub>
-          </CollapsibleSection>
+          <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} />
 
           {/* 📝 Queixa Principal e Anamnese */}
           <CollapsibleSection title="Queixa Principal e Anamnese" icon="📝" expanded={expandedSections.includes("queixa")} onToggle={()=>toggleSection("queixa")}>

@@ -7,6 +7,7 @@ import { CollapsibleSection, CollapsibleSub, AudioField, Row, useMediaQuery } fr
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import GeneralAssessment from "../components/GeneralAssessment";
+import PatientIdentification from "../components/PatientIdentification";
 import { detectLocalDor } from "../utils/clinicalDetection.js";
 import { useClinicalScan } from "../hooks/useClinicalScan.js";
 import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
@@ -480,6 +481,7 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
       <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
         {tab === "avaliacao" && (
           <>
+            <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} />
             <Section title="Anamnese Oncológica" icon="📋">
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
                 Preencha os dados da avaliação oncológica, tipo de câncer, estadiamento e tratamentos realizados.

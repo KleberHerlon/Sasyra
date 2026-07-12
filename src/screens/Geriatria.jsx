@@ -9,6 +9,7 @@ import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import GeneralAssessment from "../components/GeneralAssessment";
 import { detectLocalDor } from "../utils/clinicalDetection.js";
 import { calcMEEM, calcGDS15, calcSarcF, calcKatz, calcLawton, calcTinetti, calcFragilidade, calcBBS } from "../data/geriatriaScales";
+import PatientIdentification from "../components/PatientIdentification";
 import { useClinicalScan } from "../hooks/useClinicalScan.js";
 import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
 import { extractClinicalEntities } from "../utils/clinicalDetection.js";
@@ -534,6 +535,7 @@ export default function Geriatria({ student, students, allPatients, currentModul
       <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
         {tab === "avaliacao" && (
           <>
+            <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} />
             <Section title="Anamnese Geriátrica" icon="📋">
               <div style={{ fontSize:12, color:C.textMuted, marginBottom:12 }}>História clínica, comorbidades, medicações e condições funcionais e sociais.</div>
               <div style={{ background:C.redBg, border:`1.5px solid ${C.red}`, borderRadius:12, padding:"14px 16px", marginBottom:12 }}>
