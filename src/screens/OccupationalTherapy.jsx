@@ -859,7 +859,7 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
                   value={yellowFlags} onChange={setYellowFlags} activeColor={C.amber} />
               </div>
               <CollapsibleSub title="BodyMap — Mapa Corporal de Dor">
-                <BodyMap value={bodyPain} onChange={setBodyPain} colors={{ mark:C.purple, ...C }} />
+                <BodyMap value={bodyPain} onChange={setBodyPain} colors={{ mark:C.purple, ...C }} sex={student?.sexo} />
               </CollapsibleSub>
               {kbList.length > 0 && (
                 <div style={{ marginTop:12, background:C.cardAlt, borderRadius:10, padding:"14px 16px" }}>

@@ -549,7 +549,7 @@ export default function Rheumatology({ student, students, allPatients, currentMo
       <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
         {tab === "avaliacao" && (
           <>
-            <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} />
+            <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} expanded={expandedSections.includes("identificacao")} onToggle={()=>toggleSection("identificacao")} />
             <Section title="Anamnese Reumatológica" icon="📋">
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
                 Preencha os dados da avaliação reumatológica, diagnóstico, tempo de doença, rigidez matinal e articulações envolvidas.
@@ -630,7 +630,7 @@ export default function Rheumatology({ student, students, allPatients, currentMo
               </div>
             </Section>
 
-            <GeneralAssessment storageKey="reumato" studentId={sid} colors={{ ...C, accent: C.purple }} initialBodyPain={localDor} />
+            <GeneralAssessment storageKey="reumato" studentId={sid} colors={{ ...C, accent: C.purple }} initialBodyPain={localDor} sex={student?.sexo} />
 
             <CifSection cifSuggestions={cifSuggestionsReuma} autoCif={autoCifReuma} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 

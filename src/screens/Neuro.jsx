@@ -891,7 +891,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
             </div>
           </Section>
 
-          <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} />
+          <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} expanded={expandedSections.includes("identificacao")} onToggle={()=>toggleSection("identificacao")} />
 
           {/* 📝 Queixa Principal e Anamnese */}
           <CollapsibleSection title="Queixa Principal e Anamnese" icon="📝" expanded={expandedSections.includes("queixa")} onToggle={()=>toggleSection("queixa")}>
@@ -1009,7 +1009,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
             </CollapsibleSub>
           </CollapsibleSection>
 
-          <GeneralAssessment storageKey="neuro" studentId={sid} colors={{ ...C, accent: C.purple }} initialBodyPain={localDor} />
+          <GeneralAssessment storageKey="neuro" studentId={sid} colors={{ ...C, accent: C.purple }} initialBodyPain={localDor} sex={student?.sexo} />
 
           {/* ⚡ Dor e Funcionalidade */}
           <CollapsibleSection title="Dor e Funcionalidade" icon="⚡" expanded={expandedSections.includes("dor")} onToggle={()=>toggleSection("dor")}>

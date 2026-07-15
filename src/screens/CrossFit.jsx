@@ -622,7 +622,7 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
             </div>
           </Section>
 
-          <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} />
+          <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} expanded={expandedSections.includes("identificacao")} onToggle={()=>toggleSection("identificacao")} />
 
           <CollapsibleSection title="Queixa Principal e Anamnese" icon="📝" expanded={expandedSections.includes("queixa")} onToggle={()=>toggleSection("queixa")}>
             <div style={{background:C.redBg,border:`1.5px solid ${C.red}`,borderRadius:12,padding:"12px 14px",marginBottom:16}}>
@@ -686,7 +686,7 @@ export default function CrossFit({ student, students, onSelectStudent, onAddStud
               </CollapsibleSub>
               <CollapsibleSub title="Localização e BodyMap">
                 <div><span style={lbl()}>Local da dor</span><SingleSelect options={["Cabeça","Pescoço","Ombro","Lombar","Quadril","Joelho","Tornozelo","Punho","Generalizada"]} value={localDor} onChange={setLocalDor} activeColor={C.amber} /></div>
-                <div style={{marginTop:10}}><BodyMap value={bodyPain} onChange={setBodyPain} colors={{mark:C.amber,...C}} /></div>
+                <div style={{marginTop:10}}><BodyMap value={bodyPain} onChange={setBodyPain} colors={{mark:C.amber,...C}} sex={student?.sexo} /></div>
               </CollapsibleSub>
             </Row>
           </CollapsibleSection>

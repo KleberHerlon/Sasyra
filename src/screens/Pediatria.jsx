@@ -771,7 +771,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
             </div>
           </Section>
 
-          <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} hideAntropometria />
+          <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} hideAntropometria expanded={expandedSections.includes("identificacao")} onToggle={()=>toggleSection("identificacao")} />
 
           {/* 📝 Queixa Principal e Anamnese */}
           <CollapsibleSection title="Queixa Principal e Anamnese" icon="📝" expanded={expandedSections.includes("queixa")} onToggle={()=>toggleSection("queixa")}>
@@ -898,7 +898,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
             </CollapsibleSub>
           </CollapsibleSection>
 
-          <GeneralAssessment storageKey="pediatria" studentId={sid} colors={{ ...C, accent: C.blue }} initialBodyPain={localDor} pediatric />
+          <GeneralAssessment storageKey="pediatria" studentId={sid} colors={{ ...C, accent: C.blue }} initialBodyPain={localDor} sex={student?.sexo} pediatric />
 
           {/* ⚡ Dor e Funcionalidade */}
           <CollapsibleSection title="Dor e Funcionalidade" icon="⚡" expanded={expandedSections.includes("dor")} onToggle={()=>toggleSection("dor")}>
@@ -1138,7 +1138,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
               {atividadesTerapeuticas.length>0&&<div style={{marginTop:8,display:"flex",flexWrap:"wrap",gap:4}}>{atividadesTerapeuticas.map(a=><span key={a} style={{fontSize:10,color:C.green,background:C.greenBg,border:`1px solid ${C.green}30`,borderRadius:6,padding:"2px 8px"}}>{a}</span>)}</div>}
             </CollapsibleSub>
             <CollapsibleSub title="BodyMap — Mapa Corporal de Dor">
-              <BodyMap value={bodyPain} onChange={setBodyPain} colors={{mark:C.blue,...C}} pediatric />
+              <BodyMap value={bodyPain} onChange={setBodyPain} colors={{mark:C.blue,...C}} pediatric sex={student?.sexo} />
             </CollapsibleSub>
           </CollapsibleSection>
 

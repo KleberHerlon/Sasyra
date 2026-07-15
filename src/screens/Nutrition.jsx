@@ -756,7 +756,7 @@ export default function Nutrition({ student, students, onSelectStudent, onAddStu
             </Section>
 
             <CollapsibleSection title="BodyMap — Mapa Corporal de Dor" icon="🧍" expanded={expandedSections.includes("bodymap")} onToggle={() => toggleSection("bodymap")}>
-              <BodyMap value={bodyPain} onChange={setBodyPain} colors={{ mark:C.amber, ...C }} />
+              <BodyMap value={bodyPain} onChange={setBodyPain} colors={{ mark:C.amber, ...C }} sex={student?.sexo} />
             </CollapsibleSection>
 
             <CollapsibleSection title="Histórico de Avaliações" icon="📚" expanded={expandedSections.includes("history")} onToggle={() => toggleSection("history")}>
