@@ -17,6 +17,22 @@ export function calcOxford(value) {
   return grades[v] || { grade: "—", level: "Não avaliado", color: M };
 }
 
+export function calcPISQ12(scores) {
+  const total = (scores || []).reduce((a,b) => a + Number(b||0), 0);
+  const pct = Math.round((total / 48) * 100);
+  const level = pct >= 80 ? "Função sexual preservada" : pct >= 50 ? "Disfunção moderada" : "Disfunção importante";
+  const color = pct >= 80 ? G : pct >= 50 ? A : R;
+  return { total, pct, level, color };
+}
+
+export function calcUDI6(scores) {
+  const total = (scores || []).reduce((a,b) => a + Number(b||0), 0);
+  const pct = Math.round((total / 18) * 100);
+  const level = pct <= 25 ? "Leve" : pct <= 50 ? "Moderado" : pct <= 75 ? "Grave" : "Muito grave";
+  const color = pct <= 25 ? G : pct <= 50 ? A : pct <= 75 ? R : P;
+  return { total, pct, level, color };
+}
+
 export function calcPERFECT(perfect) {
   const p = Number(perfect.power) || 0;
   const e = Number(perfect.endurance) || 0;

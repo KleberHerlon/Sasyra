@@ -1153,6 +1153,46 @@ const SCALES = {
     ],
   },
 
+  "Glasgow Coma Scale (GCS)": {
+    id:"gcs", shortName:"GCS", aliases:["Glasgow Coma Scale","GCS","Escala de Coma de Glasgow"], sections:3, maxPerSection:null, mcid:2, mdc:1.3,
+    goodDirection:"highIsGood",
+    calculate(answers){
+      const sum = Object.values(answers).reduce((t,v)=>t+(Number(v)||0),0);
+      return {raw:sum, max:15, pct:Math.round(sum/15*100)};
+    },
+    interpret(pct){
+      if(pct>=87) return {level:"Trauma leve", desc:"Comprometimento neurológico leve.", color:"#16A34A"};
+      if(pct>=60) return {level:"Trauma moderado", desc:"Comprometimento neurológico moderado.", color:"#D97706"};
+      if(pct>=27) return {level:"Trauma grave", desc:"Comprometimento neurológico grave.", color:"#DC2626"};
+      return {level:"Coma", desc:"Estado comatoso. Intervenção imediata.", color:"#BE185D"};
+    },
+    questions:[
+      {id:"gcs_ocular",label:"Abertura Ocular",o:["1 — Não abre","2 — Abre à pressão (estímulo doloroso)","3 — Abre ao comando verbal","4 — Abertura espontânea"]},
+      {id:"gcs_verbal",label:"Resposta Verbal",o:["1 — Sem resposta","2 — Sons incompreensíveis (gemidos)","3 — Palavras inadequadas","4 — Confuso / conversação confusa","5 — Orientado / conversação normal"]},
+      {id:"gcs_motora",label:"Resposta Motora",o:["1 — Sem resposta","2 — Extensão ao estímulo (descerebração)","3 — Flexão anormal (decorticação)","4 — Flexão normal / retirada inespecífica","5 — Localiza estímulo doloroso","6 — Obedece comandos"]},
+    ],
+  },
+
+  "Trunk Impairment Scale (TIS)": {
+    id:"tis", shortName:"TIS", aliases:["TIS","Trunk Impairment Scale","Escala de Comprometimento de Tronco"], sections:3, maxPerSection:null, mcid:3, mdc:2,
+    goodDirection:"highIsGood",
+    calculate(answers){
+      const sum = Object.values(answers).reduce((t,v)=>t+(Number(v)||0),0);
+      return {raw:sum, max:23, pct:Math.round(sum/23*100)};
+    },
+    interpret(pct){
+      if(pct>=87) return {level:"Controle preservado", desc:"Bom controle de tronco.", color:"#16A34A"};
+      if(pct>=61) return {level:"Déficit leve", desc:"Comprometimento leve de tronco.", color:"#D97706"};
+      if(pct>=30) return {level:"Déficit moderado", desc:"Comprometimento moderado de tronco.", color:"#A78BFA"};
+      return {level:"Déficit grave", desc:"Comprometimento grave de tronco.", color:"#BE185D"};
+    },
+    questions:[
+      {id:"tis_estatico",label:"Sentado estático",o:["0 — Incapaz","1","2","3","4","5","6","7 — Controle total"]},
+      {id:"tis_dinamico",label:"Sentado dinâmico (alcances / flexão)",o:["0 — Incapaz","1","2","3","4","5","6","7","8","9","10 — Controle total"]},
+      {id:"tis_transf",label:"Transferências / coordenação",o:["0 — Incapaz","1","2","3","4","5","6 — Independente"]},
+    ],
+  },
+
   "Timed Up and Go (TUG)": simpleScale("tug","TUG",["Timed Up and Go (TUG)","TUG","Timed Up and Go"], [0,120], "highIsBad", s=>{
     if(s<=10) return pct({level:"Normal", desc:"Mobilidade funcional preservada.", color:"#16A34A"});
     if(s<=20) return pct({level:"Risco moderado de queda", desc:"Mobilidade reduzida.", color:"#D97706"});
@@ -1318,6 +1358,73 @@ const SCALES = {
 
   // ════════════════════ CARDIO-RESPIRATÓRIA ════════════════════
 
+  "London Chest Activity of Daily Living (LCADL)": {
+    id:"lcadl", shortName:"LCADL", aliases:["LCADL","London Chest Activity of Daily Living","London Chest Activity of Daily Living (LCADL)"], sections:15, maxPerSection:5, mcid:10, mdc:6,
+    goodDirection: "highIsBad",
+    interpret(pct){
+      if(pct<20) return {level:"Leve", desc:"Pouco impacto nas AVDs.", color:"#16A34A"};
+      if(pct<50) return {level:"Moderada", desc:"Impacto moderado nas AVDs.", color:"#D97706"};
+      if(pct<80) return {level:"Grave", desc:"Grande impacto nas AVDs.", color:"#DC2626"};
+      return {level:"Muito grave", desc:"Impacto muito grave nas AVDs.", color:"#BE185D"};
+    },
+    questions:[
+      {id:"lcadl_1",label:"Cuidados pessoais (lavar/secar/cabelo/vestir)",o:["0 - Eu nunca fiz","1 - Não me dá falta de ar","2 - Falta de ar moderada","3 - Falta de ar forte","4 - Deixei de fazer por causa da falta de ar","5 - Não faço por outras razões"]},
+      {id:"lcadl_2",label:"Secar a parte superior do corpo",o:["0 - Eu nunca fiz","1 - Não me dá falta de ar","2 - Falta de ar moderada","3 - Falta de ar forte","4 - Deixei de fazer por causa da falta de ar","5 - Não faço por outras razões"]},
+      {id:"lcadl_3",label:"Calçar sapatos/meias",o:["0 - Eu nunca fiz","1 - Não me dá falta de ar","2 - Falta de ar moderada","3 - Falta de ar forte","4 - Deixei de fazer por causa da falta de ar","5 - Não faço por outras razões"]},
+      {id:"lcadl_4",label:"Tomar banho/duche",o:["0 - Eu nunca fiz","1 - Não me dá falta de ar","2 - Falta de ar moderada","3 - Falta de ar forte","4 - Deixei de fazer por causa da falta de ar","5 - Não faço por outras razões"]},
+      {id:"lcadl_5",label:"Curvar-se (abaixar para pegar objetos)",o:["0 - Eu nunca fiz","1 - Não me dá falta de ar","2 - Falta de ar moderada","3 - Falta de ar forte","4 - Deixei de fazer por causa da falta de ar","5 - Não faço por outras razões"]},
+      {id:"lcadl_6",label:"Subir escadas",o:["0 - Eu nunca fiz","1 - Não me dá falta de ar","2 - Falta de ar moderada","3 - Falta de ar forte","4 - Deixei de fazer por causa da falta de ar","5 - Não faço por outras razões"]},
+      {id:"lcadl_7",label:"Andar em plano",o:["0 - Eu nunca fiz","1 - Não me dá falta de ar","2 - Falta de ar moderada","3 - Falta de ar forte","4 - Deixei de fazer por causa da falta de ar","5 - Não faço por outras razões"]},
+      {id:"lcadl_8",label:"Fazer a cama",o:["0 - Eu nunca fiz","1 - Não me dá falta de ar","2 - Falta de ar moderada","3 - Falta de ar forte","4 - Deixei de fazer por causa da falta de ar","5 - Não faço por outras razões"]},
+      {id:"lcadl_9",label:"Arrumar a casa",o:["0 - Eu nunca fiz","1 - Não me dá falta de ar","2 - Falta de ar moderada","3 - Falta de ar forte","4 - Deixei de fazer por causa da falta de ar","5 - Não faço por outras razões"]},
+      {id:"lcadl_10",label:"Fazer compras",o:["0 - Eu nunca fiz","1 - Não me dá falta de ar","2 - Falta de ar moderada","3 - Falta de ar forte","4 - Deixei de fazer por causa da falta de ar","5 - Não faço por outras razões"]},
+      {id:"lcadl_11",label:"Lavar roupa",o:["0 - Eu nunca fiz","1 - Não me dá falta de ar","2 - Falta de ar moderada","3 - Falta de ar forte","4 - Deixei de fazer por causa da falta de ar","5 - Não faço por outras razões"]},
+      {id:"lcadl_12",label:"Aspirar/varrer",o:["0 - Eu nunca fiz","1 - Não me dá falta de ar","2 - Falta de ar moderada","3 - Falta de ar forte","4 - Deixei de fazer por causa da falta de ar","5 - Não faço por outras razões"]},
+      {id:"lcadl_13",label:"Jardinagem",o:["0 - Eu nunca fiz","1 - Não me dá falta de ar","2 - Falta de ar moderada","3 - Falta de ar forte","4 - Deixei de fazer por causa da falta de ar","5 - Não faço por outras razões"]},
+      {id:"lcadl_14",label:"Passear",o:["0 - Eu nunca fiz","1 - Não me dá falta de ar","2 - Falta de ar moderada","3 - Falta de ar forte","4 - Deixei de fazer por causa da falta de ar","5 - Não faço por outras razões"]},
+      {id:"lcadl_15",label:"Sair para socializar",o:["0 - Eu nunca fiz","1 - Não me dá falta de ar","2 - Falta de ar moderada","3 - Falta de ar forte","4 - Deixei de fazer por causa da falta de ar","5 - Não faço por outras razões"]},
+    ],
+  },
+
+  "Duke Activity Status Index (DASI)": {
+    id:"dasi", shortName:"DASI", aliases:["DASI","Duke Activity Status Index","Duke Activity Status Index (DASI)"], sections:12, maxPerSection:1, mcid:10, mdc:6,
+    goodDirection: "highIsGood",
+    calculate(answers){
+      const weights = {
+        dasi_1: 2.75, dasi_2: 1.75, dasi_3: 2.75, dasi_4: 5.50,
+        dasi_5: 8.00, dasi_6: 8.00, dasi_7: 8.00, dasi_8: 2.70,
+        dasi_9: 3.50, dasi_10: 8.00, dasi_11: 4.50, dasi_12: 5.25,
+      };
+      const max = 58.2;
+      let total = 0;
+      for (const [key, val] of Object.entries(answers)) {
+        total += val ? (weights[key] || 0) : 0;
+      }
+      const pct = Math.round((total / max) * 100);
+      return { raw: total, pct, max };
+    },
+    interpret(pct){
+      if(pct>=80) return {level:"Excelente", desc:"Capacidade funcional preservada.", color:"#16A34A"};
+      if(pct>=60) return {level:"Moderado", desc:"Capacidade funcional reduzida.", color:"#D97706"};
+      if(pct>=40) return {level:"Reduzido", desc:"Comprometimento funcional significativo.", color:"#DC2626"};
+      return {level:"Muito reduzido", desc:"Comprometimento funcional grave.", color:"#BE185D"};
+    },
+    questions:[
+      {id:"dasi_1",label:"Autocuidado (comer, vestir, banho)",o:["Não","Sim"]},
+      {id:"dasi_2",label:"Caminhar em casa",o:["Não","Sim"]},
+      {id:"dasi_3",label:"Caminhar 1-2 quarteirões em terreno plano",o:["Não","Sim"]},
+      {id:"dasi_4",label:"Subir um lance de escadas",o:["Não","Sim"]},
+      {id:"dasi_5",label:"Subir alguns lances de escadas",o:["Não","Sim"]},
+      {id:"dasi_6",label:"Andar em morro/ladeira",o:["Não","Sim"]},
+      {id:"dasi_7",label:"Correr curta distância",o:["Não","Sim"]},
+      {id:"dasi_8",label:"Tarefas domésticas leves (tirar pó, lavar louça)",o:["Não","Sim"]},
+      {id:"dasi_9",label:"Tarefas domésticas moderadas (aspirar, varrer)",o:["Não","Sim"]},
+      {id:"dasi_10",label:"Tarefas domésticas pesadas (mover móveis)",o:["Não","Sim"]},
+      {id:"dasi_11",label:"Jardinagem (cavar, plantar)",o:["Não","Sim"]},
+      {id:"dasi_12",label:"Relação sexual",o:["Não","Sim"]},
+    ],
+  },
+
   "NYHA Functional Classification": simpleScale("nyha","NYHA",["NYHA","NYHA Functional Classification","New York Heart Association"], [1,4], "highIsBad", s=>{
     if(s<=1) return pct({level:"Classe I", desc:"Sem limitação. Atividade física habitual não causa sintomas.", color:"#16A34A"});
     if(s<=2) return pct({level:"Classe II", desc:"Limitação leve. Atividade física habitual causa sintomas.", color:"#D97706"});
@@ -1381,20 +1488,125 @@ const SCALES = {
     return pct({level:"Impacto grave", desc:"Grande impacto funcional e social.", color:"#DC2626"});
   }),
 
+  "PISQ-12 (Pelvic Organ Prolapse/Incontinence Sexual Questionnaire)": {
+    id:"pisq12", shortName:"PISQ-12", aliases:["PISQ-12","Pelvic Organ Prolapse/Incontinence Sexual Questionnaire"], sections:12, maxPerSection:4, goodDirection:"highIsGood", mcid:10, mdc:6,
+    interpret(pct){
+      if(pct>=80) return {level:"Função sexual preservada", desc:"Função sexual preservada com mínimo impacto dos sintomas pélvicos.", color:"#16A34A"};
+      if(pct>=50) return {level:"Disfunção moderada", desc:"Disfunção sexual moderada. Intervenção indicada.", color:"#D97706"};
+      return {level:"Disfunção importante", desc:"Disfunção sexual importante com grande impacto na qualidade de vida.", color:"#DC2626"};
+    },
+    questions:[
+      {id:"pisq1",label:"Com que frequência seu problema pélvico afeta seu desejo sexual?",o:["Sempre","Frequentemente","Às vezes","Raramente","Nunca"]},
+      {id:"pisq2",label:"Com que frequência seu problema pélvico dificulta atingir o orgasmo?",o:["Sempre","Frequentemente","Às vezes","Raramente","Nunca"]},
+      {id:"pisq3",label:"Com que frequência você evita relações sexuais por causa do seu problema?",o:["Sempre","Frequentemente","Às vezes","Raramente","Nunca"]},
+      {id:"pisq4",label:"Com que frequência se sente ansiosa ou deprimida quanto à sua vida sexual?",o:["Sempre","Frequentemente","Às vezes","Raramente","Nunca"]},
+      {id:"pisq5",label:"Você sente dor durante a relação sexual?",o:["Sempre","Frequentemente","Às vezes","Raramente","Nunca"]},
+      {id:"pisq6",label:"Você perde urina durante a atividade sexual?",o:["Sempre","Frequentemente","Às vezes","Raramente","Nunca"]},
+      {id:"pisq7",label:"Evita relações sexuais por medo de perda urinária ou fecal?",o:["Sempre","Frequentemente","Às vezes","Raramente","Nunca"]},
+      {id:"pisq8",label:"Sente desconforto vaginal (peso, pressão) durante a relação?",o:["Sempre","Frequentemente","Às vezes","Raramente","Nunca"]},
+      {id:"pisq9",label:"Seu problema pélvico limita as posições sexuais?",o:["Sempre","Frequentemente","Às vezes","Raramente","Nunca"]},
+      {id:"pisq10",label:"Seu parceiro evita contato sexual devido ao seu problema pélvico?",o:["Sempre","Frequentemente","Às vezes","Raramente","Nunca"]},
+      {id:"pisq11",label:"Você evita discutir o problema com seu parceiro?",o:["Sempre","Frequentemente","Às vezes","Raramente","Nunca"]},
+      {id:"pisq12",label:"Sente-se menos feminina ou com baixa autoestima sexual?",o:["Sempre","Frequentemente","Às vezes","Raramente","Nunca"]},
+    ],
+  },
+
+  "UDI-6 (Urogenital Distress Inventory-6)": {
+    id:"udi6", shortName:"UDI-6", aliases:["UDI-6","Urogenital Distress Inventory-6"], sections:6, maxPerSection:3, goodDirection:"highIsBad", mcid:15, mdc:10,
+    interpret(pct){
+      if(pct<=25) return {level:"Leve", desc:"Sintomas urinários leves.", color:"#16A34A"};
+      if(pct<=50) return {level:"Moderado", desc:"Sintomas urinários moderados.", color:"#D97706"};
+      if(pct<=75) return {level:"Grave", desc:"Sintomas urinários graves.", color:"#DC2626"};
+      return {level:"Muito grave", desc:"Sintomas urinários muito graves. Encaminhamento especializado.", color:"#BE185D"};
+    },
+    questions:[
+      {id:"udi1",label:"Frequência urinária (urinar muitas vezes ao dia)",o:["Não incomoda","Incomoda um pouco","Incomoda moderadamente","Incomoda muito"]},
+      {id:"udi2",label:"Urgência para urinar (vontade forte e súbita)",o:["Não incomoda","Incomoda um pouco","Incomoda moderadamente","Incomoda muito"]},
+      {id:"udi3",label:"Perda de urina ao tossir, espirrar ou fazer esforço",o:["Não incomoda","Incomoda um pouco","Incomoda moderadamente","Incomoda muito"]},
+      {id:"udi4",label:"Perda de urina em pequenas quantidades (gotas)",o:["Não incomoda","Incomoda um pouco","Incomoda moderadamente","Incomoda muito"]},
+      {id:"udi5",label:"Dificuldade para esvaziar a bexiga",o:["Não incomoda","Incomoda um pouco","Incomoda moderadamente","Incomoda muito"]},
+      {id:"udi6",label:"Dor ou desconforto na região da bexiga ou pélvis",o:["Não incomoda","Incomoda um pouco","Incomoda moderadamente","Incomoda muito"]},
+    ],
+  },
+
+  "OAB-q (Overactive Bladder Questionnaire)": simpleScale("oabq","OAB-q",["OAB-q","Overactive Bladder Questionnaire"], [0,100], "highIsBad", s=>{
+    if(s<=25) return pct({level:"Leve", desc:"Sintomas leves de bexiga hiperativa.", color:"#16A34A"});
+    if(s<=50) return pct({level:"Moderado", desc:"Sintomas moderados de bexiga hiperativa.", color:"#D97706"});
+    if(s<=75) return pct({level:"Grave", desc:"Sintomas graves. Tratamento intensivo indicado.", color:"#DC2626"});
+    return pct({level:"Muito grave", desc:"Sintomas muito graves. Grande impacto na qualidade de vida.", color:"#BE185D"});
+  }),
+
   // ════════════════════ GERIATRIA ════════════════════
 
-  "MEEM (Mini-Exame do Estado Mental)": simpleScale("meem","MEEM",["MEEM (MMSE)","MEEM","MMSE","Mini-Exame do Estado Mental","Mini Mental State Examination"], [0,30], "highIsGood", s=>{
-    if(s>=27) return pct({level:"Normal", desc:"Função cognitiva preservada.", color:"#16A34A"});
-    if(s>=21) return pct({level:"Declínio cognitivo leve", desc:"Comprometimento cognitivo leve (CCL).", color:"#D97706"});
-    if(s>=11) return pct({level:"Declínio cognitivo moderado", desc:"Demência moderada.", color:"#DC2626"});
-    return pct({level:"Declínio cognitivo grave", desc:"Demência avançada.", color:"#BE185D"});
-  }),
+  "MEEM (Mini-Exame do Estado Mental)": {
+    id:"meem", shortName:"MEEM", aliases:["MEEM (MMSE)","MEEM","MMSE","Mini-Exame do Estado Mental","Mini Mental State Examination"], sections:30, maxPerSection:1, mcid:3, mdc:2,
+    goodDirection:"highIsGood",
+    interpret(pct){
+      if(pct>=90) return {level:"Normal", desc:"Função cognitiva preservada.", color:"#16A34A"};
+      if(pct>=70) return {level:"Declínio cognitivo leve", desc:"Comprometimento cognitivo leve (CCL).", color:"#D97706"};
+      if(pct>=37) return {level:"Declínio cognitivo moderado", desc:"Demência moderada.", color:"#DC2626"};
+      return {level:"Declínio cognitivo grave", desc:"Demência avançada.", color:"#BE185D"};
+    },
+    questions:[
+      {id:"meem_t1",label:"Orientação temporal — Que ano é?",o:["Errado","Certo"]},
+      {id:"meem_t2",label:"Orientação temporal — Em que estação do ano estamos?",o:["Errado","Certo"]},
+      {id:"meem_t3",label:"Orientação temporal — Que dia do mês é hoje?",o:["Errado","Certo"]},
+      {id:"meem_t4",label:"Orientação temporal — Em que dia da semana estamos?",o:["Errado","Certo"]},
+      {id:"meem_t5",label:"Orientação temporal — Em que mês estamos?",o:["Errado","Certo"]},
+      {id:"meem_e1",label:"Orientação espacial — Em que estado estamos?",o:["Errado","Certo"]},
+      {id:"meem_e2",label:"Orientação espacial — Em que cidade estamos?",o:["Errado","Certo"]},
+      {id:"meem_e3",label:"Orientação espacial — Em que bairro/região estamos?",o:["Errado","Certo"]},
+      {id:"meem_e4",label:"Orientação espacial — Em que local específico (hospital/clínica/casa)?",o:["Errado","Certo"]},
+      {id:"meem_e5",label:"Orientação espacial — Em que andar/sala estamos?",o:["Errado","Certo"]},
+      {id:"meem_r1",label:"Registro — Repetir: CARRO",o:["Errado","Certo"]},
+      {id:"meem_r2",label:"Registro — Repetir: VASO",o:["Errado","Certo"]},
+      {id:"meem_r3",label:"Registro — Repetir: TIJOLO",o:["Errado","Certo"]},
+      {id:"meem_a1",label:"Atenção/Cálculo — 100−7 (93)",o:["Errado","Certo"]},
+      {id:"meem_a2",label:"Atenção/Cálculo — 93−7 (86)",o:["Errado","Certo"]},
+      {id:"meem_a3",label:"Atenção/Cálculo — 86−7 (79)",o:["Errado","Certo"]},
+      {id:"meem_a4",label:"Atenção/Cálculo — 79−7 (72)",o:["Errado","Certo"]},
+      {id:"meem_a5",label:"Atenção/Cálculo — 72−7 (65)",o:["Errado","Certo"]},
+      {id:"meem_ev1",label:"Evocação — Recordar: CARRO",o:["Errado","Certo"]},
+      {id:"meem_ev2",label:"Evocação — Recordar: VASO",o:["Errado","Certo"]},
+      {id:"meem_ev3",label:"Evocação — Recordar: TIJOLO",o:["Errado","Certo"]},
+      {id:"meem_ln1",label:"Nomeação — Mostrar relógio e perguntar: 'O que é isto?'",o:["Errado","Certo"]},
+      {id:"meem_ln2",label:"Nomeação — Mostrar caneta e perguntar: 'O que é isto?'",o:["Errado","Certo"]},
+      {id:"meem_lr",label:"Repetição — Repetir: 'NEM AQUI, NEM ALI, NEM LÁ'",o:["Errado","Certo"]},
+      {id:"meem_lc1",label:"Comando 3 etapas — Pegar o papel com a mão direita",o:["Errado","Certo"]},
+      {id:"meem_lc2",label:"Comando 3 etapas — Dobrar o papel ao meio",o:["Errado","Certo"]},
+      {id:"meem_lc3",label:"Comando 3 etapas — Colocar o papel no chão",o:["Errado","Certo"]},
+      {id:"meem_ll",label:"Leitura — Ler e executar: 'FECHE OS OLHOS'",o:["Errado","Certo"]},
+      {id:"meem_le",label:"Escrita — Escrever uma frase completa (sujeito+verbo+objeto)",o:["Errado","Certo"]},
+      {id:"meem_ld",label:"Cópia — Copiar o desenho de dois pentágonos interseccionados",o:["Errado","Certo"]},
+    ],
+  },
 
-  "GDS-15 (Geriatric Depression Scale)": simpleScale("gds15","GDS-15",["GDS-15","Geriatric Depression Scale","GDS"], [0,15], "highIsBad", s=>{
-    if(s<=5) return pct({level:"Normal", desc:"Sintomas depressivos ausentes.", color:"#16A34A"});
-    if(s<=10) return pct({level:"Depressão leve", desc:"Sintomas depressivos leves.", color:"#D97706"});
-    return pct({level:"Depressão grave", desc:"Sintomas depressivos graves. Encaminhamento psiquiátrico.", color:"#DC2626"});
-  }),
+  "GDS-15 (Geriatric Depression Scale)": {
+    id:"gds15", shortName:"GDS-15", aliases:["GDS-15","Geriatric Depression Scale","GDS"], sections:15, maxPerSection:1, mcid:3, mdc:2,
+    goodDirection:"highIsBad",
+    interpret(pct){
+      if(pct<=33) return {level:"Normal", desc:"Sintomas depressivos ausentes.", color:"#16A34A"};
+      if(pct<=67) return {level:"Depressão leve", desc:"Sintomas depressivos leves.", color:"#D97706"};
+      return {level:"Depressão grave", desc:"Sintomas depressivos graves. Encaminhamento psiquiátrico.", color:"#DC2626"};
+    },
+    questions:[
+      {id:"gds_1",label:"Está satisfeito(a) com sua vida?",o:["Sim","Não"]},
+      {id:"gds_2",label:"Deixou muitos de seus interesses e atividades?",o:["Não","Sim"]},
+      {id:"gds_3",label:"Sente que sua vida está vazia?",o:["Não","Sim"]},
+      {id:"gds_4",label:"Fica entediado(a)/aborrecido(a) com frequência?",o:["Não","Sim"]},
+      {id:"gds_5",label:"Está de bom humor a maior parte do tempo?",o:["Sim","Não"]},
+      {id:"gds_6",label:"Tem medo de que algo ruim lhe aconteça?",o:["Não","Sim"]},
+      {id:"gds_7",label:"Sente-se feliz a maior parte do tempo?",o:["Sim","Não"]},
+      {id:"gds_8",label:"Sente-se desamparado(a) / sem saída?",o:["Não","Sim"]},
+      {id:"gds_9",label:"Prefere ficar em casa a sair e fazer coisas novas?",o:["Não","Sim"]},
+      {id:"gds_10",label:"Sente que tem mais problemas de memória que os outros?",o:["Não","Sim"]},
+      {id:"gds_11",label:"Acha maravilhoso estar vivo(a)?",o:["Sim","Não"]},
+      {id:"gds_12",label:"Sente-se inútil / sem valor do jeito que está agora?",o:["Não","Sim"]},
+      {id:"gds_13",label:"Sente-se cheio(a) de energia?",o:["Sim","Não"]},
+      {id:"gds_14",label:"Sente que sua situação é sem esperança?",o:["Não","Sim"]},
+      {id:"gds_15",label:"Acha que os outros estão melhores que você?",o:["Não","Sim"]},
+    ],
+  },
 
   "Katz Index of Independence in ADLs": simpleScale("katz","Katz",["Katz Index","Katz","Katz Index of Independence in ADLs"], [0,6], "highIsGood", s=>{
     if(s>=5) return pct({level:"Independência funcional", desc:"Função preservada nas AVDs básicas.", color:"#16A34A"});
@@ -1414,16 +1626,105 @@ const SCALES = {
     return pct({level:"Alto risco de queda", desc:"Equilíbrio e marcha severamente comprometidos.", color:"#DC2626"});
   }),
 
-  "FES-I (Falls Efficacy Scale)": simpleScale("fesi","FES-I",["FES-I","Falls Efficacy Scale"], [16,64], "highIsBad", s=>{
-    if(s<=19) return pct({level:"Baixa preocupação", desc:"Pouco medo de cair.", color:"#16A34A"});
-    if(s<=27) return pct({level:"Preocupação moderada", desc:"Medo moderado de cair.", color:"#D97706"});
-    if(s>=28) return pct({level:"Alta preocupação", desc:"Medo intenso de cair. Risco de restrição de atividades.", color:"#DC2626"});
-  }),
+  "FES-I (Falls Efficacy Scale)": {
+    id:"fesi", shortName:"FES-I", aliases:["FES-I","Falls Efficacy Scale"], sections:16, maxPerSection:4, mcid:5, mdc:3,
+    goodDirection:"highIsBad",
+    interpret(pct){
+      if(pct<=30) return {level:"Baixa preocupação", desc:"Pouco medo de cair.", color:"#16A34A"};
+      if(pct<=43) return {level:"Preocupação moderada", desc:"Medo moderado de cair.", color:"#D97706"};
+      return {level:"Alta preocupação", desc:"Medo intenso de cair. Risco de restrição de atividades.", color:"#DC2626"};
+    },
+    questions:[
+      {id:"fesi_1",label:"Limpar a casa (varrer, aspirar)",o:["Nem um pouco preocupado","Um pouco preocupado","Moderadamente preocupado","Muito preocupado"]},
+      {id:"fesi_2",label:"Vestir-se ou despir-se",o:["Nem um pouco preocupado","Um pouco preocupado","Moderadamente preocupado","Muito preocupado"]},
+      {id:"fesi_3",label:"Preparar refeições simples",o:["Nem um pouco preocupado","Um pouco preocupado","Moderadamente preocupado","Muito preocupado"]},
+      {id:"fesi_4",label:"Tomar banho",o:["Nem um pouco preocupado","Um pouco preocupado","Moderadamente preocupado","Muito preocupado"]},
+      {id:"fesi_5",label:"Ir às compras",o:["Nem um pouco preocupado","Um pouco preocupado","Moderadamente preocupado","Muito preocupado"]},
+      {id:"fesi_6",label:"Sentar-se ou levantar-se da cadeira",o:["Nem um pouco preocupado","Um pouco preocupado","Moderadamente preocupado","Muito preocupado"]},
+      {id:"fesi_7",label:"Subir ou descer escadas",o:["Nem um pouco preocupado","Um pouco preocupado","Moderadamente preocupado","Muito preocupado"]},
+      {id:"fesi_8",label:"Caminhar pela vizinhança / fora de casa",o:["Nem um pouco preocupado","Um pouco preocupado","Moderadamente preocupado","Muito preocupado"]},
+      {id:"fesi_9",label:"Alcançar algo acima da cabeça ou no chão",o:["Nem um pouco preocupado","Um pouco preocupado","Moderadamente preocupado","Muito preocupado"]},
+      {id:"fesi_10",label:"Atender o telefone antes que pare de tocar",o:["Nem um pouco preocupado","Um pouco preocupado","Moderadamente preocupado","Muito preocupado"]},
+      {id:"fesi_11",label:"Andar em superfície escorregadia (molhada, encerada)",o:["Nem um pouco preocupado","Um pouco preocupado","Moderadamente preocupado","Muito preocupado"]},
+      {id:"fesi_12",label:"Visitar um amigo ou parente",o:["Nem um pouco preocupado","Um pouco preocupado","Moderadamente preocupado","Muito preocupado"]},
+      {id:"fesi_13",label:"Andar em local com aglomeração de pessoas",o:["Nem um pouco preocupado","Um pouco preocupado","Moderadamente preocupado","Muito preocupado"]},
+      {id:"fesi_14",label:"Caminhar em superfície irregular (calçada, grama)",o:["Nem um pouco preocupado","Um pouco preocupado","Moderadamente preocupado","Muito preocupado"]},
+      {id:"fesi_15",label:"Subir ou descer uma rampa/ladeira",o:["Nem um pouco preocupado","Um pouco preocupado","Moderadamente preocupado","Muito preocupado"]},
+      {id:"fesi_16",label:"Sair para evento social (igreja, reunião)",o:["Nem um pouco preocupado","Um pouco preocupado","Moderadamente preocupado","Muito preocupado"]},
+    ],
+  },
 
-  "MNA (Mini Nutritional Assessment)": simpleScale("mna","MNA",["MNA","Mini Nutritional Assessment"], [0,30], "highIsGood", s=>{
-    if(s>=24) return pct({level:"Estado nutricional normal", desc:"Boa nutrição.", color:"#16A34A"});
-    if(s>=17) return pct({level:"Risco de desnutrição", desc:"Risco nutricional. Monitoramento e intervenção.", color:"#D97706"});
-    return pct({level:"Desnutrido", desc:"Desnutrição estabelecida. Intervenção nutricional urgente.", color:"#DC2626"});
+  "MNA (Mini Nutritional Assessment)": {
+    id:"mna", shortName:"MNA", aliases:["MNA","Mini Nutritional Assessment"], sections:18, maxPerSection:null, mcid:4, mdc:3,
+    goodDirection:"highIsGood",
+    calculate(answers){
+      const weights = {
+        mna_a:[0,1,2], mna_b:[0,1,2,3], mna_c:[0,1,2], mna_d:[0,2], mna_e:[0,1,2], mna_f:[0,1,2,3],
+        mna_g:[0,1], mna_h:[0,1], mna_i:[0,1], mna_j:[0,1,2], mna_k:[0,0.5,1], mna_l:[0,1],
+        mna_m:[0,0.5,1], mna_n:[0,1,2], mna_o:[0,1,2], mna_p:[0,0.5,1,2], mna_q:[0,0.5,1], mna_r:[0,1],
+      };
+      let sum = 0;
+      for(const [k, w] of Object.entries(weights)) {
+        const idx = Number(answers[k]);
+        if(!isNaN(idx) && w[idx] !== undefined) sum += w[idx];
+      }
+      return {raw:sum, max:30, pct:Math.round(sum/30*100)};
+    },
+    interpret(pct){
+      if(pct>=80) return {level:"Estado nutricional normal", desc:"Boa nutrição.", color:"#16A34A"};
+      if(pct>=57) return {level:"Risco de desnutrição", desc:"Risco nutricional. Monitoramento e intervenção.", color:"#D97706"};
+      return {level:"Desnutrido", desc:"Desnutrição estabelecida. Intervenção nutricional urgente.", color:"#DC2626"};
+    },
+    questions:[
+      // ── Triagem (6 itens, máx 14 pontos) ──
+      {id:"mna_a",label:"A — Ingestão alimentar nos últimos 3 meses",o:["0 — Diminuição grave","1 — Diminuição moderada","2 — Sem diminuição"]},
+      {id:"mna_b",label:"B — Perda de peso nos últimos 3 meses",o:["0 — >3 kg","1 — Não sabe","2 — 1-3 kg","3 — Sem perda"]},
+      {id:"mna_c",label:"C — Mobilidade",o:["0 — Restrito ao leito/cadeira","1 — Deambula no domicílio","2 — Sai do domicílio"]},
+      {id:"mna_d",label:"D — Doença aguda / estresse psicológico nos últimos 3 meses?",o:["0 — Sim","2 — Não"]},
+      {id:"mna_e",label:"E — Problemas neuropsicológicos (demência/depressão)",o:["0 — Demência/depressão grave","1 — Demência/depressão leve","2 — Sem problemas"]},
+      {id:"mna_f",label:"F — IMC (kg/m²)",o:["0 — <19","1 — 19 a <21","2 — 21 a <23","3 — ≥23"]},
+      // ── Avaliação (12 itens, máx 16 pontos) ──
+      {id:"mna_g",label:"G — Vive em domicílio próprio (não institucionalizado)?",o:["0 — Não","1 — Sim"]},
+      {id:"mna_h",label:"H — Utiliza >3 medicamentos/dia?",o:["0 — Sim","1 — Não"]},
+      {id:"mna_i",label:"I — Úlceras/lesões de pele por pressão?",o:["0 — Sim","1 — Não"]},
+      {id:"mna_j",label:"J — Quantas refeições completas faz por dia?",o:["0 — 1 refeição","1 — 2 refeições","2 — 3 refeições"]},
+      {id:"mna_k",label:"K — Consome proteínas? (≥1: laticínios/ovos/legumes/carne/peixe/aves)",o:["0 — Nenhuma","0.5 — Sim (1-2 fontes)","1 — Sim (≥3 fontes)"]},
+      {id:"mna_l",label:"L — Consome ≥2 porções de frutas/vegetais/dia?",o:["0 — Não","1 — Sim"]},
+      {id:"mna_m",label:"M — Ingestão hídrica/dia (água, suco, café, leite...)",o:["0 — <3 copos","0.5 — 3-5 copos","1 — >5 copos"]},
+      {id:"mna_n",label:"N — Modo de alimentação",o:["0 — Necessita de ajuda","1 — Alimenta-se sozinho, com dificuldade","2 — Alimenta-se sozinho sem dificuldade"]},
+      {id:"mna_o",label:"O — O paciente acredita ter problema nutricional?",o:["0 — Acredita estar desnutrido","1 — Incerteza","2 — Acredita não ter problema"]},
+      {id:"mna_p",label:"P — Estado de saúde comparado a outros da mesma idade?",o:["0 — Pior","0.5 — Não sabe","1 — Igual","2 — Melhor"]},
+      {id:"mna_q",label:"Q — Circunferência do braço (cm)",o:["0 — <21 cm","1 — ≥21 cm"]},
+      {id:"mna_r",label:"R — Circunferência da panturrilha (cm)",o:["0 — <31 cm","1 — ≥31 cm"]},
+    ],
+  },
+
+  "SPPB (Short Physical Performance Battery)": {
+    id:"sppb", shortName:"SPPB", aliases:["SPPB","Short Physical Performance Battery","Short Physical Performance Battery (SPPB)"], sections:3, maxPerSection:4, mcid:2, mdc:1.3,
+    goodDirection:"highIsGood",
+    calculate(answers){
+      const sum = Object.values(answers).reduce((t,v)=>t+(Number(v)||0),0);
+      return {raw:sum, max:12, pct:Math.round(sum/12*100)};
+    },
+    interpret(pct){
+      if(pct>=83) return {level:"Bom desempenho", desc:"Desempenho físico preservado.", color:"#16A34A"};
+      if(pct>=58) return {level:"Desempenho moderado", desc:"Limitação física leve.", color:"#D97706"};
+      if(pct>=33) return {level:"Desempenho baixo", desc:"Limitação física importante.", color:"#F87171"};
+      return {level:"Desempenho muito baixo", desc:"Limitação física severa. Risco de fragilidade.", color:"#BE185D"};
+    },
+    questions:[
+      {id:"sppb_balance",label:"Equilíbrio (side-by-side + semi-tandem + tandem)",o:["0 — Incapaz","1 — Mantém <10s","2 — Mantém parcialmente","3 — Mantém com dificuldade","4 — Mantém 10s em cada"]},
+      {id:"sppb_gait",label:"Velocidade de marcha (4m)",o:["0 — Incapaz","1 — >8,7s","2 — 6,21-8,70s","3 — 4,82-6,20s","4 — <4,82s"]},
+      {id:"sppb_chair",label:"Levantar da cadeira (5x)",o:["0 — Incapaz","1 — >16,7s","2 — 13,70-16,69s","3 — 11,20-13,69s","4 — <11,19s"]},
+    ],
+  },
+
+  "Clinical Frailty Scale (CFS)": simpleScale("cfs","CFS",["Clinical Frailty Scale","CFS"], [1,9], "highIsBad", s=>{
+    if(s<=3) return pct({level:"Em forma", desc:"Boa condição física.", color:"#16A34A"});
+    if(s===4) return pct({level:"Vulnerável", desc:"Sinais iniciais de vulnerabilidade.", color:"#D97706"});
+    if(s===5) return pct({level:"Levemente frágil", desc:"Dependência parcial em AVD instrumentais.", color:"#F59E0B"});
+    if(s<=7) return pct({level:"Moderadamente frágil", desc:"Dependência em AVDs.", color:"#DC2626"});
+    return pct({level:"Severamente frágil", desc:"Dependência total. Risco de desfechos adversos.", color:"#BE185D"});
   }),
 
   // ════════════════════ DERMATOFUNCIONAL ════════════════════
@@ -1445,6 +1746,36 @@ const SCALES = {
     if(s>=40) return pct({level:"Limitação moderada", desc:"Limitação funcional parcial de MMII.", color:"#D97706"});
     if(s>=20) return pct({level:"Limitação grave", desc:"Comprometimento funcional importante.", color:"#DC2626"});
     return pct({level:"Limitação severa", desc:"Função de MMII severamente comprometida.", color:"#BE185D"});
+  }),
+
+  "DLQI (Dermatology Life Quality Index)": {
+    id:"dlqi", shortName:"DLQI", aliases:["DLQI","Dermatology Life Quality Index"],
+    sections:10, maxPerSection:3, mcid:5, mdc:3,
+    interpret(pct){
+      if(pct<=16) return {level:"Pequeno efeito", desc:"Impacto mínimo na qualidade de vida.", color:"#16A34A"};
+      if(pct<=33) return {level:"Efeito moderado", desc:"Impacto moderado na qualidade de vida.", color:"#D97706"};
+      if(pct<=50) return {level:"Efeito importante", desc:"Impacto importante na qualidade de vida.", color:"#DC2626"};
+      return {level:"Efeito muito importante", desc:"Impacto muito importante na qualidade de vida.", color:"#BE185D"};
+    },
+    questions:[
+      {id:"dlqi_1",label:"Sintomas e sensações (coceira, dor, ardência)",o:["Nada","Um pouco","Muito","Extremamente"]},
+      {id:"dlqi_2",label:"Vergonha ou constrangimento",o:["Nada","Um pouco","Muito","Extremamente"]},
+      {id:"dlqi_3",label:"Compras e cuidados com a casa",o:["Nada","Um pouco","Muito","Extremamente"]},
+      {id:"dlqi_4",label:"Vestuário e escolha de roupas",o:["Nada","Um pouco","Muito","Extremamente"]},
+      {id:"dlqi_5",label:"Vida social e lazer",o:["Nada","Um pouco","Muito","Extremamente"]},
+      {id:"dlqi_6",label:"Esporte e atividades físicas",o:["Nada","Um pouco","Muito","Extremamente"]},
+      {id:"dlqi_7",label:"Trabalho e estudo",o:["Nada","Um pouco","Muito","Extremamente"]},
+      {id:"dlqi_8",label:"Relacionamentos (parceiro, amigos, parentes)",o:["Nada","Um pouco","Muito","Extremamente"]},
+      {id:"dlqi_9",label:"Dificuldades sexuais",o:["Nada","Um pouco","Muito","Extremamente"]},
+      {id:"dlqi_10",label:"Tratamento e cuidados com a pele",o:["Nada","Um pouco","Muito","Extremamente"]},
+    ],
+  },
+
+  "Patient-Specific Functional Scale (PSFS)": simpleScale("psfs","PSFS",["PSFS","Patient-Specific Functional Scale"], [0,10], "highIsGood", s=>{
+    if(s>=8) return pct({level:"Função excelente", desc:"Capaz de realizar atividades sem limitações.", color:"#16A34A"});
+    if(s>=6) return pct({level:"Boa função", desc:"Capaz de realizar a maioria das atividades.", color:"#22C55E"});
+    if(s>=4) return pct({level:"Limitação moderada", desc:"Dificuldade em algumas atividades.", color:"#D97706"});
+    return pct({level:"Limitação grave", desc:"Dificuldade significativa nas atividades.", color:"#DC2626"});
   }),
 
   // ════════════════════ REUMATOLÓGICA ════════════════════
@@ -1513,6 +1844,83 @@ const SCALES = {
     return pct({level:"CP altamente complexos", desc:"Alta complexidade. Cuidados paliativos exclusivos.", color:"#DC2626"});
   }),
 
+  "Brief Pain Inventory (BPI)": {
+    id:"bpi", shortName:"BPI", aliases:["BPI","Brief Pain Inventory","Brief Pain Inventory (BPI)"],
+    sections:11, maxPerSection:10, goodDirection:"highIsBad", mcid:2, mdc:1.3,
+    calculate(answers){
+      const sev = ["pain_worst","pain_least","pain_avg","pain_now"];
+      const interf = ["pain_interf_general","pain_interf_mood","pain_interf_walk","pain_interf_work","pain_interf_relations","pain_interf_sleep","pain_interf_enjoy"];
+      const all = [...sev, ...interf];
+      const s = ks => ks.reduce((t,k) => t + (Number(answers[k])||0), 0);
+      const total = s(all);
+      const max = all.length * 10;
+      return {raw:total, pct:Math.round((total/max)*100), max, severityAvg:Number((s(sev)/sev.length).toFixed(1)), interferenceAvg:Number((s(interf)/interf.length).toFixed(1))};
+    },
+    interpret(pct){
+      if(pct<=30) return {level:"Leve", desc:"Intensidade e interferência leves. Intervenção analgésica básica.", color:"#16A34A"};
+      if(pct<=60) return {level:"Moderada", desc:"Intensidade moderada. Abordagem multimodal.", color:"#D97706"};
+      return {level:"Grave", desc:"Intensidade elevada. Controle álgico intensivo.", color:"#DC2626"};
+    },
+    questions:[
+      {id:"pain_worst",label:"Pior dor nas últimas 24h",o:["0","1","2","3","4","5","6","7","8","9","10"]},
+      {id:"pain_least",label:"Dor mais fraca nas últimas 24h",o:["0","1","2","3","4","5","6","7","8","9","10"]},
+      {id:"pain_avg",label:"Dor em média",o:["0","1","2","3","4","5","6","7","8","9","10"]},
+      {id:"pain_now",label:"Dor neste momento",o:["0","1","2","3","4","5","6","7","8","9","10"]},
+      {id:"pain_interf_general",label:"Interferência: Atividade geral",o:["0","1","2","3","4","5","6","7","8","9","10"]},
+      {id:"pain_interf_mood",label:"Interferência: Humor",o:["0","1","2","3","4","5","6","7","8","9","10"]},
+      {id:"pain_interf_walk",label:"Interferência: Caminhar",o:["0","1","2","3","4","5","6","7","8","9","10"]},
+      {id:"pain_interf_work",label:"Interferência: Trabalho",o:["0","1","2","3","4","5","6","7","8","9","10"]},
+      {id:"pain_interf_relations",label:"Interferência: Relacionamentos",o:["0","1","2","3","4","5","6","7","8","9","10"]},
+      {id:"pain_interf_sleep",label:"Interferência: Sono",o:["0","1","2","3","4","5","6","7","8","9","10"]},
+      {id:"pain_interf_enjoy",label:"Interferência: Prazer de viver",o:["0","1","2","3","4","5","6","7","8","9","10"]},
+    ],
+  },
+
+  "Distress Thermometer": simpleScale("distress","Distress",["Distress Thermometer"], [0,10], "highIsBad", s=>{
+    if(s<=3) return pct({level:"Baixo", desc:"Sofrimento emocional baixo. Suporte básico.", color:"#16A34A"});
+    if(s<=6) return pct({level:"Moderado", desc:"Sofrimento moderado. Avaliação psicossocial.", color:"#D97706"});
+    if(s<=8) return pct({level:"Alto", desc:"Sofrimento elevado. Encaminhamento para psico-oncologia.", color:"#DC2626"});
+    return pct({level:"Muito alto", desc:"Sofrimento muito elevado. Intervenção urgente.", color:"#BE185D"});
+  }),
+
+  // ════════════════════ REUMATOLÓGICA (cont.) ════════════════════
+
+  "BASFI (Bath Ankylosing Spondylitis Functional Index)": {
+    id:"basfi", shortName:"BASFI", aliases:["BASFI","Bath Ankylosing Spondylitis Functional Index"], sections:10, maxPerSection:10, mcid:7, mdc:5,
+    goodDirection:"highIsBad",
+    interpret(pct){
+      if(pct<=30) return {level:"Boa função", desc:"Função preservada. Independência nas AVDs.", color:"#16A34A"};
+      if(pct<=60) return {level:"Limitação moderada", desc:"Comprometimento funcional parcial.", color:"#D97706"};
+      return {level:"Limitação grave", desc:"Comprometimento funcional importante.", color:"#DC2626"};
+    },
+    questions:[
+      {id:"basfi_meias",label:"Vestir meias ou meia-calça sem ajuda",o:["0 - Fácil","1","2","3","4","5","6","7","8","9","10 - Impossível"]},
+      {id:"basfi_caneta",label:"Curvar-se para pegar caneta do chão",o:["0 - Fácil","1","2","3","4","5","6","7","8","9","10 - Impossível"]},
+      {id:"basfi_prateleira",label:"Alcançar prateleira alta sem ajuda",o:["0 - Fácil","1","2","3","4","5","6","7","8","9","10 - Impossível"]},
+      {id:"basfi_cadeira",label:"Levantar de cadeira sem usar os braços",o:["0 - Fácil","1","2","3","4","5","6","7","8","9","10 - Impossível"]},
+      {id:"basfi_chao",label:"Levantar-se do chão (decúbito dorsal)",o:["0 - Fácil","1","2","3","4","5","6","7","8","9","10 - Impossível"]},
+      {id:"basfi_pe",label:"Ficar em pé sem apoio por 10 minutos",o:["0 - Fácil","1","2","3","4","5","6","7","8","9","10 - Impossível"]},
+      {id:"basfi_escada",label:"Subir 12-15 degraus sem corrimão",o:["0 - Fácil","1","2","3","4","5","6","7","8","9","10 - Impossível"]},
+      {id:"basfi_ombro",label:"Olhar sobre o ombro sem girar o corpo",o:["0 - Fácil","1","2","3","4","5","6","7","8","9","10 - Impossível"]},
+      {id:"basfi_atividade",label:"Realizar atividade física (exercícios, jardinagem)",o:["0 - Fácil","1","2","3","4","5","6","7","8","9","10 - Impossível"]},
+      {id:"basfi_tarefas",label:"Realizar tarefas domésticas dia inteiro",o:["0 - Fácil","1","2","3","4","5","6","7","8","9","10 - Impossível"]},
+    ],
+  },
+
+  "SDAI (Simplified Disease Activity Index)": simpleScale("sdai","SDAI",["SDAI","Simplified Disease Activity Index"], [0,126], "highIsBad", s=>{
+    if(s<=3.3) return pct({level:"Remissão", desc:"Doença em remissão clínica.", color:"#16A34A"});
+    if(s<=11) return pct({level:"Baixa atividade", desc:"Baixa atividade de doença.", color:"#D97706"});
+    if(s<=26) return pct({level:"Atividade moderada", desc:"Atividade moderada de doença.", color:"#F59E0B"});
+    return pct({level:"Alta atividade", desc:"Alta atividade de doença. Ajuste terapêutico.", color:"#DC2626"});
+  }),
+
+  "CDAI (Clinical Disease Activity Index)": simpleScale("cdai","CDAI",["CDAI","Clinical Disease Activity Index"], [0,76], "highIsBad", s=>{
+    if(s<=2.8) return pct({level:"Remissão", desc:"Doença em remissão clínica.", color:"#16A34A"});
+    if(s<=10) return pct({level:"Baixa atividade", desc:"Baixa atividade de doença.", color:"#D97706"});
+    if(s<=22) return pct({level:"Atividade moderada", desc:"Atividade moderada de doença.", color:"#F59E0B"});
+    return pct({level:"Alta atividade", desc:"Alta atividade de doença. Ajuste terapêutico.", color:"#DC2626"});
+  }),
+
   // ════════════════════ ESPORTIVA ════════════════════
 
   "Return to Sport Criteria (RTS)": simpleScale("rts","RTS",["Return to Sport Criteria","RTS","Return to Sport"], [0,100], "highIsGood", s=>{
@@ -1562,6 +1970,26 @@ const SCALES = {
     if(s<=8) return pct({level:"Cadeira de rodas parcial", desc:"Cadeira de rodas para a maioria das atividades.", color:"#DC2626"});
     return pct({level:"Restrito ao leito / cadeira de rodas total", desc:"Dependente para transferências.", color:"#BE185D"});
   }),
+
+  "TUG Pediátrico": {
+    id:"tugped", shortName:"TUG Ped", aliases:["TUG Pediátrico","Timed Up and Go Pediátrico","TUG Ped"], simple:true, range:[0,120], goodDirection:"highIsBad", mcid:3, mdc:2,
+    interpret(s){
+      if(s<=8) return pct({level:"Normal", desc:"Mobilidade funcional preservada.", color:"#16A34A"});
+      if(s<=15) return pct({level:"Limítrofe", desc:"Mobilidade reduzida. Monitorar.", color:"#D97706"});
+      if(s<=25) return pct({level:"Alto risco", desc:"Mobilidade significativamente comprometida.", color:"#DC2626"});
+      return pct({level:"Muito alto risco", desc:"Mobilidade severamente comprometida.", color:"#BE185D"});
+    },
+  },
+
+  "DENVER II": {
+    id:"denver", shortName:"DENVER II", aliases:["DENVER II"], simple:true, range:[0,100], goodDirection:"highIsGood", mcid:10, mdc:6,
+    interpret(s){
+      if(s>=90) return pct({level:"Normal/Avançado", desc:"Desenvolvimento acima ou dentro do esperado.", color:"#16A34A"});
+      if(s>=75) return pct({level:"Dentro do normal", desc:"Desenvolvimento na faixa esperada.", color:"#D97706"});
+      if(s>=50) return pct({level:"Risco/Questionável", desc:"Atenção ao desenvolvimento. Reavaliar.", color:"#DC2626"});
+      return pct({level:"Atraso", desc:"Atraso significativo. Encaminhamento para avaliação.", color:"#BE185D"});
+    },
+  },
 };
 
 export default SCALES;

@@ -14,6 +14,13 @@ export function calcVancouver(scores) {
   return { total, max: 13, pigmentation: p, vascularity: v, pliability: pl, height: h, level, color };
 }
 
+export function calcDLQI(scores) {
+  const total = [1,2,3,4,5,6,7,8,9,10].reduce((s,i) => s + Math.min(Number(scores[`dlqi_${i}`]) || 0, 3), 0);
+  const level = total <= 5 ? "Pequeno efeito" : total <= 10 ? "Efeito moderado" : total <= 15 ? "Efeito importante" : "Efeito muito importante";
+  const color = total <= 5 ? G : total <= 10 ? A : total <= 15 ? P : R;
+  return { total, max:30, level, color };
+}
+
 export function calcEdema(level) {
   const v = Number(level);
   const desc = v === 0 ? "Ausente" : v === 1 ? "Leve (desaparece com digito)" : v === 2 ? "Moderado (2-4mm)" : v === 3 ? "Acentuado (4-6mm)" : "Grave (>6mm)";

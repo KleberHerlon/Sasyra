@@ -59,3 +59,10 @@ export function calcFragilidade(indicators) {
   const color = count === 0 ? G : count <= 2 ? A : R;
   return { count, level, color };
 }
+
+export function calcSPPB(scores) {
+  const total = Object.values(scores).reduce((a, b) => a + (Number(b) || 0), 0);
+  const level = total >= 10 ? "Bom desempenho" : total >= 7 ? "Desempenho moderado" : total >= 4 ? "Desempenho baixo" : "Desempenho muito baixo";
+  const color = total >= 10 ? G : total >= 7 ? A : total >= 4 ? P : R;
+  return { total, max: 12, level, color };
+}

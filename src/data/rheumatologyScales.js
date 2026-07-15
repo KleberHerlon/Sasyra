@@ -54,3 +54,38 @@ export function calcWPI(wpiValue) {
   const color = v <= 4 ? "#4ADE80" : v <= 8 ? "#FBBF24" : "#F87171";
   return { total: v, level, color };
 }
+
+export function calcBASFI(scores) {
+  const vals = Object.values(scores).map(v => Number(v) || 0);
+  if (vals.length < 10) return null;
+  const total = vals.reduce((a, b) => a + b, 0);
+  const avg = Math.round((total / vals.length) * 100) / 100;
+  const level = avg <= 3 ? "Boa função" : avg <= 6 ? "Limitação moderada" : "Limitação grave";
+  const color = avg <= 3 ? "#4ADE80" : avg <= 6 ? "#FBBF24" : "#F87171";
+  return { total: avg, level, color };
+}
+
+export function calcSDAI(tender28, swollen28, patientGlobal, physicianGlobal, crp) {
+  const t = Number(tender28) || 0;
+  const s = Number(swollen28) || 0;
+  const pg = Number(patientGlobal) || 0;
+  const phg = Number(physicianGlobal) || 0;
+  const c = Number(crp) || 0;
+  if (!t && !s && !pg && !phg && !c) return null;
+  const total = t + s + pg + phg + c;
+  const level = total <= 3.3 ? "Remissão" : total <= 11 ? "Baixa atividade" : total <= 26 ? "Atividade moderada" : "Alta atividade";
+  const color = total <= 3.3 ? "#4ADE80" : total <= 11 ? "#FBBF24" : total <= 26 ? "#A78BFA" : "#F87171";
+  return { total, level, color };
+}
+
+export function calcCDAI(tender28, swollen28, patientGlobal, physicianGlobal) {
+  const t = Number(tender28) || 0;
+  const s = Number(swollen28) || 0;
+  const pg = Number(patientGlobal) || 0;
+  const phg = Number(physicianGlobal) || 0;
+  if (!t && !s && !pg && !phg) return null;
+  const total = t + s + pg + phg;
+  const level = total <= 2.8 ? "Remissão" : total <= 10 ? "Baixa atividade" : total <= 22 ? "Atividade moderada" : "Alta atividade";
+  const color = total <= 2.8 ? "#4ADE80" : total <= 10 ? "#FBBF24" : total <= 22 ? "#A78BFA" : "#F87171";
+  return { total, level, color };
+}

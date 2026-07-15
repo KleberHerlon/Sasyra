@@ -54,3 +54,14 @@ export function calcESAS(scores) {
   const color = total <= 10 ? "#4ADE80" : total <= 30 ? "#FBBF24" : "#F87171";
   return { total, level, color };
 }
+
+export function calcBPI(scores) {
+  const sev = ["pain_worst","pain_least","pain_avg","pain_now"];
+  const interf = ["pain_interf_general","pain_interf_mood","pain_interf_walk","pain_interf_work","pain_interf_relations","pain_interf_sleep","pain_interf_enjoy"];
+  const sum = ks => ks.reduce((t,k) => t + (Number(scores[k])||0), 0);
+  const sCount = sev.filter(k => scores[k] !== undefined && scores[k] !== "").length;
+  const iCount = interf.filter(k => scores[k] !== undefined && scores[k] !== "").length;
+  const severityAvg = sCount > 0 ? Number((sum(sev) / sCount).toFixed(1)) : 0;
+  const interferenceAvg = iCount > 0 ? Number((sum(interf) / iCount).toFixed(1)) : 0;
+  return { severityAvg, interferenceAvg };
+}
