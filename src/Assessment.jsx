@@ -128,8 +128,33 @@ export default function Assessment({
       setExpandedSections(p => p.includes(firstKey) ? p : [...p, firstKey]);
     }
   }, [kbList, queixaKeys]);
+  const [tab, setTab] = useState("avaliacao");
+
   return (
     <>
+      {/* Tab Navigation */}
+      <div style={{ display:"flex", gap:4, marginBottom:16, padding: isMobile ? "6px 0" : "0" }}>
+        {[
+          ["avaliacao","📋","Avaliação"],
+          ["evolucao","📈","Evolução"],
+          ["relatorio","📊","Relatório"],
+          ["evidencias","🔬","Evidências"],
+        ].map(([k, ic, lb]) => (
+          <button key={k} onClick={() => setTab(k)}
+            style={{
+              background: tab === k ? C.greenBg : "transparent",
+              border: `1px solid ${tab === k ? C.green + "50" : "transparent"}`,
+              borderRadius: 8, padding: isMobile ? "5px 10px" : "7px 16px",
+              fontSize: isMobile ? 11 : 13, fontWeight: tab === k ? 700 : 400,
+              color: tab === k ? C.green : C.textMuted,
+              cursor: "pointer", fontFamily: F,
+            }}>
+            {ic} {isMobile ? "" : lb}
+          </button>
+        ))}
+      </div>
+
+      {tab === "avaliacao" && (<>
       {/* Histórico de Avaliações */}
       <Section title="Histórico de Avaliações" icon="📂">
         <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
@@ -741,6 +766,110 @@ export default function Assessment({
           </div>
         )}
       </CollapsibleSection>
+      </>)}
+
+      {tab === "evolucao" && (
+        <div style={{ ...cardStyle() }}>
+          <h3 style={{ margin:"0 0 16px", fontSize:16, fontWeight:700, color:C.green, display:"flex", alignItems:"center", gap:8 }}>
+            <span>📈</span> Evolução do Paciente
+          </h3>
+          <div style={{ fontSize:13, color:C.textMuted, lineHeight:1.6, padding:"20px", textAlign:"center" }}>
+            {assessmentHistory.length > 0 ? (<>
+              <div style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:8 }}>
+                {assessmentHistory.length} avaliação(ões) registrada(s)
+              </div>
+              <div style={{ marginBottom:16 }}>
+                {assessmentHistory.filter(a => a.patientId === patientId).slice(-5).reverse().map((a, i) => (
+                  <div key={i} style={{ background:C.surface, borderRadius:8, padding:"8px 12px", marginBottom:6, textAlign:"left", border:`1px solid ${C.border}` }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:C.green }}>{a.date}</div>
+                    <div style={{ fontSize:11, color:C.textSub }}>Queixa: {a.queixa || "—"}</div>
+                    <div style={{ fontSize:11, color:C.textSub }}>DCT: {a.diagnosticoCinesio || "—"}</div>
+                    <button onClick={() => loadAssessment(a)} style={{ marginTop:4, background:C.greenBg, border:`1px solid ${C.green}40`, borderRadius:6, padding:"2px 10px", fontSize:10, color:C.green, cursor:"pointer", fontWeight:600, fontFamily:F }}>
+                      Carregar esta avaliação
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </>) : (
+              <div>
+                <div style={{ fontSize:40, marginBottom:12 }}>📝</div>
+                <div>Nenhuma avaliação salva ainda.</div>
+                <div style={{ marginTop:8, fontSize:11 }}>Salve avaliações na aba "Avaliação" para acompanhar a evolução.</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === "relatorio" && (
+        <div style={{ ...cardStyle() }}>
+          <h3 style={{ margin:"0 0 16px", fontSize:16, fontWeight:700, color:C.green, display:"flex", alignItems:"center", gap:8 }}>
+            <span>📊</span> Relatório Clínico
+          </h3>
+          <div style={{ fontSize:13, color:C.textMuted, lineHeight:1.6, padding:"20px", textAlign:"center" }}>
+            {assessmentHistory.length > 0 ? (<>
+              <div style={{ fontSize:14, fontWeight:600, color:C.text, marginBottom:12 }}>
+                Gerar relatório da última avaliação
+              </div>
+              <div style={{ display:"flex", justifyContent:"center", gap:10, flexWrap:"wrap" }}>
+                <button onClick={() => { /* PDF generation placeholder */ }}
+                  style={{ background:C.green, color:"#fff", border:"none", borderRadius:8, padding:"10px 20px", fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:F }}>
+                  📄 Gerar PDF
+                </button>
+                <button onClick={() => { /* Share placeholder */ }}
+                  style={{ background:C.surface, color:C.green, border:`1px solid ${C.green}40`, borderRadius:8, padding:"10px 20px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:F }}>
+                  📤 Compartilhar
+                </button>
+              </div>
+              <div style={{ marginTop:16, background:C.surface, borderRadius:8, padding:"12px 16px", textAlign:"left", border:`1px solid ${C.border}` }}>
+                <div style={{ fontSize:11, fontWeight:700, color:C.textMuted, marginBottom:8 }}>Dados da última avaliação</div>
+                <div style={{ fontSize:12, color:C.text }}>Paciente: {pt.nome || "—"}</div>
+                <div style={{ fontSize:12, color:C.text }}>Data: {pt.data || "—"}</div>
+                <div style={{ fontSize:12, color:C.text }}>Queixa: {queixa || "—"}</div>
+                <div style={{ fontSize:12, color:C.text }}>DCT: {diagnosticoCinesio || "—"}</div>
+              </div>
+            </>) : (
+              <div>
+                <div style={{ fontSize:40, marginBottom:12 }}>📄</div>
+                <div>Nenhuma avaliação salva para gerar relatório.</div>
+                <div style={{ marginTop:8, fontSize:11 }}>Salve uma avaliação na aba "Avaliação" primeiro.</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === "evidencias" && (
+        <div style={{ ...cardStyle() }}>
+          <h3 style={{ margin:"0 0 16px", fontSize:16, fontWeight:700, color:C.green, display:"flex", alignItems:"center", gap:8 }}>
+            <span>🔬</span> Evidências Clínicas
+          </h3>
+          <div style={{ fontSize:13, color:C.textMuted, lineHeight:1.6, padding:"20px", textAlign:"center" }}>
+            {kbList.length > 0 ? (
+              <div style={{ textAlign:"left" }}>
+                <div style={{ fontSize:12, fontWeight:700, color:C.green, marginBottom:12 }}>
+                  Condições detectadas: {kbList.map(k => k.label).join(", ")}
+                </div>
+                {kbList.map((kb, i) => (
+                  <div key={i} style={{ background:C.surface, borderRadius:8, padding:"10px 14px", marginBottom:8, border:`1px solid ${C.border}` }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{kb.label}</div>
+                    <div style={{ fontSize:11, color:C.textSub, marginTop:4 }}>{kb.desc || "Base de conhecimento carregada."}</div>
+                    {kb.escalas && <div style={{ marginTop:6, display:"flex", gap:4, flexWrap:"wrap" }}>
+                      {kb.escalas.map(s => <span key={s} style={{ background:C.greenBg, color:C.green, borderRadius:4, padding:"2px 6px", fontSize:10 }}>{s}</span>)}
+                    </div>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div>
+                <div style={{ fontSize:40, marginBottom:12 }}>🔬</div>
+                <div>Nenhuma condição detectada na queixa.</div>
+                <div style={{ marginTop:8, fontSize:11 }}>Preencha a queixa principal na aba "Avaliação" para carregar evidências.</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

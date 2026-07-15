@@ -612,11 +612,14 @@ const PEDIATRIC_LABEL_POS = {
   "Pé E":        { F:[450,1310], B:[970,1310] },
 };
 
-export function BodyMap({ value, onChange, sex, pediatric }) {
+export function BodyMap({ value, onChange, sex, pediatric, colors }) {
   const [view, setView] = useState("front");
   const kv = view === "front" ? "F" : "B";
   const isMobile = useMediaQuery("(max-width:767px)");
-  const bodyScale = pediatric ? (isMobile ? 1.0 : 1.5) : (isMobile ? 0.9 : 1.4);
+  const isTiny = useMediaQuery("(max-width:400px)");
+  const bodyScale = pediatric
+    ? (isTiny ? 0.75 : isMobile ? 0.95 : 1.5)
+    : (isTiny ? 0.65 : isMobile ? 0.85 : 1.4);
   const activeParts = pediatric ? PEDIATRIC_PARTS : Object.keys(PART_SLUG);
   const activeSlug = pediatric ? (() => {
     const map = {};
@@ -680,7 +683,7 @@ export function BodyMap({ value, onChange, sex, pediatric }) {
   const tglStyle = (v) => ({
     background: view === v ? "rgba(var(--green-rgb), 0.125)" : "transparent",
     border: view === v ? "1px solid rgba(var(--green-rgb), 0.375)" : `1px solid ${C_BODY.border}`,
-    borderRadius: 6, padding: "4px 14px", fontSize: 11, fontWeight: view === v ? 700 : 400,
+    borderRadius: 6, padding: isTiny ? "2px 8px" : "4px 14px", fontSize: isTiny ? 10 : 11, fontWeight: view === v ? 700 : 400,
     color: view === v ? "var(--green)" : C_BODY.textMuted,
     cursor: "pointer", fontFamily: "'Inter','Segoe UI',sans-serif",
   });
@@ -689,8 +692,8 @@ export function BodyMap({ value, onChange, sex, pediatric }) {
     position: "absolute",
     transform: "translate(-50%,-50%)",
     background: "rgba(0,0,0,0.8)",
-    color: "var(--green)",
-    fontSize: pediatric ? 9 : 10,
+    color: colors?.mark || "var(--green)",
+    fontSize: pediatric ? (isTiny ? 7 : 9) : (isTiny ? 8 : 10),
     fontWeight: 700,
     padding: "2px 8px",
     borderRadius: 4,
@@ -703,8 +706,8 @@ export function BodyMap({ value, onChange, sex, pediatric }) {
 
   return (
     <div style={{ textAlign:"center" }}>
-      <div style={{ display:"flex", justifyContent:"center", gap:6, marginBottom:6 }}>
-        {pediatric && <span style={{ fontSize:10, color:C_BODY.textMuted, marginRight:4, alignSelf:"center" }}>🧸</span>}
+      <div style={{ display:"flex", justifyContent:"center", gap: isTiny ? 3 : 6, marginBottom:6 }}>
+        {pediatric && <span style={{ fontSize: isTiny ? 9 : 10, color: C_BODY.textMuted, marginRight:4, alignSelf:"center" }}>🧸</span>}
         <button onClick={() => setView("front")} style={tglStyle("front")}>Frente</button>
         <button onClick={() => setView("back")} style={tglStyle("back")}>Costas</button>
       </div>
@@ -736,8 +739,8 @@ export function BodyMap({ value, onChange, sex, pediatric }) {
         })}
       </div>
       {(value||[]).length > 0 && (
-        <div style={{ marginTop:10, textAlign:"left", background:"var(--card)", border:"1px solid var(--border)", borderRadius:10, padding:"10px 12px" }}>
-          <div style={{ fontSize:9, fontWeight:800, color:"var(--textMuted)", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>
+        <div style={{ marginTop: isTiny ? 6 : 10, textAlign:"left", background:"var(--card)", border:"1px solid var(--border)", borderRadius:10, padding: isTiny ? "6px 8px" : "10px 12px" }}>
+          <div style={{ fontSize: isTiny ? 8 : 9, fontWeight:800, color:"var(--textMuted)", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>
             {pediatric ? "Áreas selecionadas" : "Áreas selecionadas — articulação e músculos"}
           </div>
           {(value||[]).map(id => {
@@ -753,7 +756,7 @@ export function BodyMap({ value, onChange, sex, pediatric }) {
           })}
         </div>
       )}
-      <div style={{ fontSize:10, color: C_BODY.textMuted, marginTop:6, lineHeight:1.4 }}>
+      <div style={{ fontSize: isTiny ? 9 : 10, color: C_BODY.textMuted, marginTop: isTiny ? 4 : 6, lineHeight:1.4 }}>
         {pediatric ? "Toque nas áreas para marcar onde a criança sente dor" : "Clique nas áreas do corpo para adicionar/remover"}
       </div>
     </div>
