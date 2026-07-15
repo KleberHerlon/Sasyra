@@ -1078,18 +1078,68 @@ const SCALES = {
     ],
   },
 
-  "Berg Balance Scale (BBS)": simpleScale("bbs","BBS",["Berg Balance Scale","BBS","Berg"], [0,56], "highIsGood", s=>{
-    if(s>=45) return pct({level:"Baixo risco de queda", desc:"Equilíbrio funcional preservado.", color:"#16A34A"});
-    if(s>=21) return pct({level:"Médio risco de queda", desc:"Equilíbrio moderadamente comprometido.", color:"#D97706"});
-    return pct({level:"Alto risco de queda", desc:"Equilíbrio severamente comprometido.", color:"#DC2626"});
-  }),
+  "Berg Balance Scale (BBS)": {
+    id:"bbs", shortName:"BBS", aliases:["Berg Balance Scale","BBS","Berg"], sections:14, maxPerSection:4, mcid:5, mdc:3,
+    goodDirection:"highIsGood",
+    interpret(pct){
+      if(pct>=80) return {level:"Baixo risco de queda", desc:"Equilíbrio funcional preservado.", color:"#16A34A"};
+      if(pct>=38) return {level:"Médio risco de queda", desc:"Equilíbrio moderadamente comprometido.", color:"#D97706"};
+      return {level:"Alto risco de queda", desc:"Equilíbrio severamente comprometido.", color:"#DC2626"};
+    },
+    questions:[
+      {id:"bbs_1",label:"1 — Sentado para em pé",o:["0 — Precisa de ajuda moderada/máxima","1 — Precisa de ajuda mínima ou supervisão","2 — Levanta-se com ajuda das mãos após várias tentativas","3 — Levanta-se sozinho com as mãos","4 — Levanta-se sozinho sem as mãos e estabiliza"]},
+      {id:"bbs_2",label:"2 — Em pé sem apoio",o:["0 — Incapaz de ficar em pé >30s sem ajuda","1 — Necessita várias tentativas para ficar 30s","2 — Fica em pé 30s sem ajuda (observar)","3 — Fica em pé 2min sob supervisão","4 — Fica em pé 2min com segurança"]},
+      {id:"bbs_3",label:"3 — Sentado sem apoio, pés no chão",o:["0 — Incapaz de sentar >10s sem apoio","1 — Senta 10s com apoio","2 — Senta 10s sem apoio, mas precisa compensar","3 — Senta 2min sob supervisão","4 — Senta 2min com segurança"]},
+      {id:"bbs_4",label:"4 — Em pé para sentado",o:["0 — Precisa de ajuda para sentar","1 — Senta sem controle do movimento","2 — Usa as mãos para controlar a descida","3 — Controla a descida com leve uso das mãos","4 — Senta com segurança e mínimo uso das mãos"]},
+      {id:"bbs_5",label:"5 — Transferências (cadeira↔cadeira / cama↔cadeira)",o:["0 — Precisa de 2 pessoas para transferir","1 — Precisa de 1 pessoa para ajudar","2 — Transfere com supervisão verbal ou física","3 — Transfere sozinho com leve auxílio das mãos","4 — Transfere sozinho com segurança"]},
+      {id:"bbs_6",label:"6 — Em pé sem apoio, olhos fechados",o:["0 — Precisa de ajuda para não cair","1 — Não consegue fechar os olhos e ficar 3s","2 — Mantém 3s com olhos fechados","3 — Mantém 10s sob supervisão","4 — Mantém 10s com segurança"]},
+      {id:"bbs_7",label:"7 — Em pé sem apoio, pés juntos",o:["0 — Precisa de ajuda para juntar os pés","1 — Junta os pés mas não mantém 15s","2 — Mantém 15s com supervisão","3 — Mantém 15s sozinho","4 — Junta os pés sozinho e mantém 1min"]},
+      {id:"bbs_8",label:"8 — Alcançar à frente com braço estendido",o:["0 — Perde equilíbrio ao tentar","1 — Alcança mas precisa de supervisão","2 — Alcança <5cm","3 — Alcança 5-12cm","4 — Alcança >12cm com segurança"]},
+      {id:"bbs_9",label:"9 — Pegar objeto do chão",o:["0 — Incapaz de tentar / precisa de ajuda","1 — Tenta mas não pega","2 — Pega o objeto com supervisão","3 — Pega o objeto sozinho, com dificuldade","4 — Pega o objeto com facilidade e segurança"]},
+      {id:"bbs_10",label:"10 — Virar-se e olhar sobre os ombros",o:["0 — Precisa de ajuda para não cair","1 — Gira com desequilíbrio","2 — Gira apenas lateralmente mantendo equilíbrio","3 — Olha apenas para um lado com desequilíbrio","4 — Olha sobre ambos os ombros com segurança"]},
+      {id:"bbs_11",label:"11 — Girar 360°",o:["0 — Precisa de ajuda para girar","1 — Gira com muitos passos (>8)","2 — Gira em 4-8 passos, devagar","3 — Gira em <4 passos em uma direção","4 — Gira 360° em ≤4s em ambas as direções"]},
+      {id:"bbs_12",label:"12 — Apoiar pés alternadamente sobre banco",o:["0 — Incapaz de tentar / precisa de ajuda","1 — Apoia 2-4 pés mas não completa","2 — Completa 8 apoios em >20s","3 — Completa 8 apoios em 20s","4 — Completa 8 apoios em <20s"]},
+      {id:"bbs_13",label:"13 — Em pé, um pé à frente do outro",o:["0 — Perde equilíbrio ao colocar os pés","1 — Dá o passo, não mantém","2 — Dá passo pequeno, mantém com ajuda","3 — Coloca um pé à frente e mantém 30s","4 — Coloca pé à frente e mantém 30s com segurança"]},
+      {id:"bbs_14",label:"14 — Em pé sobre uma perna só",o:["0 — Incapaz de tentar / precisa de ajuda","1 — Tenta levantar a perna, não mantém","2 — Mantém 3s com supervisão","3 — Mantém 5-10s","4 — Mantém >10s com segurança"]},
+    ],
+  },
 
-  "Functional Independence Measure (MIF)": simpleScale("mif","MIF",["MIF","Functional Independence Measure","FIM"], [18,126], "highIsGood", s=>{
-    if(s>=108) return pct({level:"Independência completa/modificada", desc:"Funcionalidade preservada.", color:"#16A34A"});
-    if(s>=72) return pct({level:"Dependência moderada", desc:"Necessita de assistência parcial.", color:"#D97706"});
-    if(s>=36) return pct({level:"Dependência grave", desc:"Necessita de assistência significativa.", color:"#DC2626"});
-    return pct({level:"Dependência total", desc:"Assistência total nas AVDs.", color:"#BE185D"});
-  }),
+  "Functional Independence Measure (MIF)": {
+    id:"mif", shortName:"MIF", aliases:["MIF","Functional Independence Measure","FIM"], sections:18, maxPerSection:7, mcid:12, mdc:8,
+    goodDirection:"highIsGood",
+    interpret(pct){
+      if(pct>=86) return {level:"Independência completa/modificada", desc:"Funcionalidade preservada.", color:"#16A34A"};
+      if(pct>=57) return {level:"Dependência moderada", desc:"Necessita de assistência parcial.", color:"#D97706"};
+      if(pct>=29) return {level:"Dependência grave", desc:"Necessita de assistência significativa.", color:"#DC2626"};
+      return {level:"Dependência total", desc:"Assistência total nas AVDs.", color:"#BE185D"};
+    },
+    questions:[
+      // ── Autocuidado ──
+      {id:"mif_1",label:"Alimentação",o:["1 — Assistência total","2 — Assistência máxima (25-50%)","3 — Assistência moderada (50-75%)","4 — Assistência mínima (>75%)","5 — Supervisão / preparo","6 — Independência modificada","7 — Independência completa"]},
+      {id:"mif_2",label:"Higiene pessoal (rosto, dentes, barba, cabelo)",o:["1 — Assistência total","2 — Assistência máxima","3 — Assistência moderada","4 — Assistência mínima","5 — Supervisão","6 — Independência modificada","7 — Independência completa"]},
+      {id:"mif_3",label:"Banho (lavar e secar o corpo)",o:["1 — Assistência total","2 — Assistência máxima","3 — Assistência moderada","4 — Assistência mínima","5 — Supervisão","6 — Independência modificada","7 — Independência completa"]},
+      {id:"mif_4",label:"Vestir — Tronco superior",o:["1 — Assistência total","2 — Assistência máxima","3 — Assistência moderada","4 — Assistência mínima","5 — Supervisão","6 — Independência modificada","7 — Independência completa"]},
+      {id:"mif_5",label:"Vestir — Tronco inferior",o:["1 — Assistência total","2 — Assistência máxima","3 — Assistência moderada","4 — Assistência mínima","5 — Supervisão","6 — Independência modificada","7 — Independência completa"]},
+      {id:"mif_6",label:"Uso do vaso sanitário (higiene íntima, ajustar roupa)",o:["1 — Assistência total","2 — Assistência máxima","3 — Assistência moderada","4 — Assistência mínima","5 — Supervisão","6 — Independência modificada","7 — Independência completa"]},
+      // ── Controle esfincteriano ──
+      {id:"mif_7",label:"Controle vesical (bexiga)",o:["1 — Incontinência total","2 — Incontinência >1x/dia","3 — Incontinência <1x/dia","4 — Continente com uso de sonda/fralda","5 — Continente com medicação/dispositivo","6 — Continente, independência modificada","7 — Continência completa"]},
+      {id:"mif_8",label:"Controle intestinal",o:["1 — Incontinência total","2 — Incontinência >1x/semana","3 — Incontinência <1x/semana","4 — Continente com uso de fralda","5 — Continente com laxante/supositório","6 — Continente, independência modificada","7 — Continência completa"]},
+      // ── Transferências ──
+      {id:"mif_9",label:"Transferência — Cama / cadeira / cadeira de rodas",o:["1 — Assistência total","2 — Assistência máxima","3 — Assistência moderada","4 — Assistência mínima","5 — Supervisão","6 — Independência modificada","7 — Independência completa"]},
+      {id:"mif_10",label:"Transferência — Vaso sanitário",o:["1 — Assistência total","2 — Assistência máxima","3 — Assistência moderada","4 — Assistência mínima","5 — Supervisão","6 — Independência modificada","7 — Independência completa"]},
+      {id:"mif_11",label:"Transferência — Banheira / Chuveiro",o:["1 — Assistência total","2 — Assistência máxima","3 — Assistência moderada","4 — Assistência mínima","5 — Supervisão","6 — Independência modificada","7 — Independência completa"]},
+      // ── Locomoção ──
+      {id:"mif_12",label:"Locomoção — Marcha / cadeira de rodas",o:["1 — Assistência total","2 — Assistência máxima","3 — Assistência moderada","4 — Assistência mínima","5 — Supervisão","6 — Independência modificada","7 — Independência completa"]},
+      {id:"mif_13",label:"Escadas (subir e descer 12-14 degraus)",o:["1 — Assistência total","2 — Assistência máxima","3 — Assistência moderada","4 — Assistência mínima","5 — Supervisão","6 — Independência modificada","7 — Independência completa"]},
+      // ── Comunicação ──
+      {id:"mif_14",label:"Compreensão (auditiva / visual)",o:["1 — Compreensão ausente","2 — Compreende <25%","3 — Compreende 25-49%","4 — Compreende 50-74%","5 — Compreende 75-90%","6 — Compreende 90-99%","7 — Compreensão completa"]},
+      {id:"mif_15",label:"Expressão (verbal / não verbal)",o:["1 — Expressão ausente","2 — Expressa <25%","3 — Expressa 25-49%","4 — Expressa 50-74%","5 — Expressa 75-90%","6 — Expressa 90-99%","7 — Expressão completa"]},
+      // ── Cognição social ──
+      {id:"mif_16",label:"Interação social (cooperação, comportamento)",o:["1 — Interação totalmente inadequada","2 — Interação inadequada >75% do tempo","3 — Interação inadequada 50-74%","4 — Interação inadequada 25-49%","5 — Interação inadequada <25%","6 — Interação adequada quase sempre","7 — Interação totalmente adequada"]},
+      {id:"mif_17",label:"Resolução de problemas",o:["1 — Nenhuma capacidade de resolver","2 — Resolve <25%","3 — Resolve 25-49%","4 — Resolve 50-74%","5 — Resolve 75-90%","6 — Resolve 90-99%","7 — Resolução completa"]},
+      {id:"mif_18",label:"Memória",o:["1 — Nenhuma capacidade de lembrar","2 — Lembra <25%","3 — Lembra 25-49%","4 — Lembra 50-74%","5 — Lembra 75-90%","6 — Lembra 90-99%","7 — Memória completa"]},
+    ],
+  },
 
   "Fugl-Meyer Assessment": {
     id:"fugl", shortName:"Fugl-Meyer", aliases:["Fugl-Meyer","FMA","Fugl-Meyer Assessment"],
@@ -1608,23 +1658,94 @@ const SCALES = {
     ],
   },
 
-  "Katz Index of Independence in ADLs": simpleScale("katz","Katz",["Katz Index","Katz","Katz Index of Independence in ADLs"], [0,6], "highIsGood", s=>{
-    if(s>=5) return pct({level:"Independência funcional", desc:"Função preservada nas AVDs básicas.", color:"#16A34A"});
-    if(s>=2) return pct({level:"Dependência parcial", desc:"Dependência em 1-4 atividades.", color:"#D97706"});
-    return pct({level:"Dependência grave", desc:"Dependente em 5-6 atividades.", color:"#DC2626"});
-  }),
+  "Katz Index of Independence in ADLs": {
+    id:"katz", shortName:"Katz", aliases:["Katz Index","Katz","Katz Index of Independence in ADLs"], sections:6, maxPerSection:1, mcid:1, mdc:0.5,
+    goodDirection:"highIsGood",
+    calculate(answers){
+      const indep = Object.values(answers).filter(v => v === 1).length;
+      return {raw:indep, max:6, pct:Math.round(indep/6*100)};
+    },
+    interpret(pct){
+      if(pct>=83) return {level:"Independência funcional", desc:"Função preservada nas AVDs básicas.", color:"#16A34A"};
+      if(pct>=33) return {level:"Dependência parcial", desc:"Dependência em 1-4 atividades.", color:"#D97706"};
+      return {level:"Dependência grave", desc:"Dependente em 5-6 atividades.", color:"#DC2626"};
+    },
+    questions:[
+      {id:"katz_1",label:"Banho (esponja, chuveiro ou banheira)",o:["Dependente / precisa de ajuda","Independente"]},
+      {id:"katz_2",label:"Vestir-se (inclui calçados e amarrar sapatos)",o:["Dependente / precisa de ajuda","Independente"]},
+      {id:"katz_3",label:"Higiene pessoal (ir ao banheiro, higiene íntima)",o:["Dependente / precisa de ajuda","Independente"]},
+      {id:"katz_4",label:"Transferência (deitar e levantar da cama, sentar e levantar)",o:["Dependente / precisa de ajuda","Independente"]},
+      {id:"katz_5",label:"Continência (controle de esfíncteres)",o:["Dependente / precisa de ajuda","Independente"]},
+      {id:"katz_6",label:"Alimentação (levar comida do prato à boca)",o:["Dependente / precisa de ajuda","Independente"]},
+    ],
+  },
 
-  "Lawton Instrumental ADL Scale": simpleScale("lawton","Lawton",["Lawton Scale","Lawton","Lawton Instrumental ADL Scale"], [0,27], "highIsGood", s=>{
-    if(s>=21) return pct({level:"Independência funcional", desc:"Função preservada nas AVDs instrumentais.", color:"#16A34A"});
-    if(s>=10) return pct({level:"Dependência parcial", desc:"Necessita de assistência em atividades instrumentais.", color:"#D97706"});
-    return pct({level:"Dependência grave", desc:"Dependente para atividades instrumentais.", color:"#DC2626"});
-  }),
+  "Lawton Instrumental ADL Scale": {
+    id:"lawton", shortName:"Lawton", aliases:["Lawton Scale","Lawton","Lawton Instrumental ADL Scale"], sections:8, maxPerSection:3, mcid:3, mdc:2,
+    goodDirection:"highIsGood",
+    interpret(pct){
+      if(pct>=83) return {level:"Independência funcional", desc:"Função preservada nas AVDs instrumentais.", color:"#16A34A"};
+      if(pct>=42) return {level:"Dependência parcial", desc:"Necessita de assistência em atividades instrumentais.", color:"#D97706"};
+      return {level:"Dependência grave", desc:"Dependente para atividades instrumentais.", color:"#DC2626"};
+    },
+    questions:[
+      {id:"lawton_1",label:"Uso do telefone",o:["1 — Não usa","2 — Atende, mas não disca / Disca alguns números","3 — Usa por iniciativa própria"]},
+      {id:"lawton_2",label:"Fazer compras",o:["1 — Não faz compras","2 — Precisa de acompanhamento","3 — Faz compras sozinho(a)"]},
+      {id:"lawton_3",label:"Preparo de alimentos",o:["1 — Não prepara","2 — Aquece e serve refeições","3 — Planeja e prepara refeições completas"]},
+      {id:"lawton_4",label:"Tarefas domésticas",o:["1 — Não realiza","2 — Tarefas leves com ajuda","3 — Mantém a casa sozinho(a)"]},
+      {id:"lawton_5",label:"Lavanderia / Cuidar da própria roupa",o:["1 — Não lava a própria roupa","2 — Lava pequenas peças","3 — Lava todas as roupas sozinho(a)"]},
+      {id:"lawton_6",label:"Uso de transporte",o:["1 — Não utiliza transporte","2 — Utiliza com acompanhamento","3 — Utiliza transporte de forma independente"]},
+      {id:"lawton_7",label:"Uso de medicações",o:["1 — Não administra","2 — Toma se preparadas com antecedência","3 — Toma sozinho(a) na dose e horário corretos"]},
+      {id:"lawton_8",label:"Manejo de finanças",o:["1 — Não cuida das finanças","2 — Apenas pequenas compras diárias","3 — Gerencia todas as finanças sozinho(a)"]},
+    ],
+  },
 
-  "Tinetti Performance Oriented Mobility Assessment": simpleScale("tinetti","Tinetti",["Tinetti","POMA","Tinetti Performance Oriented Mobility Assessment"], [0,28], "highIsGood", s=>{
-    if(s>=25) return pct({level:"Baixo risco de queda", desc:"Mobilidade e equilíbrio preservados.", color:"#16A34A"});
-    if(s>=19) return pct({level:"Risco moderado de queda", desc:"Alterações de equilíbrio/marcha.", color:"#D97706"});
-    return pct({level:"Alto risco de queda", desc:"Equilíbrio e marcha severamente comprometidos.", color:"#DC2626"});
-  }),
+  "Tinetti Performance Oriented Mobility Assessment": {
+    id:"tinetti", shortName:"Tinetti", aliases:["Tinetti","POMA","Tinetti Performance Oriented Mobility Assessment"], sections:18, maxPerSection:null, mcid:4, mdc:3,
+    goodDirection:"highIsGood",
+    calculate(answers){
+      const w = {
+        t_1:[0,1], t_2:[0,1,2], t_3:[0,1,2], t_4:[0,1,2], t_5:[0,1,2], t_6:[0,1,2], t_7:[0,1],
+        t_8a:[0,1], t_8b:[0,1], t_9:[0,1,2],
+        t_10:[0,1], t_11a:[0,1,2], t_11b:[0,1,2], t_12:[0,1], t_13:[0,1,2], t_14:[0,1,2], t_15:[0,1,2], t_16:[0,1],
+      };
+      const maxw = {t_1:1,t_2:2,t_3:2,t_4:2,t_5:2,t_6:2,t_7:1,t_8a:1,t_8b:1,t_9:2,t_10:1,t_11a:2,t_11b:2,t_12:1,t_13:2,t_14:2,t_15:2,t_16:1};
+      let sum=0, max=0;
+      for(const [k,arr] of Object.entries(w)){
+        const idx = Number(answers[k]);
+        if(!isNaN(idx) && arr[idx]!==undefined) sum+=arr[idx];
+        max+=maxw[k]||1;
+      }
+      return {raw:sum, max:28, pct:Math.round(sum/28*100)};
+    },
+    interpret(pct){
+      if(pct>=89) return {level:"Baixo risco de queda", desc:"Mobilidade e equilíbrio preservados.", color:"#16A34A"};
+      if(pct>=68) return {level:"Risco moderado de queda", desc:"Alterações de equilíbrio/marcha.", color:"#D97706"};
+      return {level:"Alto risco de queda", desc:"Equilíbrio e marcha severamente comprometidos.", color:"#DC2626"};
+    },
+    questions:[
+      // ── Equilíbrio (9 itens, máx 16) ──
+      {id:"t_1",label:"1 — Equilíbrio sentado",o:["0 — Inclina-se / desliza da cadeira","1 — Estável, seguro"]},
+      {id:"t_2",label:"2 — Levantar da cadeira",o:["0 — Incapaz sem ajuda","1 — Capaz, mas usa os braços","2 — Capaz sem usar os braços"]},
+      {id:"t_3",label:"3 — Tentativas de levantar",o:["0 — Incapaz sem ajuda","1 — >1 tentativa","2 — 1 tentativa"]},
+      {id:"t_4",label:"4 — Equilíbrio imediato (primeiros 5 segundos)",o:["0 — Instável (cambaleia, move os pés)","1 — Estável, mas usa suporte","2 — Estável sem suporte"]},
+      {id:"t_5",label:"5 — Equilíbrio em pé (pés juntos)",o:["0 — Instável","1 — Estável, mas base alargada (>10cm)","2 — Pés juntos, estável"]},
+      {id:"t_6",label:"6 — Teste do empurrão (3× no esterno, pés juntos)",o:["0 — Cai ou precisa de apoio","1 — Cambaleia, agarra, mas mantém","2 — Estável, não se desequilibra"]},
+      {id:"t_7",label:"7 — Olhos fechados (pés juntos)",o:["0 — Instável / cai","1 — Estável"]},
+      {id:"t_8a",label:"8a — Giro 360° — Passos contínuos",o:["0 — Passos descontínuos / interrompidos","1 — Passos contínuos e fluidos"]},
+      {id:"t_8b",label:"8b — Giro 360° — Estabilidade",o:["0 — Instável (cambaleia, agarra)","1 — Estável durante todo o giro"]},
+      {id:"t_9",label:"9 — Sentar-se",o:["0 — Inseguro (erra distância, cai)","1 — Usa os braços ou movimento brusco","2 — Movimento suave e controlado"]},
+      // ── Marcha (7 itens, máx 12) ──
+      {id:"t_10",label:"10 — Início da marcha",o:["0 — Hesitação, múltiplas tentativas","1 — Inicia sem hesitação"]},
+      {id:"t_11a",label:"11a — Altura do passo — Pé direito",o:["0 — Não eleva o pé do chão","1 — Passa o pé D pelo tornozelo E","2 — Eleva completamente o pé do chão"]},
+      {id:"t_11b",label:"11b — Altura do passo — Pé esquerdo",o:["0 — Não eleva o pé do chão","1 — Passa o pé E pelo tornozelo D","2 — Eleva completamente o pé do chão"]},
+      {id:"t_12",label:"12 — Simetria dos passos",o:["0 — Comprimento dos passos desigual","1 — Comprimento dos passos simétrico"]},
+      {id:"t_13",label:"13 — Continuidade dos passos",o:["0 — Passos interrompidos / paradas frequentes","1 — Passos hesitantes, mas sem parar","2 — Passos contínuos, sem interrupção"]},
+      {id:"t_14",label:"14 — Trajetória (caminha 3m em linha reta)",o:["0 — Desvio marcado da linha","1 — Desvio leve com uso de apoio","2 — Linha reta sem auxílio"]},
+      {id:"t_15",label:"15 — Tronco",o:["0 — Balanço acentuado ou uso de apoio","1 — Flexão de joelhos/dorso ou abertura de braços","2 — Ereta, sem balanço ou flexão"]},
+      {id:"t_16",label:"16 — Base de apoio durante a marcha",o:["0 — Calcanhares afastados ao caminhar","1 — Calcanhares quase se tocando ao caminhar"]},
+    ],
+  },
 
   "FES-I (Falls Efficacy Scale)": {
     id:"fesi", shortName:"FES-I", aliases:["FES-I","Falls Efficacy Scale"], sections:16, maxPerSection:4, mcid:5, mdc:3,
