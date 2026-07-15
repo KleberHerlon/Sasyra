@@ -2385,6 +2385,10 @@ NÃO cite nem recomende cirurgias, medicamentos, infiltrações ou qualquer proc
                   value={df.resposta} onChange={v=>setDf(f=>({...f,resposta:v}))} activeColor={C.green}/>
               </Field>
               <Field l="Escala aplicada nesta sessão">
+                <div style={{ fontSize:10, color:"var(--amber)", marginBottom:6, fontWeight:600, lineHeight:1.4 }}>
+                  ⭐ = escalas sugeridas pela avaliação (condição detectada)<br/>
+                  As demais são complementares e podem ser usadas conforme necessidade clínica
+                </div>
                 <div style={{ display:"flex", gap:6 }}>
                   <select value="" onChange={e => {
                     const key = e.target.value;
@@ -2395,9 +2399,9 @@ NÃO cite nem recomende cirurgias, medicamentos, infiltrações ou qualquer proc
                   }} style={{...sel({}),flex:1,fontSize:11}}>
                     <option value="">Selecionar escala…</option>
                     {(evidence?.escalas || []).map(s => (
-                      <option key={s} value={s}>{s} ⬤</option>
+                      <option key={s} value={s} style={{color:"var(--amber)",fontWeight:700}}>⭐ {s}</option>
                     ))}
-                    <option value="" disabled style={{height:1,background:"var(--border)"}}>── todas as escalas ──</option>
+                    <option value="" disabled style={{color:"var(--textMuted)",fontStyle:"italic"}}>── complementares ──</option>
                     {Object.keys(SCALES).filter(k => !(evidence?.escalas || []).includes(k)).sort().map(s => (
                       <option key={s} value={s}>{s}</option>
                     ))}
