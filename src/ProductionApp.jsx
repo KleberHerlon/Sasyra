@@ -2385,36 +2385,34 @@ NÃO cite nem recomende cirurgias, medicamentos, infiltrações ou qualquer proc
                   value={df.resposta} onChange={v=>setDf(f=>({...f,resposta:v}))} activeColor={C.green}/>
               </Field>
               <Field l="Escala aplicada nesta sessão">
-                {evidence?.escalas ? (
-                  <>
-                    <div style={{ display:"flex", gap:6 }}>
-                      <select value="" onChange={e => {
-                        const key = e.target.value;
-                        if (!key) return;
-                        let s = SCALES[key];
-                        if (!s) s = Object.values(SCALES).find(sc => sc.aliases?.includes(key));
-                        if (s) setScaleModal({open:true, scale:s, key});
-                      }} style={{...sel({}),flex:1,fontSize:11}}>
-                        <option value="">Selecionar escala…</option>
-                        {evidence.escalas.map(s => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
-                      {df.escalas && !df.escalaData && (
-                        <button onClick={() => setDf(f => ({...f, escalas:"", escalaData:null }))} style={{background:"transparent",border:`1px solid ${C.border}`,borderRadius:8,width:36,cursor:"pointer",fontSize:16,color:C.textMuted,flexShrink:0}} title="Remover">×</button>
-                      )}
-                    </div>
-                    {df.escalaData && (
-                      <div style={{ fontSize:11, color:"var(--green)", marginTop:6, fontWeight:700, background:"var(--card)", borderRadius:6, padding:"6px 10px", border:"1px solid var(--border)" }}>
-                        📊 {df.escalaData.shortName || df.escalaData.scaleName}: {df.escalaData.pct}% — {df.escalaData.interpretation}
-                      </div>
-                    )}
-                    {df.escalas && !df.escalaData && (
-                      <div style={{ fontSize:11, color:"var(--blue)", marginTop:4 }}>{df.escalas}</div>
-                    )}
-                  </>
-                ) : (
-                  <input value={df.escalas} onChange={e=>setDf(f=>({...f,escalas:e.target.value}))} style={inp()} placeholder="Ex: ODI=32%, KOOS=58…"/>
+                <div style={{ display:"flex", gap:6 }}>
+                  <select value="" onChange={e => {
+                    const key = e.target.value;
+                    if (!key) return;
+                    let s = SCALES[key];
+                    if (!s) s = Object.values(SCALES).find(sc => sc.aliases?.includes(key));
+                    if (s) setScaleModal({open:true, scale:s, key});
+                  }} style={{...sel({}),flex:1,fontSize:11}}>
+                    <option value="">Selecionar escala…</option>
+                    {(evidence?.escalas || []).map(s => (
+                      <option key={s} value={s}>{s} ⬤</option>
+                    ))}
+                    <option value="" disabled style={{height:1,background:"var(--border)"}}>── todas as escalas ──</option>
+                    {Object.keys(SCALES).filter(k => !(evidence?.escalas || []).includes(k)).sort().map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                  {df.escalas && !df.escalaData && (
+                    <button onClick={() => setDf(f => ({...f, escalas:"", escalaData:null }))} style={{background:"transparent",border:`1px solid ${C.border}`,borderRadius:8,width:36,cursor:"pointer",fontSize:16,color:C.textMuted,flexShrink:0}} title="Remover">×</button>
+                  )}
+                </div>
+                {df.escalaData && (
+                  <div style={{ fontSize:11, color:"var(--green)", marginTop:6, fontWeight:700, background:"var(--card)", borderRadius:6, padding:"6px 10px", border:"1px solid var(--border)" }}>
+                    📊 {df.escalaData.shortName || df.escalaData.scaleName}: {df.escalaData.pct}% — {df.escalaData.interpretation}
+                  </div>
+                )}
+                {df.escalas && !df.escalaData && (
+                  <div style={{ fontSize:11, color:"var(--blue)", marginTop:4 }}>{df.escalas}</div>
                 )}
               </Field>
             </Row>
