@@ -17,6 +17,8 @@ import { calcOxford, calcPERFECT } from "../data/uroScales";
 import BristolStoolScale from "../components/BristolStoolScale";
 import ErectionRigidityScale from "../components/ErectionRigidityScale";
 import PelvicFloorMap from "../components/PelvicFloorMap";
+import BladderDiary from "../components/BladderDiary";
+import BridgeAlerts from "../components/BridgeAlerts";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -496,6 +498,7 @@ export default function UroGynecology({ student, students, allPatients, currentM
       <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
         {tab === "avaliacao" && (
           <>
+            <BridgeAlerts studentId={sid} />
             <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} expanded={expandedSections.includes("identificacao")} onToggle={()=>toggleSection("identificacao")} />
             <Section title="Anamnese Uro-Ginecológica" icon="📋">
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
@@ -614,18 +617,7 @@ export default function UroGynecology({ student, students, allPatients, currentM
               <ErectionRigidityScale value={erectionRigidity} onChange={setErectionRigidity} colors={{ ...C, accent: C.amber, font: F }} />
             )}
 
-            <Section title="Diário Miccional" icon="📝">
-              <div style={{ fontSize:12, color:C.textMuted, marginBottom:10, lineHeight:1.5 }}>
-                Preencha os dados do diário miccional das últimas 24-72h.
-              </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr", gap:"12px 16px" }}>
-                <NumericField label="Diurese dia (ml)" value={diureseDia} onChange={setDiureseDia} min={0} max={5000} unit="ml" />
-                <NumericField label="Diurese noite (ml)" value={diureseNoite} onChange={setDiureseNoite} min={0} max={5000} unit="ml" />
-                <NumericField label="Perdas dia (n)" value={perdasDia} onChange={setPerdasDia} min={0} max={50} />
-                <NumericField label="Perdas noite (n)" value={perdasNoite} onChange={setPerdasNoite} min={0} max={50} />
-                <NumericField label="Ingestão hídrica (ml)" value={ingestaoHidrica} onChange={setIngestaoHidrica} min={0} max={8000} unit="ml" />
-              </div>
-            </Section>
+            <BladderDiary studentId={sid} colors={C} />
 
             <Section title="Avaliação do Assoalho Pélvico" icon="🔍">
               <CollapsibleSub title="Escala de Oxford">

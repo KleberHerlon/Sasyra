@@ -13,6 +13,7 @@ import LogoSVG from "../components/LogoSVG";
 import { useClinicalScan } from "../hooks/useClinicalScan.js";
 import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
 import { calcVancouver, calcEdema } from "../data/dermatoScales";
+import BridgeAlerts from "../components/BridgeAlerts";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -455,6 +456,7 @@ export default function DermatoFunctional({ student, students, onSelectStudent, 
       <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
         {tab === "avaliacao" && (
           <>
+            <BridgeAlerts studentId={sid} />
             <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} expanded={expandedSections.includes("identificacao")} onToggle={()=>toggleSection("identificacao")} />
             <Section title="Anamnese Dermatofuncional" icon="📋">
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>

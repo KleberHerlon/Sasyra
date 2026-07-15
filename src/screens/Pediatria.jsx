@@ -12,6 +12,7 @@ import { CIF } from "../data/cif.js";
 import { calcGMFCS, calcAIMS, calcMCHAT, calcPEDI } from "../data/pediatriaScales";
 import LogoSVG from "../components/LogoSVG";
 import PatientIdentification from "../components/PatientIdentification";
+import BridgeAlerts from "../components/BridgeAlerts";
 
 const C = {
   bg:"#F5F0EB",surface:"#FCFAF7",card:"#FCFAF7",cardAlt:"#F0EBE5",
@@ -756,6 +757,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
       <div style={{ maxWidth:960, margin:"0 auto", padding: isMobile ? "12px 10px" : "20px 16px" }}>
         {/* ════════ TAB: AVALIAÇÃO ════════ */}
         {tab === "avaliacao" && <>
+          <BridgeAlerts studentId={sid} />
           {/* 📂 Histórico de Avaliações */}
           <Section title="Histórico de Avaliações" icon="📂">
             <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>

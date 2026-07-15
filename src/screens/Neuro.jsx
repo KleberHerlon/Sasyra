@@ -14,6 +14,7 @@ import StopwatchField from "../components/StopwatchField";
 import PatientIdentification from "../components/PatientIdentification";
 import DermatomeMap from "../components/DermatomeMap";
 import ReflexMatrix from "../components/ReflexMatrix";
+import BridgeAlerts from "../components/BridgeAlerts";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -876,6 +877,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
 
         {/* ════════ TAB: AVALIAÇÃO ════════ */}
         {tab === "avaliacao" && <>
+          <BridgeAlerts studentId={sid} />
           {/* 📂 Histórico de Avaliações */}
           <Section title="Histórico de Avaliações" icon="📂">
             <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>

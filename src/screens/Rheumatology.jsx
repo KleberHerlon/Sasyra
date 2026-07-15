@@ -14,6 +14,7 @@ import { extractClinicalEntities } from "../utils/clinicalDetection.js";
 import LogoSVG from "../components/LogoSVG";
 import { calcDAS28, calcBASDAI, calcHAQ, calcWOMAC, calcWPI } from "../data/rheumatologyScales";
 import PatientIdentification from "../components/PatientIdentification";
+import BridgeAlerts from "../components/BridgeAlerts";
 
 
 const C = {
@@ -547,6 +548,7 @@ export default function Rheumatology({ student, students, allPatients, currentMo
       <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
         {tab === "avaliacao" && (
           <>
+            <BridgeAlerts studentId={sid} />
             <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} expanded={expandedSections.includes("identificacao")} onToggle={()=>toggleSection("identificacao")} />
             <Section title="Anamnese Reumatológica" icon="📋">
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
@@ -786,7 +788,7 @@ export default function Rheumatology({ student, students, allPatients, currentMo
             {/* 📊 Escalas Padronizadas */}
             <CollapsibleSection title="Escalas Padronizadas" icon="📊" expanded={expandedSections.includes("escalas")} onToggle={()=>toggleSection("escalas")}>
               <div style={{fontSize:12,color:C.textMuted,marginBottom:12,lineHeight:1.5}}>Selecione uma escala validada para aplicar ao paciente. Os resultados ficam salvos neste módulo.</div>
-                             <ScaleSelector scaleNames={["FIQ (Fibromyalgia Impact Questionnaire)","BASFI","SDAI","CDAI"]} onSave={handleScaleSave} savedResults={savedScales} />
+                              <ScaleSelector scaleNames={["FIQ (Fibromyalgia Impact Questionnaire)","SLEDAI","BASFI","SDAI","CDAI"]} onSave={handleScaleSave} savedResults={savedScales} />
               {savedScales.length > 0 && (
                 <div style={{marginTop:12}}>
                   <span style={{fontSize:9,fontWeight:700,color:C.green,textTransform:"uppercase",letterSpacing:"0.08em"}}>✓ Resultados Salvos: {savedScales.length}</span>

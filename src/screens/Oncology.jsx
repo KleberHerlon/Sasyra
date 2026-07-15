@@ -14,6 +14,7 @@ import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
 import { extractClinicalEntities } from "../utils/clinicalDetection.js";
 import LogoSVG from "../components/LogoSVG";
 import { calcECOG, calcKPS, calcEORTC, calcESAS } from "../data/oncologyScales";
+import BridgeAlerts from "../components/BridgeAlerts";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -479,6 +480,7 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
       <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
         {tab === "avaliacao" && (
           <>
+            <BridgeAlerts studentId={sid} />
             <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} expanded={expandedSections.includes("identificacao")} onToggle={()=>toggleSection("identificacao")} />
             <Section title="Anamnese Oncológica" icon="📋">
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>

@@ -827,9 +827,21 @@ const SCALES = {
     ],
   },
 
-  "Fibromyalgia Impact Questionnaire (FIQ)": {
-    id:"fiq", shortName:"FIQ", aliases:["FIQ","Fibromyalgia Impact Questionnaire"], sections:10, maxPerSection:4, mcid:14, mdc:9,
+  "Fibromyalgia Impact Questionnaire Revised (FIQ-R)": {
+    id:"fiq", shortName:"FIQ-R",     aliases:["FIQ","FIQ-R","Fibromyalgia Impact Questionnaire","Fibromyalgia Impact Questionnaire Revised","FIQ (Fibromyalgia Impact Questionnaire)"], sections:21, maxPerSection:10, mcid:14, mdc:9,
     goodDirection:"highIsBad",
+    calculate(answers){
+      const funcItems = [0,1,2,3,4,5,6,7,8];
+      const overallItems = [9,10];
+      const symptomItems = [11,12,13,14,15,16,17,18,19,20];
+      const keys = Object.keys(answers);
+      const vals = keys.map(k => Number(answers[k]) || 0);
+      const func = funcItems.reduce((s,i) => s + (vals[i]||0), 0) / 3;
+      const overall = overallItems.reduce((s,i) => s + (vals[i]||0), 0);
+      const symptoms = symptomItems.reduce((s,i) => s + (vals[i]||0), 0) / 2;
+      const total = Math.round((func + overall + symptoms) * 10) / 10;
+      return {raw:total, max:100, pct:Math.round(total)};
+    },
     interpret(pct){
       if(pct<=30) return {level:"Impacto leve", desc:"Bom controle da fibromialgia.", color:"#16A34A"};
       if(pct<=55) return {level:"Impacto moderado", desc:"Fibromialgia com limitação parcial.", color:"#D97706"};
@@ -837,16 +849,30 @@ const SCALES = {
       return {level:"Impacto muito severo", desc:"Fibromialgia grave. Abordagem multidisciplinar.", color:"#BE185D"};
     },
     questions:[
-      {id:"fiq_andar",label:"Caminhar",o:["Sem dificuldade","Leve dificuldade","Moderada dificuldade","Muita dificuldade","Incapaz"]},
-      {id:"fiq_compras",label:"Fazer compras",o:["Sem dificuldade","Leve dificuldade","Moderada dificuldade","Muita dificuldade","Incapaz"]},
-      {id:"fiq_tarefas",label:"Tarefas domésticas",o:["Sem dificuldade","Leve dificuldade","Moderada dificuldade","Muita dificuldade","Incapaz"]},
-      {id:"fiq_carro",label:"Dirigir / andar de carro",o:["Sem dificuldade","Leve dificuldade","Moderada dificuldade","Muita dificuldade","Incapaz"]},
-      {id:"fiq_subir",label:"Subir escadas",o:["Sem dificuldade","Leve dificuldade","Moderada dificuldade","Muita dificuldade","Incapaz"]},
-      {id:"fiq_trabalho",label:"Trabalho / Atividades laborais",o:["Sem dificuldade","Leve dificuldade","Moderada dificuldade","Muita dificuldade","Incapaz"]},
-      {id:"fiq_sono",label:"Qualidade do sono",o:["Excelente","Boa","Regular","Ruim","Muito ruim"]},
-      {id:"fiq_cansaço",label:"Nível de cansaço / fadiga",o:["Nenhum","Leve","Moderado","Forte","Muito forte"]},
-      {id:"fiq_dor",label:"Nível de dor generalizada",o:["Nenhuma","Leve","Moderada","Forte","Muito forte"]},
-      {id:"fiq_rigidez",label:"Rigidez matinal",o:["Nenhuma","Leve","Moderada","Forte","Muito forte"]},
+      // ── Função (9 itens) ──
+      {id:"fiqr_f1",label:"Pentear o cabelo (0–10)",o:["0 — Sem dificuldade","1","2","3","4","5","6","7","8","9","10 — Muito difícil"]},
+      {id:"fiqr_f2",label:"Caminhar por 20 minutos",o:["0 — Sem dificuldade","1","2","3","4","5","6","7","8","9","10 — Muito difícil"]},
+      {id:"fiqr_f3",label:"Preparar uma refeição caseira",o:["0 — Sem dificuldade","1","2","3","4","5","6","7","8","9","10 — Muito difícil"]},
+      {id:"fiqr_f4",label:"Aspirar, varrer ou esfregar o chão",o:["0 — Sem dificuldade","1","2","3","4","5","6","7","8","9","10 — Muito difícil"]},
+      {id:"fiqr_f5",label:"Levantar e carregar sacola de compras",o:["0 — Sem dificuldade","1","2","3","4","5","6","7","8","9","10 — Muito difícil"]},
+      {id:"fiqr_f6",label:"Subir um lance de escadas",o:["0 — Sem dificuldade","1","2","3","4","5","6","7","8","9","10 — Muito difícil"]},
+      {id:"fiqr_f7",label:"Trocar roupa de cama (lençóis/cobertores)",o:["0 — Sem dificuldade","1","2","3","4","5","6","7","8","9","10 — Muito difícil"]},
+      {id:"fiqr_f8",label:"Ficar sentado(a) por 45 minutos",o:["0 — Sem dificuldade","1","2","3","4","5","6","7","8","9","10 — Muito difícil"]},
+      {id:"fiqr_f9",label:"Fazer compras no supermercado",o:["0 — Sem dificuldade","1","2","3","4","5","6","7","8","9","10 — Muito difícil"]},
+      // ── Impacto geral (2 itens) ──
+      {id:"fiqr_o1",label:"A fibromialgia me impediu de realizar meus objetivos",o:["0 — Nunca","1","2","3","4","5","6","7","8","9","10 — Sempre"]},
+      {id:"fiqr_o2",label:"Senti-me completamente sobrecarregado(a)",o:["0 — Nunca","1","2","3","4","5","6","7","8","9","10 — Sempre"]},
+      // ── Sintomas (10 itens) ──
+      {id:"fiqr_s1",label:"Nível de dor",o:["0 — Nenhuma","1","2","3","4","5","6","7","8","9","10 — Insuportável"]},
+      {id:"fiqr_s2",label:"Nível de energia",o:["0 — Muita energia","1","2","3","4","5","6","7","8","9","10 — Nenhuma energia"]},
+      {id:"fiqr_s3",label:"Nível de rigidez",o:["0 — Nenhuma","1","2","3","4","5","6","7","8","9","10 — Rigidez intensa"]},
+      {id:"fiqr_s4",label:"Qualidade do sono",o:["0 — Dormi muito bem","1","2","3","4","5","6","7","8","9","10 — Dormi muito mal"]},
+      {id:"fiqr_s5",label:"Nível de depressão",o:["0 — Nenhuma","1","2","3","4","5","6","7","8","9","10 — Depressão profunda"]},
+      {id:"fiqr_s6",label:"Problemas de memória",o:["0 — Memória boa","1","2","3","4","5","6","7","8","9","10 — Memória muito ruim"]},
+      {id:"fiqr_s7",label:"Nível de ansiedade",o:["0 — Nenhuma","1","2","3","4","5","6","7","8","9","10 — Muito ansioso(a)"]},
+      {id:"fiqr_s8",label:"Sensibilidade ao toque",o:["0 — Nenhuma","1","2","3","4","5","6","7","8","9","10 — Extremamente sensível"]},
+      {id:"fiqr_s9",label:"Problemas de equilíbrio",o:["0 — Nenhum","1","2","3","4","5","6","7","8","9","10 — Desequilíbrio grave"]},
+      {id:"fiqr_s10",label:"Sensibilidade a ruídos, luz, odores ou frio",o:["0 — Nenhuma","1","2","3","4","5","6","7","8","9","10 — Extremamente sensível"]},
     ],
   },
 
@@ -1900,6 +1926,53 @@ const SCALES = {
   }),
 
   // ════════════════════ REUMATOLÓGICA ════════════════════
+
+  "SLEDAI (Systemic Lupus Erythematosus Disease Activity Index)": {
+    id:"sledai", shortName:"SLEDAI", aliases:["SLEDAI","Systemic Lupus Erythematosus Disease Activity Index","Lúpus SLEDAI"], sections:24, maxPerSection:1, mcid:3, mdc:2,
+    goodDirection:"highIsBad",
+    calculate(answers){
+      const weights = {
+        sl_seiz:8, sl_psych:8, sl_organic:8, sl_visual:8, sl_cranial:8, sl_luphead:8, sl_cva:8, sl_vasc:8,
+        sl_arth:4, sl_myos:4, sl_urcast:4, sl_hematur:4, sl_protein:4, sl_pyuria:4,
+        sl_rash:2, sl_alopec:2, sl_mucosa:2, sl_pleur:2, sl_peric:2, sl_compl:2, sl_dsdna:2, sl_fever:1, sl_thromb:1, sl_leuko:1,
+      };
+      let sum=0;
+      for(const [k, w] of Object.entries(weights)) { if(answers[k] === 1 || answers[k] === true) sum+=w; }
+      return {raw:sum, max:105, pct:Math.round(sum/105*100)};
+    },
+    interpret(pct){
+      if(pct<=4) return {level:"Remissão / Baixa atividade", desc:"Doença inativa ou atividade leve.", color:"#16A34A"};
+      if(pct<=15) return {level:"Atividade moderada", desc:"Atividade moderada. Ajustar tratamento.", color:"#D97706"};
+      if(pct<=30) return {level:"Atividade alta", desc:"Atividade importante. Intensificar terapia.", color:"#DC2626"};
+      return {level:"Atividade muito alta", desc:"Risco de dano orgânico. Intervenção urgente.", color:"#BE185D"};
+    },
+    questions:[
+      {id:"sl_seiz",label:"Convulsão (início recente)",o:["Ausente","Presente"]},
+      {id:"sl_psych",label:"Psicose",o:["Ausente","Presente"]},
+      {id:"sl_organic",label:"Síndrome orgânico-cerebral",o:["Ausente","Presente"]},
+      {id:"sl_visual",label:"Distúrbio visual (retinopatia lúpica)",o:["Ausente","Presente"]},
+      {id:"sl_cranial",label:"Neuropatia craniana (início recente)",o:["Ausente","Presente"]},
+      {id:"sl_luphead",label:"Cefaleia lúpica (grave, persistente)",o:["Ausente","Presente"]},
+      {id:"sl_cva",label:"AVC (início recente, excluir aterosclerose)",o:["Ausente","Presente"]},
+      {id:"sl_vasc",label:"Vasculite (ulceração, gangrena, nódulos)",o:["Ausente","Presente"]},
+      {id:"sl_arth",label:"Artrite (≥2 articulações com dor + edema)",o:["Ausente","Presente"]},
+      {id:"sl_myos",label:"Miosite (dor muscular + CPK/aldolase elevados)",o:["Ausente","Presente"]},
+      {id:"sl_urcast",label:"Cilindros urinários (hemáticos ou granulosos)",o:["Ausente","Presente"]},
+      {id:"sl_hematur",label:"Hematúria (>5 hemácias/campo)",o:["Ausente","Presente"]},
+      {id:"sl_protein",label:"Proteinúria (>0,5g/24h, início recente)",o:["Ausente","Presente"]},
+      {id:"sl_pyuria",label:"Piúria (>5 leucócitos/campo)",o:["Ausente","Presente"]},
+      {id:"sl_rash",label:"Rash cutâneo novo (malar, discóide, fotossensibilidade)",o:["Ausente","Presente"]},
+      {id:"sl_alopec",label:"Alopécia (difusa ou em placas, início recente)",o:["Ausente","Presente"]},
+      {id:"sl_mucosa",label:"Úlceras mucosas (oral ou nasal)",o:["Ausente","Presente"]},
+      {id:"sl_pleur",label:"Pleurisia (dor pleurítica + atrito ou derrame)",o:["Ausente","Presente"]},
+      {id:"sl_peric",label:"Pericardite (dor + atrito ou ECG/ECO)",o:["Ausente","Presente"]},
+      {id:"sl_compl",label:"Complemento baixo (C3 ou C4 abaixo do normal)",o:["Ausente","Presente"]},
+      {id:"sl_dsdna",label:"Anti-dsDNA elevado (>25% ou acima do normal)",o:["Ausente","Presente"]},
+      {id:"sl_fever",label:"Febre (>38°C, excluir infecção)",o:["Ausente","Presente"]},
+      {id:"sl_thromb",label:"Trombocitopenia (<100.000 plaquetas/mm³)",o:["Ausente","Presente"]},
+      {id:"sl_leuko",label:"Leucopenia (<3.000 leucócitos/mm³)",o:["Ausente","Presente"]},
+    ],
+  },
 
   "BASDAI (Bath Ankylosing Spondylitis Disease Activity Index)": simpleScale("basdai","BASDAI",["BASDAI","Bath Ankylosing Spondylitis Disease Activity Index"], [0,10], "highIsBad", s=>{
     if(s<=3) return pct({level:"Baixa atividade", desc:"Doença controlada.", color:"#16A34A"});
