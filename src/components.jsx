@@ -1031,3 +1031,28 @@ export function CollapsibleSub({ title, defaultOpen = true, children }) {
     </div>
   );
 }
+
+export function NumericField({ label, value, onChange, unit, min, max, step, required, readOnly }) {
+  const v = Number(value);
+  const outOfRange = value !== "" && value !== undefined && !isNaN(v) && ((min !== undefined && v < min) || (max !== undefined && v > max));
+  const isEmpty = required && (value === "" || value === undefined || value === null);
+  const isInvalid = !readOnly && (outOfRange || isEmpty);
+
+  return (
+    <div>
+      <span style={{ display:"block", fontSize:10, fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase", color: C.textMuted, marginBottom:5 }}>
+        {label}{required && <span style={{ color:"var(--red)", marginLeft:2 }}> *</span>}
+      </span>
+      <div style={{ display:"flex", alignItems:"center", background:C.surface, border:`1px solid ${isInvalid ? C.red : C.border}`, borderRadius:10, overflow:"hidden", transition:"border-color 0.15s" }}>
+        <input type="number" value={value ?? ""} min={min} max={max} step={step || 1} onChange={onChange ? (e => onChange(e.target.value)) : undefined} readOnly={readOnly || false}
+          style={{ width:"100%", boxSizing:"border-box", border:"none", background:"transparent", textAlign:"center", fontSize:16, fontWeight:700, color:C.text, padding:"10px 4px", flex:1, outline:"none", fontFamily:"'Inter','Segoe UI',system-ui,sans-serif", opacity:readOnly ? 0.7 : 1, cursor:readOnly ? "not-allowed" : "text" }} />
+        {unit && <span style={{ fontSize:11, color:C.textMuted, paddingRight:12, flexShrink:0 }}>{unit}</span>}
+      </div>
+      {outOfRange && !readOnly && (
+        <div style={{ fontSize:9, color:C.red, marginTop:2, fontWeight:600 }}>
+          Fora do intervalo ({min}–{max})
+        </div>
+      )}
+    </div>
+  );
+}

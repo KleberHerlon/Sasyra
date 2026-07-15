@@ -15,6 +15,7 @@ import LogoSVG from "../components/LogoSVG";
 import { calcDAS28, calcBASDAI, calcHAQ, calcWOMAC, calcWPI } from "../data/rheumatologyScales";
 import PatientIdentification from "../components/PatientIdentification";
 import BridgeAlerts from "../components/BridgeAlerts";
+import { NumericField } from "../components";
 
 
 const C = {
@@ -34,18 +35,6 @@ const primaryBtn = (e={}) => ({ background:C.purple, color:"#fff", border:"none"
 const ghostBtn = (e={}) => ({ background:"transparent", color:C.purple, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 16px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:F, display:"inline-flex", alignItems:"center", gap:6, ...e });
 const iconBtn = (active=false, activeColor=C.purple, e={}) => ({ background:active ? `${activeColor}18` : C.surface, border:`1px solid ${active ? activeColor+"50" : C.border}`, color:active ? activeColor : C.textMuted, borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:active ? 700 : 400, cursor:"pointer", fontFamily:F, transition:"all 0.12s", ...e });
 
-function NumericField({ label, value, onChange, unit, min, max, step, readOnly }) {
-  return (
-    <div>
-      <span style={lbl()}>{label}</span>
-      <div style={{ display:"flex", alignItems:"center", background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, overflow:"hidden" }}>
-        <input type="number" value={value} min={min} max={max} step={step || 1} onChange={onChange ? (e => onChange(e.target.value)) : undefined} readOnly={readOnly || false}
-          style={{ ...inp(), border:"none", background:"transparent", textAlign:"center", fontSize:16, fontWeight:700, color:C.text, padding:"10px 4px", flex:1, ...(readOnly ? { opacity:0.7, cursor:"not-allowed" } : {}) }} />
-        {unit && <span style={{ fontSize:11, color:C.textMuted, paddingRight:12, flexShrink:0 }}>{unit}</span>}
-      </div>
-    </div>
-  );
-}
 
 function SingleSelect({ options, value, onChange, activeColor }) {
   return (

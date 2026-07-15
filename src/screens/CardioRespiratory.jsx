@@ -4,7 +4,7 @@ import CifAndHonorarios from "../components/CifAndHonorarios";
 import CifSection from "../components/CifSection";
 import { CIF } from "../data/cif";
 import { calcMinnesota } from "../data/cardioScales";
-import { CollapsibleSection, CollapsibleSub, Row, useMediaQuery, AudioField } from "../components";
+import { CollapsibleSection, CollapsibleSub, Row, useMediaQuery, AudioField, NumericField } from "../components";
 import ScaleSelector from "../components/ScaleSelector";
 import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import GeneralAssessment from "../components/GeneralAssessment";
@@ -32,19 +32,6 @@ const card = (e={}) => ({ background:C.card, border:`1px solid ${C.border}`, bor
 const primaryBtn = (e={}) => ({ background:C.red, color:"#fff", border:"none", borderRadius:8, padding:"10px 20px", fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:F, display:"inline-flex", alignItems:"center", gap:6, ...e });
 const ghostBtn = (e={}) => ({ background:"transparent", color:C.red, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 16px", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:F, display:"inline-flex", alignItems:"center", gap:6, ...e });
 const iconBtn = (active=false, activeColor=C.red, e={}) => ({ background:active ? `${activeColor}18` : C.surface, border:`1px solid ${active ? activeColor+"50" : C.border}`, color:active ? activeColor : C.textMuted, borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:active ? 700 : 400, cursor:"pointer", fontFamily:F, transition:"all 0.12s", ...e });
-
-function NumericField({ label, value, onChange, unit, min, max, step }) {
-  return (
-    <div>
-      <span style={lbl()}>{label}</span>
-      <div style={{ display:"flex", alignItems:"center", background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, overflow:"hidden" }}>
-        <input type="number" value={value} min={min} max={max} step={step || 1} onChange={e => onChange(e.target.value)}
-          style={{ ...inp(), border:"none", background:"transparent", textAlign:"center", fontSize:16, fontWeight:700, color:C.text, padding:"10px 4px", flex:1 }} />
-        {unit && <span style={{ fontSize:11, color:C.textMuted, paddingRight:12, flexShrink:0 }}>{unit}</span>}
-      </div>
-    </div>
-  );
-}
 
 function SingleSelect({ options, value, onChange, activeColor }) {
   return (
