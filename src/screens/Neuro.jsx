@@ -15,6 +15,7 @@ import PatientIdentification from "../components/PatientIdentification";
 import DermatomeMap from "../components/DermatomeMap";
 import ReflexMatrix from "../components/ReflexMatrix";
 import BridgeAlerts from "../components/BridgeAlerts";
+import HelpTips from "../components/HelpTips";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -853,6 +854,7 @@ export default function Neuro({ student, students, onSelectStudent, onAddStudent
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <LogoSVG C={C} F={F}/>
           <button onClick={()=>setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+          <HelpTips moduleId="neuro" colors={C} />
         </div>
         <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
           {[["avaliacao","📋",isMobile?"":"Avaliação"],["evolucao","📈",isMobile?"":"Evolução"],["relatorio","📊",isMobile?"":"Relatório"],["evidencias","🔬",isMobile?"":"Evidências"]].map(([k,ic,lb])=>(

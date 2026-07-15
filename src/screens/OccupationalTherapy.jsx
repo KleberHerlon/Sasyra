@@ -9,6 +9,7 @@ import { useSemanticScanner } from "../hooks/useSemanticScanner.js";
 import { detectLocalDor, extractClinicalEntities } from "../utils/clinicalDetection.js";
 import { CIF } from "../data/cif.js";
 import { calcBioimpedancia } from "../data/physicalAssessment";
+import HelpTips from "../components/HelpTips";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -682,6 +683,7 @@ export default function OccupationalTherapy({ student, students, onSelectStudent
       <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding: isMobile ? "0 10px" : "0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height: isMobile ? 50 : 60 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <button onClick={() => setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>← Pacientes</button>
+          <HelpTips moduleId="to" colors={C} />
           <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>🤲 Terapia Ocupacional</span>
         </div>
         <div style={{ display:"flex", gap:4, overflowX: isMobile ? "auto" : "visible", flexShrink:1, msOverflowStyle:"none", scrollbarWidth:"none" }}>

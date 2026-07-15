@@ -15,6 +15,7 @@ import { extractClinicalEntities } from "../utils/clinicalDetection.js";
 import { calcYBalance, calcLSI, calcLSIBidirectional, calcRTS } from "../data/sportsScales";
 import PatientIdentification from "../components/PatientIdentification";
 import BridgeAlerts from "../components/BridgeAlerts";
+import HelpTips from "../components/HelpTips";
 
 
 const C = {
@@ -478,6 +479,7 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <LogoSVG C={C} F={F}/>
           <button onClick={()=>setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+          <HelpTips moduleId="sports" colors={C} />
         </div>
         <div style={{ display:"flex", gap:4 }}>
           {[["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (

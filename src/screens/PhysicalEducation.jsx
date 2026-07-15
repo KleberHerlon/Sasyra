@@ -21,6 +21,7 @@ import AssignFromOtherModules from "../components/AssignFromOtherModules";
 import { BodyMap, GonioRow, MRCRow, TestCard, NumericField } from "../components";
 import { useMediaQuery } from "../components";
 import { CIF } from "../data/cif.js";
+import HelpTips from "../components/HelpTips";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -848,6 +849,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
       <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding: isMobile ? "0 12px" : "0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height: isMobile ? 52 : 60, flexWrap:"nowrap", overflowX:"auto" }}>
         <div style={{ display:"flex", alignItems:"center", gap: isMobile ? 6 : 12, flexShrink:0 }}>
           <button onClick={() => setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })}>← Alunos</button>
+          <HelpTips moduleId="pe" colors={C} />
           {!isMobile && <span style={{ fontSize:11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>
             🏋️ Educação Física / Performance
           </span>}

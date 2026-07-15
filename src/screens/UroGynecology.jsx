@@ -19,6 +19,7 @@ import ErectionRigidityScale from "../components/ErectionRigidityScale";
 import PelvicFloorMap from "../components/PelvicFloorMap";
 import BladderDiary from "../components/BladderDiary";
 import BridgeAlerts from "../components/BridgeAlerts";
+import HelpTips from "../components/HelpTips";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -462,6 +463,7 @@ export default function UroGynecology({ student, students, allPatients, currentM
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <LogoSVG C={C} F={F}/>
           <button onClick={()=>setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+          <HelpTips moduleId="uro" colors={C} />
         </div>
         <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
           {[["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (

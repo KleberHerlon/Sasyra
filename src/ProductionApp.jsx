@@ -21,6 +21,7 @@ import Integrations from "./screens/Integrations";
 import ExpressAssessment from "./components/ExpressAssessment";
 import EvidencePanel from "./components/EvidencePanel";
 import LogoSVG from "./components/LogoSVG";
+import HelpTips from "./components/HelpTips";
 import Neuro from "./screens/Neuro";
 import Pediatria from "./screens/Pediatria";
 import CardioRespiratory from "./screens/CardioRespiratory";
@@ -1590,6 +1591,7 @@ function SubModuleLayout({ title, onBack, theme, onToggleTheme, onAgenda, onFina
           ← {title}
         </button>
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          <HelpTips moduleId="ortopedica" colors={C} />
           {onAgenda && <button onClick={onAgenda} style={ghostBtn({ fontSize:12 })}>📅 Agenda</button>}
           {onFinanceiro && <button onClick={onFinanceiro} style={ghostBtn({ fontSize:12 })}>💰 Financeiro</button>}
           <button onClick={onToggleTheme} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.textMuted, padding:"5px 8px", fontSize:14, lineHeight:1, cursor:"pointer", fontFamily:F }}>

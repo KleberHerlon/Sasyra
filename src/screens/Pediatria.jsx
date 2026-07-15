@@ -13,6 +13,7 @@ import { calcGMFCS, calcAIMS, calcMCHAT, calcPEDI } from "../data/pediatriaScale
 import LogoSVG from "../components/LogoSVG";
 import PatientIdentification from "../components/PatientIdentification";
 import BridgeAlerts from "../components/BridgeAlerts";
+import HelpTips from "../components/HelpTips";
 
 const C = {
   bg:"#F5F0EB",surface:"#FCFAF7",card:"#FCFAF7",cardAlt:"#F0EBE5",
@@ -721,6 +722,7 @@ export default function Pediatria({ student, students, onSelectStudent, onAddStu
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <LogoSVG C={C} F={F}/>
           <button onClick={()=>setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+          <HelpTips moduleId="pediatria" colors={C} />
         </div>
         <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
           {[["avaliacao","📋",isMobile?"":"Avaliação"],["evolucao","📈",isMobile?"":"Evolução"],["relatorio","📊",isMobile?"":"Relatório"],["evidencias","🔬",isMobile?"":"Evidências"]].map(([k,ic,lb])=>(

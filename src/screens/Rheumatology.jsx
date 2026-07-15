@@ -15,6 +15,7 @@ import LogoSVG from "../components/LogoSVG";
 import { calcDAS28, calcBASDAI, calcHAQ, calcWOMAC, calcWPI } from "../data/rheumatologyScales";
 import PatientIdentification from "../components/PatientIdentification";
 import BridgeAlerts from "../components/BridgeAlerts";
+import HelpTips from "../components/HelpTips";
 import { NumericField } from "../components";
 
 
@@ -508,6 +509,7 @@ export default function Rheumatology({ student, students, allPatients, currentMo
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <LogoSVG C={C} F={F}/>
           <button onClick={()=>setStudentListView(true)} style={ghostBtn({ padding:"5px 10px", fontSize:11 })} title="Trocar paciente">👥 Pacientes</button>
+          <HelpTips moduleId="reumatologia" colors={C} />
         </div>
         <div style={{ display:"flex", gap:4 }}>
           {[["avaliacao","🔬","Avaliação"],["evolucao","📈","Evolução"],["relatorio","📊","Relatório"],["evidencias","🔬","Evidências"]].map(([k,ic,lb]) => (

@@ -10,6 +10,7 @@ import { detectLocalDor, extractClinicalEntities } from "../utils/clinicalDetect
 import { CIF } from "../data/cif.js";
 import { calcBioimpedancia, calcPollock7Dobras, calcPollock3Dobras } from "../data/physicalAssessment";
 import { calcIMC, calcRCQ } from "../data/peScales";
+import HelpTips from "../components/HelpTips";
 
 const C = {
   bg:"#0E141B",surface:"#111822",card:"#19243A",cardAlt:"#162030",
@@ -601,6 +602,7 @@ export default function Nutrition({ student, students, onSelectStudent, onAddStu
       <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding: isMobile ? "0 8px" : "0 24px", display:"flex", alignItems:"center", justifyContent:"space-between", height: isMobile ? 50 : 60 }}>
         <div style={{ display:"flex", alignItems:"center", gap: isMobile ? 6 : 12 }}>
           <button onClick={() => setStudentListView(true)} style={ghostBtn({ padding:"5px 8px", fontSize: isMobile ? 10 : 11 })}>← {isMobile ? "" : "Pacientes"}</button>
+          <HelpTips moduleId="nutrition" colors={C} />
           <span style={{ fontSize: isMobile ? 10 : 11, fontWeight:700, color:C.textMuted, letterSpacing:"0.1em", textTransform:"uppercase" }}>{isMobile ? "🥗" : "🥗 Nutrição"}</span>
         </div>
         <div style={{ display:"flex", gap:4, overflowX: isMobile ? "auto" : "visible", flexShrink:1, msOverflowStyle:"none", scrollbarWidth:"none" }}>
