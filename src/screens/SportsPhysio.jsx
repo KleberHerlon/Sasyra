@@ -525,24 +525,12 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
       <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
         {tab === "avaliacao" && (
           <>
-            <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} />
+            <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} expanded={expandedSections.includes("identificacao")} onToggle={()=>toggleSection("identificacao")} />
             <Section title="Perfil do Atleta" icon="⚽">
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
                 Preencha os dados do atleta, modalidade esportiva, histórico de lesões e queixa atual.
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
-                <div>
-                  <span style={lbl()}>Nome do atleta</span>
-                  <input type="text" value={nomeAtleta} onChange={e => setNomeAtleta(e.target.value)} style={inp()} placeholder="Nome completo" />
-                </div>
-                <div>
-                  <span style={lbl()}>Idade</span>
-                  <input type="number" value={idadeAtleta} onChange={e => setIdadeAtleta(e.target.value)} style={inp()} placeholder="Anos" min={0} max={120} />
-                </div>
-                <div>
-                  <span style={lbl()}>Sexo</span>
-                  <SingleSelect options={["Feminino","Masculino","Outro"]} value={sexoAtleta} onChange={setSexoAtleta} activeColor={C.blue} />
-                </div>
                 <div>
                   <span style={lbl()}>Modalidade esportiva</span>
                   <input type="text" value={modalidadeEsporte} onChange={e => setModalidadeEsporte(e.target.value)} style={inp()} placeholder="Ex: Futebol, CrossFit, Atletismo..." />
@@ -622,7 +610,7 @@ export default function SportsPhysio({ student, students, allPatients, currentMo
               </div>
             </Section>
 
-            <GeneralAssessment storageKey="sports" studentId={sid} colors={{ ...C, accent: C.blue }} initialBodyPain={localDor} />
+            <GeneralAssessment storageKey="sports" studentId={sid} colors={{ ...C, accent: C.blue }} initialBodyPain={localDor} sex={student?.sexo} />
 
             <CifSection cifSuggestions={cifSuggestionsSports} autoCif={autoCifSports} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 

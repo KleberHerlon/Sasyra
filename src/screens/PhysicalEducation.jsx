@@ -1085,7 +1085,7 @@ export default function PhysicalEducation({ student, students, onSelectStudent, 
               </div>
 
               <CollapsibleSection title="BodyMap — Mapa Corporal de Dor" icon="🧍" expanded={expandedSections.includes("bodymap")} onToggle={() => toggleSection("bodymap")}>
-                <BodyMap value={bodyPain} onChange={setBodyPain} colors={{ mark:C.green, ...C }} />
+                <BodyMap value={bodyPain} onChange={setBodyPain} colors={{ mark:C.green, ...C }} sex={student?.sexo} />
               </CollapsibleSection>
             </Section>
 

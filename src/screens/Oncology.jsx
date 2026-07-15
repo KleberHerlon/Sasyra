@@ -481,7 +481,7 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
       <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
         {tab === "avaliacao" && (
           <>
-            <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} />
+            <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} expanded={expandedSections.includes("identificacao")} onToggle={()=>toggleSection("identificacao")} />
             <Section title="Anamnese Oncológica" icon="📋">
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
                 Preencha os dados da avaliação oncológica, tipo de câncer, estadiamento e tratamentos realizados.
@@ -531,7 +531,7 @@ export default function Oncology({ student, students, onSelectStudent, onAddStud
               </div>
             </Section>
 
-            <GeneralAssessment storageKey="oncology" studentId={sid} colors={{ ...C, accent: C.amber }} initialBodyPain={localDor} />
+            <GeneralAssessment storageKey="oncology" studentId={sid} colors={{ ...C, accent: C.amber }} initialBodyPain={localDor} sex={student?.sexo} />
 
             <CifSection cifSuggestions={cifSuggestionsOnco} autoCif={autoCifOnco} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 

@@ -457,7 +457,7 @@ export default function DermatoFunctional({ student, students, onSelectStudent, 
       <div style={{ maxWidth:960, margin:"0 auto", padding:"20px 16px" }}>
         {tab === "avaliacao" && (
           <>
-            <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} />
+            <PatientIdentification student={student} onUpdate={(field, value) => onUpdateStudent && onUpdateStudent(student?.id, field, value)} regiao={regiao} setRegiao={setRegiao} expanded={expandedSections.includes("identificacao")} onToggle={()=>toggleSection("identificacao")} />
             <Section title="Anamnese Dermatofuncional" icon="📋">
               <div style={{ fontSize:13, color:C.textMuted, marginBottom:14, lineHeight:1.6 }}>
                 Preencha os dados da avaliação dermatofuncional, queixa principal, histórico cirúrgico e condições de pele do paciente.
@@ -533,7 +533,7 @@ export default function DermatoFunctional({ student, students, onSelectStudent, 
               </div>
             </Section>
 
-            <GeneralAssessment storageKey="dermato" studentId={sid} colors={{ ...C, accent: C.amber }} initialBodyPain={localDor} />
+            <GeneralAssessment storageKey="dermato" studentId={sid} colors={{ ...C, accent: C.amber }} initialBodyPain={localDor} sex={student?.sexo} />
 
             <CifSection cifSuggestions={cifSuggestionsDermato} autoCif={autoCifDermato} colors={{ ...C, green: C.green, blue: C.blue, blueBg: C.blueBg, purple: C.purple, purpleBg: C.purpleBg, surface: C.surface, card: C.card, textMuted: C.textMuted }} />
 
