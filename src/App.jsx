@@ -6,7 +6,7 @@ import Dashboard from './screens/Dashboard';
 // Later, this can be wrapped in a PrivateRoute if supabase token is missing.
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/Sasyra">
       <Routes>
         <Route path="/login" element={<Login />} />
         {/* Redirect root to login to ensure they see the restricted screen first */}
