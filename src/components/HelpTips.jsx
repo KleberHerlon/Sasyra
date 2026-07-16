@@ -71,13 +71,15 @@ export default function HelpTips({ moduleId, colors }) {
     <>
       <button onClick={() => setOpen(true)}
         style={{
-          background: "transparent", border: `1px solid ${C.border || "var(--border)"}`,
-          borderRadius: 8, padding: "5px 10px", fontSize: 11, fontWeight: 600,
-          color: C.textMuted || "var(--textMuted)", cursor: "pointer", fontFamily: F,
-          display: "inline-flex", alignItems: "center", gap: 4,
+          background: C.greenBg || "rgba(74,222,128,0.10)",
+          border: `1px solid ${(C.green || "var(--green)")}50`,
+          borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700,
+          color: C.green || "var(--green)", cursor: "pointer", fontFamily: F,
+          display: "inline-flex", alignItems: "center", gap: 6,
+          animation: "none",
         }}
-        title="Dicas e funcionalidades">
-        ❓ Dicas
+        title="Guia de funcionalidades do módulo">
+        💡 Dicas
       </button>
 
       {open && (
