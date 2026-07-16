@@ -1,6 +1,109 @@
 # Roteiro de Testes — SASYRA
 
-**Instruções:** Execute cada item na ordem. Marque ✅ (passou) ou ❌ (falhou). Anote observações ao lado.
+**Instruções:** Execute cada item na ordem. ✅ = passou | ❌ = falhou | 🤖 = automatizado
+
+## Tipos de Teste
+
+| Símbolo | Significado | Comando |
+|---------|-------------|---------|
+| ✅/❌ | Teste manual — execute no navegador | — |
+| 🤖 | Teste automatizado — Playwright E2E | `npm run test:e2e` |
+| 🧪 | Teste automatizado — Vitest unitário | `npm test` |
+
+---
+
+## 1. Ortopédica / Traumato-Ortopédica
+
+### 1.1 Identificação do Paciente
+| # | Teste | Esperado | Tipo |
+|---|-------|----------|------|
+| 1.1 | Abrir módulo ortopédico, ver seção "Identificação do Paciente" colapsada | Header visível, conteúdo oculto, ▶ apontando direita | 🤖 |
+| 1.2 | Clicar no header para expandir | ▶ gira 90°, conteúdo aparece | 🤖 |
+| 1.3 | Selecionar Sexo = "Feminino" e abrir BodyMap | Silhueta feminina | 🤖 |
+| 1.4 | Selecionar Sexo = "Masculino" | Silhueta masculina | 🤖 |
+| 1.5 | Preencher Antropometria (Peso 70kg, Altura 170cm) | IMC calculado automaticamente | ✅ |
+| 1.6 | Selecionar Convênio = "Particular" | Aparece campo Região CREFITO | ✅ |
+
+### 1.2 BodyMap e Queixa Principal
+| # | Teste | Esperado | Tipo |
+|---|-------|----------|------|
+| 1.7 | Clicar áreas do corpo | Áreas selecionadas em verde | 🤖 |
+| 1.8 | Alternar Frente/Costas | Mapa muda de vista | 🤖 |
+| 1.9 | Tela < 400px (mobile) | BodyMap reduz escala | 🤖 |
+| 1.10 | Digitar queixa | Scanner semântico detecta | ✅ |
+
+### 1.3 Tabs da Avaliação
+| # | Teste | Esperado | Tipo |
+|---|-------|----------|------|
+| 1.12 | Tabs: Avaliação, Evolução, Relatório, Evidências | 4 abas visíveis | 🤖 |
+| 1.13 | Clicar "Evolução" | Mostra conteúdo da aba | 🤖 |
+| 1.14 | Clicar "Relatório" | Dados + botões PDF | 🤖 |
+| 1.15 | Alternar tabs | Conteúdo preservado | 🤖 |
+
+### 1.4 💡 Dicas
+| # | Teste | Esperado | Tipo |
+|---|-------|----------|------|
+| 1.16 | Botão 💡 Dicas visível no header | Botão verde com ícone 💡 | 🤖 |
+| 1.17 | Clicar 💡 Dicas | Modal abre com funcionalidades | 🤖 |
+| 1.18 | Clicar ✕ no modal | Modal fecha | 🤖 |
+| 1.19 | Clicar fora do modal | Modal fecha | 🤖 |
+| 1.20 | Modal contém dicas específicas | Ícones, títulos, descrições | 🤖 |
+
+### 1.5 NumericField
+| # | Teste | Esperado | Tipo |
+|---|-------|----------|------|
+| 1.21 | Digitar 500 em campo Peso (max 300) | Borda vermelha + "Fora do intervalo" | 🤖 |
+| 1.22 | Digitar 70 em campo Peso | Sem erro de validação | 🤖 |
+
+## 2. Spot Checks — Cálculos de Escalas
+
+| Módulo | Escala | Input | Output Esperado | Tipo |
+|--------|--------|-------|-----------------|------|
+| Geriatria | MEEM | Todos "Certo" | 30/30 — Normal | 🧪 |
+| Geriatria | GDS-15 | Todos "Não" (itens invertidos) | 0/15 — Normal | 🧪 |
+| Geriatria | Katz | Todos "Independente" | 6/6 — Independência total | 🧪 |
+| Geriatria | Tinetti | Todos máximos | 28/28 — Baixo risco | 🧪 |
+| Geriatria | BBS | Todos "4" | 56/56 — Baixo risco | 🧪 |
+| Geriatria | MNA | Todos máximos | 30/30 — Normal | 🧪 |
+| Neuro | GCS | 4 + 5 + 6 | 15 — Trauma leve | 🧪 |
+| Neuro | MIF | Todos "7" | 126/126 — Independência | 🧪 |
+| Reumato | FIQ-R | Todos "0" | ~0/100 — Impacto leve | 🧪 |
+| Reumato | DAS28 | 0,0,0,0 | 0 — Remissão | 🧪 |
+| Cardio | DASI | Todos "Sim" | 58.2 — Excelente | 🧪 |
+| Uro | PISQ-12 | Todos "4" | 48/48 — Função preservada | 🧪 |
+
+---
+
+## Comandos de Teste
+
+```bash
+# Testes unitários (escalas, cálculos)
+npm test
+
+# Testes E2E automatizados (UI, interações)
+npm run test:e2e
+
+# Testes E2E com navegador visível
+npm run test:e2e:headed
+
+# Testes E2E com interface gráfica
+npm run test:e2e:ui
+
+# Todos os testes (unitários + E2E)
+npm run test:all
+
+# Relatório HTML dos testes E2E
+npx playwright show-report
+```
+
+## Total de Testes
+
+| Categoria | Automatizados | Manuais | Total |
+|-----------|:---:|:---:|:---:|
+| Vitest (unitários) | 721 | — | 721 |
+| Playwright (E2E) | 16 | — | 16 |
+| Manual (roteiro) | — | ~130 | 130 |
+| **TOTAL** | **737** | **~130** | **~867** |
 
 ---
 

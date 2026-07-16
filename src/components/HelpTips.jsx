@@ -2,6 +2,24 @@ import { useState } from "react";
 
 const F = "'Inter','Segoe UI',system-ui,sans-serif";
 
+const pulseKeyframes = `
+@keyframes tipsPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
+}
+@keyframes tipsGlow {
+  0%, 100% { border-color: rgba(74, 222, 128, 0.3); }
+  50% { border-color: rgba(74, 222, 128, 0.8); }
+}
+`;
+
+if (typeof document !== "undefined" && !document.getElementById("tips-animations")) {
+  const style = document.createElement("style");
+  style.id = "tips-animations";
+  style.textContent = pulseKeyframes;
+  document.head.appendChild(style);
+}
+
 const MODULE_TIPS = {
   ortopedica: {
     title: "Fisioterapia Ortopédica",
@@ -72,11 +90,12 @@ export default function HelpTips({ moduleId, colors }) {
       <button onClick={() => setOpen(true)}
         style={{
           background: C.greenBg || "rgba(74,222,128,0.10)",
-          border: `1px solid ${(C.green || "var(--green)")}50`,
-          borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700,
+          border: `2px solid ${(C.green || "var(--green)")}50`,
+          borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700,
           color: C.green || "var(--green)", cursor: "pointer", fontFamily: F,
           display: "inline-flex", alignItems: "center", gap: 6,
-          animation: "none",
+          animation: "tipsPulse 3s ease-in-out infinite, tipsGlow 2s ease-in-out infinite",
+          transition: "all 0.2s",
         }}
         title="Guia de funcionalidades do módulo">
         💡 Dicas
